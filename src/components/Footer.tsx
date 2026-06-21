@@ -47,7 +47,7 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-slate-500">
             <li className="flex items-center gap-2">
               <Mail className="h-4 w-4 text-slate-500" />
-              <span className="text-slate-400">vip-support@quotex.journal</span>
+              <span className="text-slate-400">{process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'vip-support@quotex.journal'}</span>
             </li>
             <li className="flex items-center gap-2">
               <HelpCircle className="h-4 w-4 text-slate-500" />

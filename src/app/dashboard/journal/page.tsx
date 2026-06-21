@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { getTrades, addTrade, updateTrade, deleteTrade } from '@/app/actions/trades';
+import { getTrades, addTrade, updateTrade, deleteTrade, eraseTrades, addMultipleTrades } from '@/app/actions/trades';
 import { 
   Plus, Edit2, Trash2, Image as ImageIcon, ExternalLink, 
-  Search, Filter, X, Loader, Upload, AlertCircle, ArrowUpRight, ArrowDownRight 
+  Search, Filter, X, Loader, Upload, AlertCircle, ArrowUpRight, ArrowDownRight, Trash, BrainCircuit, HeartHandshake, Eye
 } from 'lucide-react';
 
 export default function JournalPage() {
@@ -24,15 +24,41 @@ export default function JournalPage() {
   const [editingTrade, setEditingTrade] = useState<any>(null);
   const [activeScreenshot, setActiveScreenshot] = useState<string | null>(null);
 
-  // Form fields
-  const [asset, setAsset] = useState('');
+  // --- FORM FIELDS ---
+  // Common Session Metadata (Used in Add / Edit)
   const [strategy, setStrategy] = useState('');
+  const [notes, setNotes] = useState('');
+  const [tradeDate, setTradeDate] = useState('');
+  const [session, setSession] = useState('Asia');
+  const [emotionalState, setEmotionalState] = useState('Calm');
+  const [tradeQuality, setTradeQuality] = useState('A');
+  const [executionGrade, setExecutionGrade] = useState('Clean');
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+
+  // Multi-Trade Recording Fields (Only for Add)
+  const [tradesList, setTradesList] = useState<Array<{
+    id: string;
+    asset: string;
+    initialBalance: string;
+    target: string;
+    percentage: string;
+    results: 'Win' | 'Loss' | 'MTG Win';
+    autoPL: boolean;
+    profitLoss: string;
+  }>>([
+    { id: '1', asset: '', initialBalance: '', target: '', percentage: '', results: 'Win', autoPL: true, profitLoss: '' }
+  ]);
+
+  // Single-Trade Edit Fields (Only for Edit Mode)
+  const [asset, setAsset] = useState('');
   const [entryPrice, setEntryPrice] = useState('');
   const [exitPrice, setExitPrice] = useState('');
   const [profitLoss, setProfitLoss] = useState('');
-  const [notes, setNotes] = useState('');
-  const [tradeDate, setTradeDate] = useState('');
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [editInitialBalance, setEditInitialBalance] = useState('');
+  const [editTarget, setEditTarget] = useState('');
+  const [editPercentage, setEditPercentage] = useState('');
+  const [editResults, setEditResults] = useState<'Win' | 'Loss' | 'MTG Win'>('Win');
+  const [editAutoPL, setEditAutoPL] = useState(false);
 
   // Error/Success state
   const [formError, setFormError] = useState<string | null>(null);
@@ -70,6 +96,24 @@ export default function JournalPage() {
     setTradeDate(new Date().toISOString().substring(0, 16));
     setScreenshotFile(null);
     setFormError(null);
+
+    // Reset session fields
+    setSession('Asia');
+    setEmotionalState('Calm');
+    setTradeQuality('A');
+    setExecutionGrade('Clean');
+
+    // Reset multi-trade builder
+    setTradesList([
+      { id: '1', asset: '', initialBalance: '', target: '', percentage: '', results: 'Win', autoPL: true, profitLoss: '' }
+    ]);
+
+    // Reset single edit states
+    setEditInitialBalance('');
+    setEditTarget('');
+    setEditPercentage('');
+    setEditResults('Win');
+    setEditAutoPL(false);
   };
 
   const openAddModal = () => {
@@ -81,13 +125,26 @@ export default function JournalPage() {
     setEditingTrade(trade);
     setAsset(trade.asset);
     setStrategy(trade.strategy);
-    setEntryPrice(String(trade.entry_price));
-    setExitPrice(String(trade.exit_price));
+    setEntryPrice(trade.entry_price !== null && trade.entry_price !== undefined ? String(trade.entry_price) : '');
+    setExitPrice(trade.exit_price !== null && trade.exit_price !== undefined ? String(trade.exit_price) : '');
     setProfitLoss(String(trade.profit_loss));
     setNotes(trade.notes || '');
     setTradeDate(new Date(trade.trade_date).toISOString().substring(0, 16));
     setScreenshotFile(null);
     setFormError(null);
+
+    // Populate session parameters
+    setSession(trade.session || 'Asia');
+    setEmotionalState(trade.emotional_state || 'Calm');
+    setTradeQuality(trade.trade_quality || 'A');
+    setExecutionGrade(trade.execution_grade || 'Clean');
+
+    // Populate single-edit trade parameters
+    setEditInitialBalance(trade.initial_balance !== null && trade.initial_balance !== undefined ? String(trade.initial_balance) : '');
+    setEditTarget(trade.target !== null && trade.target !== undefined ? String(trade.target) : '');
+    setEditPercentage(trade.percentage !== null && trade.percentage !== undefined ? String(trade.percentage) : '');
+    setEditResults(trade.results || 'Win');
+    setEditAutoPL(false);
   };
 
   const handleFileUpload = async (file: File): Promise<string | null> => {
@@ -114,15 +171,81 @@ export default function JournalPage() {
     return publicUrl;
   };
 
+  // Multi-Trade List Modifiers
+  const addTradeRow = () => {
+    const lastRow = tradesList[tradesList.length - 1];
+    setTradesList([
+      ...tradesList,
+      {
+        id: String(Date.now() + Math.random()),
+        asset: lastRow ? lastRow.asset : '',
+        initialBalance: lastRow ? lastRow.initialBalance : '',
+        target: lastRow ? lastRow.target : '',
+        percentage: lastRow ? lastRow.percentage : '',
+        results: 'Win',
+        autoPL: true,
+        profitLoss: ''
+      }
+    ]);
+  };
+
+  const removeTradeRow = (id: string) => {
+    if (tradesList.length === 1) return;
+    setTradesList(tradesList.filter(t => t.id !== id));
+  };
+
+  const updateTradeRow = (id: string, field: string, value: any) => {
+    setTradesList(tradesList.map(t => {
+      if (t.id !== id) return t;
+      const updated = { ...t, [field]: value };
+
+      // Perform Auto P/L calculations if checked
+      if (updated.autoPL && (field === 'initialBalance' || field === 'percentage' || field === 'results' || field === 'autoPL')) {
+        const bal = Number(updated.initialBalance) || 0;
+        const pct = Number(updated.percentage) || 0;
+        if (updated.results === 'Win' || updated.results === 'MTG Win') {
+          updated.profitLoss = String((bal * pct / 100).toFixed(2));
+        } else {
+          updated.profitLoss = String((-bal * pct / 100).toFixed(2));
+        }
+      }
+      return updated;
+    }));
+  };
+
+  // Single Edit Auto P/L calculator
+  const handleSingleEditAutoPL = (field: string, value: any) => {
+    let bal = Number(field === 'editInitialBalance' ? value : editInitialBalance) || 0;
+    let pct = Number(field === 'editPercentage' ? value : editPercentage) || 0;
+    let res = (field === 'editResults' ? value : editResults);
+    let auto = (field === 'editAutoPL' ? value : editAutoPL);
+
+    if (field === 'editInitialBalance') setEditInitialBalance(value);
+    if (field === 'editPercentage') setEditPercentage(value);
+    if (field === 'editResults') setEditResults(value);
+    if (field === 'editAutoPL') setEditAutoPL(value);
+
+    if (auto) {
+      if (res === 'Win' || res === 'MTG Win') {
+        setProfitLoss(String((bal * pct / 100).toFixed(2)));
+      } else {
+        setProfitLoss(String((-bal * pct / 100).toFixed(2)));
+      }
+    }
+  };
+
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     setFormLoading(true);
 
-    if (!asset || !strategy || !entryPrice || !exitPrice || !profitLoss) {
-      setFormError('Please fill in all required fields.');
-      setFormLoading(false);
-      return;
+    // Validate entries
+    for (const t of tradesList) {
+      if (!t.asset || !t.profitLoss) {
+        setFormError('Please fill in Asset Pair and Profit/Loss for all trade rows.');
+        setFormLoading(false);
+        return;
+      }
     }
 
     try {
@@ -131,23 +254,34 @@ export default function JournalPage() {
         screenshotUrl = await handleFileUpload(screenshotFile) || '';
       }
 
-      const res = await addTrade({
-        asset,
-        strategy,
-        entry_price: Number(entryPrice),
-        exit_price: Number(exitPrice),
-        profit_loss: Number(profitLoss),
-        notes,
+      // Format array of trades
+      const tradesData = tradesList.map(t => ({
+        asset: t.asset,
+        strategy: strategy.trim(),
+        profit_loss: Number(t.profitLoss),
+        notes: notes.trim(),
         trade_date: tradeDate ? new Date(tradeDate).toISOString() : new Date().toISOString(),
         screenshot_url: screenshotUrl,
-      });
+        // Session parameters
+        session,
+        emotional_state: emotionalState,
+        trade_quality: tradeQuality,
+        execution_grade: executionGrade,
+        // Trade specific inputs
+        initial_balance: t.initialBalance ? Number(t.initialBalance) : null,
+        target: t.target ? Number(t.target) : null,
+        results: t.results,
+        percentage: t.percentage ? Number(t.percentage) : null,
+      }));
+
+      const res = await addMultipleTrades(tradesData);
 
       if (res.success) {
         setIsAddOpen(false);
         resetForm();
         await refreshTrades();
       } else {
-        setFormError(res.error || 'Failed to record trade.');
+        setFormError(res.error || 'Failed to record session trades.');
       }
     } catch (err: any) {
       setFormError(err.message || 'An error occurred.');
@@ -172,12 +306,22 @@ export default function JournalPage() {
       const res = await updateTrade(editingTrade.id, {
         asset,
         strategy,
-        entry_price: Number(entryPrice),
-        exit_price: Number(exitPrice),
+        entry_price: entryPrice ? Number(entryPrice) : null,
+        exit_price: exitPrice ? Number(exitPrice) : null,
         profit_loss: Number(profitLoss),
         notes,
         trade_date: tradeDate ? new Date(tradeDate).toISOString() : new Date().toISOString(),
         screenshot_url: screenshotUrl,
+        // Session parameters
+        session,
+        emotional_state: emotionalState,
+        trade_quality: tradeQuality,
+        execution_grade: executionGrade,
+        // Trade specific inputs
+        initial_balance: editInitialBalance ? Number(editInitialBalance) : null,
+        target: editTarget ? Number(editTarget) : null,
+        results: editResults,
+        percentage: editPercentage ? Number(editPercentage) : null,
       });
 
       if (res.success) {
@@ -185,7 +329,7 @@ export default function JournalPage() {
         resetForm();
         await refreshTrades();
       } else {
-        setFormError(res.error || 'Failed to update trade.');
+        setFormError(res.error || 'Failed to update trade record.');
       }
     } catch (err: any) {
       setFormError(err.message || 'An error occurred.');
@@ -208,6 +352,33 @@ export default function JournalPage() {
     }
   };
 
+  const handleEraseAll = async () => {
+    const confirmFirst = confirm(
+      "WARNING: This will permanently delete ALL your trading journal records. This action cannot be undone.\n\nDo you want to proceed?"
+    );
+    if (!confirmFirst) return;
+
+    const confirmSecond = confirm(
+      "Are you absolutely sure you want to delete everything? Click OK to permanently erase all your data."
+    );
+    if (!confirmSecond) return;
+
+    setLoading(true);
+    try {
+      const res = await eraseTrades();
+      if (res.success) {
+        alert("All trading data has been permanently deleted.");
+        await refreshTrades();
+      } else {
+        alert(res.error || "Failed to erase data.");
+      }
+    } catch (err: any) {
+      alert("Error erasing data: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // --- FILTER & SEARCH ---
   const assets = ['ALL', ...Array.from(new Set(trades.map((t) => t.asset)))];
   const strategies = ['ALL', ...Array.from(new Set(trades.map((t) => t.strategy)))];
@@ -222,8 +393,9 @@ export default function JournalPage() {
     const matchesStrategy = strategyFilter === 'ALL' || t.strategy === strategyFilter;
     
     let matchesOutcome = true;
-    if (outcomeFilter === 'WINS') matchesOutcome = t.profit_loss > 0;
-    if (outcomeFilter === 'LOSSES') matchesOutcome = t.profit_loss <= 0;
+    const isWin = t.profit_loss > 0 || t.results === 'Win' || t.results === 'MTG Win';
+    if (outcomeFilter === 'WINS') matchesOutcome = isWin;
+    if (outcomeFilter === 'LOSSES') matchesOutcome = !isWin;
 
     return matchesSearch && matchesAsset && matchesStrategy && matchesOutcome;
   });
@@ -237,12 +409,20 @@ export default function JournalPage() {
           <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">transaction ledger</span>
           <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-100">Trading Journal</h1>
         </div>
-        <button
-          onClick={openAddModal}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded bg-neon-green text-slate-950 font-bold hover:bg-neon-green-hover text-xs font-mono tracking-wider uppercase transition-colors glow-button"
-        >
-          <Plus className="h-4 w-4" /> RECORD NEW TRADE
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleEraseAll}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded border border-rose-500/35 hover:bg-rose-950/20 text-rose-400 font-bold text-xs font-mono tracking-wider uppercase transition-all"
+          >
+            <Trash2 className="h-4 w-4" /> ERASE DATA
+          </button>
+          <button
+            onClick={openAddModal}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded bg-neon-green text-slate-950 font-bold hover:bg-neon-green-hover text-xs font-mono tracking-wider uppercase transition-colors glow-button"
+          >
+            <Plus className="h-4 w-4" /> RECORD NEW TRADE
+          </button>
+        </div>
       </div>
 
       {/* Screenshot Preview Modal */}
@@ -259,8 +439,8 @@ export default function JournalPage() {
 
       {/* Add / Edit Trade Modal */}
       {(isAddOpen || editingTrade) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
-          <div className="w-full max-w-xl glass-panel border border-glass-border rounded-xl p-6 relative space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-4xl glass-panel border border-glass-border rounded-xl p-6 relative space-y-4 my-8">
             <button 
               onClick={() => {
                 setIsAddOpen(false);
@@ -273,10 +453,10 @@ export default function JournalPage() {
 
             <div className="space-y-1">
               <h3 className="text-sm font-mono font-bold text-slate-200 uppercase tracking-wide">
-                {isAddOpen ? 'RECORD NEW TRANSACTION' : 'MODIFY TRADE LEDGER'}
+                {isAddOpen ? 'RECORD NEW SESSION & TRADES' : 'MODIFY TRADE LEDGER'}
               </h3>
               <p className="text-[9px] text-slate-500 font-mono">
-                ENSURE MATHEMATICAL SIZING PARAMETERS ARE LOGGED ACCURATELY
+                {isAddOpen ? 'BATCH ENTER TRADES UNDER ONE EXECUTION DATE & SESSION METADATA' : 'ENSURE MATHEMATICAL SIZING PARAMETERS ARE LOGGED ACCURATELY'}
               </p>
             </div>
 
@@ -287,97 +467,383 @@ export default function JournalPage() {
               </div>
             )}
 
-            <form onSubmit={isAddOpen ? handleAddSubmit : handleEditSubmit} className="space-y-4 text-xs font-mono">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Asset */}
-                <div className="space-y-1">
-                  <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Asset Pair</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. EUR/USD"
-                    value={asset}
-                    onChange={(e) => setAsset(e.target.value)}
-                    className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 uppercase placeholder-slate-700 focus:outline-none focus:border-neon-green/30"
-                  />
+            <form onSubmit={isAddOpen ? handleAddSubmit : handleEditSubmit} className="space-y-6 text-xs font-mono">
+              
+              {/* Session Meta Section */}
+              <div className="glass-panel p-4 rounded-lg bg-slate-900/30 border border-glass-border/30 space-y-4">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wide pb-1.5 border-b border-glass-border/20 flex items-center gap-1.5">
+                  <BrainCircuit className="h-4 w-4 text-neon-green" /> Session Metadata
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Date */}
+                  <div className="space-y-1">
+                    <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Execution Date</label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={tradeDate}
+                      onChange={(e) => setTradeDate(e.target.value)}
+                      className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none focus:border-neon-green/30"
+                    />
+                  </div>
+
+                  {/* Session Dropdown */}
+                  <div className="space-y-1">
+                    <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Trading Session</label>
+                    <select
+                      value={session}
+                      onChange={(e) => setSession(e.target.value)}
+                      className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none focus:border-neon-green/30"
+                    >
+                      <option value="Asia">Asia</option>
+                      <option value="London">London</option>
+                      <option value="New York">New York</option>
+                    </select>
+                  </div>
+
+                  {/* Strategy */}
+                  <div className="space-y-1">
+                    <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Strategy Used</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. VIP Golden EMA"
+                      value={strategy}
+                      onChange={(e) => setStrategy(e.target.value)}
+                      className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 placeholder-slate-700 focus:outline-none focus:border-neon-green/30"
+                    />
+                  </div>
                 </div>
 
-                {/* Strategy */}
-                <div className="space-y-1">
-                  <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Strategy Used</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. VIP Golden EMA"
-                    value={strategy}
-                    onChange={(e) => setStrategy(e.target.value)}
-                    className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 placeholder-slate-700 focus:outline-none focus:border-neon-green/30"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Emotional State */}
+                  <div className="space-y-1">
+                    <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Emotional State</label>
+                    <select
+                      value={emotionalState}
+                      onChange={(e) => setEmotionalState(e.target.value)}
+                      className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none focus:border-neon-green/30"
+                    >
+                      <option value="Calm">Calm</option>
+                      <option value="Focused">Focused</option>
+                      <option value="Confident">Confident</option>
+                      <option value="fearful">Fearful</option>
+                      <option value="Revenge Trading">Revenge Trading</option>
+                      <option value="Overconfident">Overconfident</option>
+                    </select>
+                  </div>
+
+                  {/* Trade Quality */}
+                  <div className="space-y-1">
+                    <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Setup Quality</label>
+                    <select
+                      value={tradeQuality}
+                      onChange={(e) => setTradeQuality(e.target.value)}
+                      className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none focus:border-neon-green/30"
+                    >
+                      <option value="A+">A+</option>
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                    </select>
+                  </div>
+
+                  {/* Execution Grade */}
+                  <div className="space-y-1">
+                    <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Execution Grade</label>
+                    <select
+                      value={executionGrade}
+                      onChange={(e) => setExecutionGrade(e.target.value)}
+                      className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none focus:border-neon-green/30"
+                    >
+                      <option value="Clean">Clean</option>
+                      <option value="institutional">Institutional</option>
+                      <option value="Average">Average</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                {/* Entry Price */}
+              {/* Add Mode: Multi-Trade builder */}
+              {isAddOpen && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center pb-2 border-b border-glass-border/30">
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                      <HeartHandshake className="h-4 w-4 text-neon-green" /> Recorded Trades
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={addTradeRow}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded bg-slate-900 border border-glass-border hover:border-neon-green/40 hover:text-neon-green text-[9px] font-bold transition-all"
+                    >
+                      + ADD ANOTHER TRADE
+                    </button>
+                  </div>
+
+                  <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+                    {tradesList.map((t, index) => (
+                      <div key={t.id} className="glass-panel p-4 rounded-lg bg-slate-950/40 border border-glass-border/30 space-y-4 relative">
+                        <div className="flex justify-between items-center pb-2 border-b border-glass-border/10">
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Trade Row #{index + 1}</span>
+                          {tradesList.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeTradeRow(t.id)}
+                              className="text-[9px] text-rose-500 hover:text-rose-400 uppercase font-bold"
+                            >
+                              [Remove Row]
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                          {/* Asset */}
+                          <div className="space-y-1">
+                            <label className="block text-[9px] text-slate-400 uppercase font-bold">Asset Pair</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="EUR/USD"
+                              value={t.asset}
+                              onChange={(e) => updateTradeRow(t.id, 'asset', e.target.value)}
+                              className="w-full bg-[#030812] border border-glass-border px-2 py-1.5 rounded text-slate-200 uppercase placeholder-slate-700 focus:outline-none"
+                            />
+                          </div>
+
+                          {/* Initial Balance */}
+                          <div className="space-y-1">
+                            <label className="block text-[9px] text-slate-400 uppercase font-bold">Balance ($)</label>
+                            <input
+                              type="number"
+                              step="any"
+                              required
+                              placeholder="1000"
+                              value={t.initialBalance}
+                              onChange={(e) => updateTradeRow(t.id, 'initialBalance', e.target.value)}
+                              className="w-full bg-[#030812] border border-glass-border px-2 py-1.5 rounded text-slate-200 placeholder-slate-700 focus:outline-none"
+                            />
+                          </div>
+
+                          {/* Target */}
+                          <div className="space-y-1">
+                            <label className="block text-[9px] text-slate-400 uppercase font-bold">Target ($)</label>
+                            <input
+                              type="number"
+                              step="any"
+                              required
+                              placeholder="10"
+                              value={t.target}
+                              onChange={(e) => updateTradeRow(t.id, 'target', e.target.value)}
+                              className="w-full bg-[#030812] border border-glass-border px-2 py-1.5 rounded text-slate-200 placeholder-slate-700 focus:outline-none"
+                            />
+                          </div>
+
+                          {/* Percentage */}
+                          <div className="space-y-1">
+                            <label className="block text-[9px] text-slate-400 uppercase font-bold">Pct (%)</label>
+                            <input
+                              type="number"
+                              step="any"
+                              required
+                              placeholder="85"
+                              value={t.percentage}
+                              onChange={(e) => updateTradeRow(t.id, 'percentage', e.target.value)}
+                              className="w-full bg-[#030812] border border-glass-border px-2 py-1.5 rounded text-slate-200 placeholder-slate-700 focus:outline-none"
+                            />
+                          </div>
+
+                          {/* Results */}
+                          <div className="space-y-1">
+                            <label className="block text-[9px] text-slate-400 uppercase font-bold">Result</label>
+                            <select
+                              value={t.results}
+                              onChange={(e) => updateTradeRow(t.id, 'results', e.target.value)}
+                              className="w-full bg-[#030812] border border-glass-border px-2 py-1.5 rounded text-slate-200 focus:outline-none"
+                            >
+                              <option value="Win">Win</option>
+                              <option value="Loss">Loss</option>
+                              <option value="MTG Win">MTG Win</option>
+                            </select>
+                          </div>
+
+                          {/* P/L & Auto P/L */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-center">
+                              <label className="block text-[9px] text-slate-400 uppercase font-bold">P&L ($)</label>
+                              <label className="flex items-center gap-0.5 text-[8px] text-slate-500 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={t.autoPL}
+                                  onChange={(e) => updateTradeRow(t.id, 'autoPL', e.target.checked)}
+                                  className="rounded-sm border-glass-border bg-slate-900 focus:ring-0 scale-75"
+                                />
+                                <span>Auto</span>
+                              </label>
+                            </div>
+                            <input
+                              type="number"
+                              step="any"
+                              required
+                              disabled={t.autoPL}
+                              placeholder="150"
+                              value={t.profitLoss}
+                              onChange={(e) => updateTradeRow(t.id, 'profitLoss', e.target.value)}
+                              className="w-full bg-[#030812] border border-glass-border px-2 py-1.5 rounded text-slate-200 placeholder-slate-700 focus:outline-none disabled:opacity-50"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Mode: Single-Trade Fields */}
+              {editingTrade && (
+                <div className="glass-panel p-4 rounded-lg bg-slate-900/30 border border-glass-border/30 space-y-4">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wide pb-1.5 border-b border-glass-border/20 flex items-center gap-1.5">
+                    <Plus className="h-4 w-4 text-neon-green" /> Trade Metrics
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Asset */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] text-slate-400 uppercase font-bold">Asset Pair</label>
+                      <input
+                        type="text"
+                        required
+                        value={asset}
+                        onChange={(e) => setAsset(e.target.value)}
+                        className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 uppercase focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Initial Balance */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] text-slate-400 uppercase font-bold">Initial Balance</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={editInitialBalance}
+                        onChange={(e) => handleSingleEditAutoPL('editInitialBalance', e.target.value)}
+                        className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Target */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] text-slate-400 uppercase font-bold">Target</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={editTarget}
+                        onChange={(e) => setEditTarget(e.target.value)}
+                        className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Percentage */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] text-slate-400 uppercase font-bold">Percentage (%)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={editPercentage}
+                        onChange={(e) => handleSingleEditAutoPL('editPercentage', e.target.value)}
+                        className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Results */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] text-slate-400 uppercase font-bold">Result</label>
+                      <select
+                        value={editResults}
+                        onChange={(e) => handleSingleEditAutoPL('editResults', e.target.value)}
+                        className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none"
+                      >
+                        <option value="Win">Win</option>
+                        <option value="Loss">Loss</option>
+                        <option value="MTG Win">MTG Win</option>
+                      </select>
+                    </div>
+
+                    {/* Profit/Loss and Auto P/L */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <label className="block text-[9px] text-slate-400 uppercase font-bold">Profit/Loss ($)</label>
+                        <label className="flex items-center gap-0.5 text-[8px] text-slate-500 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editAutoPL}
+                            onChange={(e) => handleSingleEditAutoPL('editAutoPL', e.target.checked)}
+                            className="rounded-sm border-glass-border bg-slate-900 focus:ring-0 scale-75"
+                          />
+                          <span>Auto</span>
+                        </label>
+                      </div>
+                      <input
+                        type="number"
+                        step="any"
+                        required
+                        disabled={editAutoPL}
+                        value={profitLoss}
+                        onChange={(e) => setProfitLoss(e.target.value)}
+                        className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none disabled:opacity-50"
+                      />
+                    </div>
+
+                    {/* Entry Price (Legacy compatibility, optional) */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] text-slate-400 uppercase font-bold">Entry Price (Optional)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={entryPrice}
+                        onChange={(e) => setEntryPrice(e.target.value)}
+                        className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Exit Price (Legacy compatibility, optional) */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] text-slate-400 uppercase font-bold">Exit Price (Optional)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={exitPrice}
+                        onChange={(e) => setExitPrice(e.target.value)}
+                        className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Extra details (Notes & Screenshots) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Notes */}
                 <div className="space-y-1">
-                  <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Entry Price</label>
-                  <input
-                    type="number"
-                    step="any"
-                    required
-                    placeholder="1.0850"
-                    value={entryPrice}
-                    onChange={(e) => setEntryPrice(e.target.value)}
-                    className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 placeholder-slate-700 focus:outline-none focus:border-neon-green/30"
+                  <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Psychology & Technical Notes</label>
+                  <textarea
+                    placeholder="Analyze execution discipline, FOMO factors, or support breakout confirmations."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                    className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 placeholder-slate-700 focus:outline-none focus:border-neon-green/30 font-sans"
                   />
                 </div>
 
-                {/* Exit Price */}
+                {/* Screenshot Upload */}
                 <div className="space-y-1">
-                  <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Exit Price</label>
-                  <input
-                    type="number"
-                    step="any"
-                    required
-                    placeholder="1.0875"
-                    value={exitPrice}
-                    onChange={(e) => setExitPrice(e.target.value)}
-                    className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 placeholder-slate-700 focus:outline-none focus:border-neon-green/30"
-                  />
-                </div>
-
-                {/* Profit Loss */}
-                <div className="space-y-1">
-                  <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Profit/Loss ($)</label>
-                  <input
-                    type="number"
-                    step="any"
-                    required
-                    placeholder="e.g. 150 or -75"
-                    value={profitLoss}
-                    onChange={(e) => setProfitLoss(e.target.value)}
-                    className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 placeholder-slate-700 focus:outline-none focus:border-neon-green/30"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* Date */}
-                <div className="space-y-1">
-                  <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Execution Date</label>
-                  <input
-                    type="datetime-local"
-                    value={tradeDate}
-                    onChange={(e) => setTradeDate(e.target.value)}
-                    className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none focus:border-neon-green/30"
-                  />
-                </div>
-
-                {/* File Upload */}
-                <div className="space-y-1">
-                  <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Upload Chart Screenshot</label>
-                  <label className="w-full bg-[#030812] border border-glass-border hover:border-glass-border-hover rounded px-3 py-2 text-slate-400 cursor-pointer flex items-center justify-center gap-1.5 transition-colors">
-                    <Upload className="h-3.5 w-3.5" />
-                    <span className="truncate">{screenshotFile ? screenshotFile.name : 'Select image file'}</span>
+                  <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Upload Session Screenshot (Optional)</label>
+                  <label className="w-full h-[72px] bg-[#030812] border border-glass-border hover:border-glass-border-hover rounded px-3 py-2 text-slate-400 cursor-pointer flex flex-col items-center justify-center gap-1 transition-colors">
+                    <Upload className="h-4 w-4" />
+                    <span className="truncate text-[10px] text-center max-w-full block px-2">
+                      {screenshotFile ? screenshotFile.name : 'Select file (PNG, JPG, WEBP)'}
+                    </span>
                     <input
                       type="file"
                       accept="image/*"
@@ -386,18 +852,6 @@ export default function JournalPage() {
                     />
                   </label>
                 </div>
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-1">
-                <label className="block text-[9px] text-slate-400 uppercase tracking-wider font-bold">Psychology & Technical Notes</label>
-                <textarea
-                  placeholder="Analyze execution discipline, FOMO factors, or support breakout confirmations."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 placeholder-slate-700 focus:outline-none focus:border-neon-green/30 font-sans"
-                />
               </div>
 
               {/* Modal Buttons */}
@@ -409,8 +863,8 @@ export default function JournalPage() {
                 >
                   {formLoading ? (
                     <>
-                      <Loader className="h-4 w-4 animate-spin" />
-                      <span>RECORDING SUBMISSION...</span>
+                      <Loader className="h-4 w-4 animate-spin text-slate-950" />
+                      <span>SAVING DATA PARAMETERS...</span>
                     </>
                   ) : (
                     <span>CONFIRM WRITE TO LEDGER</span>
@@ -505,16 +959,16 @@ export default function JournalPage() {
             <table className="w-full text-left font-mono text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-950 border-b border-glass-border text-slate-500 text-[10px] tracking-wider uppercase font-bold">
-                  <th className="p-4">Date</th>
-                  <th className="p-4">Asset</th>
-                  <th className="p-4">Strategy</th>
-                  <th className="p-4 text-right">Entry / Exit</th>
+                  <th className="p-4">Date / Session</th>
+                  <th className="p-4">Asset / Strategy</th>
+                  <th className="p-4">Session Details</th>
+                  <th className="p-4">Trade Parameters</th>
                   <th className="p-4 text-right">Profit / Loss</th>
                   <th className="p-4 text-center">Chart</th>
                   <th className="p-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-glass-border/40">
+              <tbody className="divide-y divide-glass-border/40 text-[11px]">
                 {filteredTrades.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-slate-600">
@@ -523,26 +977,102 @@ export default function JournalPage() {
                   </tr>
                 ) : (
                   filteredTrades.map((trade) => {
-                    const isWin = trade.profit_loss > 0;
+                    const isWin = trade.profit_loss > 0 || trade.results === 'Win' || trade.results === 'MTG Win';
                     return (
                       <tr key={trade.id} className="hover:bg-slate-900/30 transition-colors">
+                        {/* Date / Session */}
                         <td className="p-4 text-slate-400">
                           {new Date(trade.trade_date).toLocaleDateString([], { month: 'short', day: '2-digit' })}
                           <span className="text-[9px] text-slate-600 block">
                             {new Date(trade.trade_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
+                          {trade.session && (
+                            <span className="inline-block mt-1 px-1 py-0.5 rounded text-[8px] bg-slate-900 border border-glass-border/40 text-slate-400 font-bold uppercase">
+                              {trade.session}
+                            </span>
+                          )}
                         </td>
-                        <td className="p-4 font-bold text-slate-200">{trade.asset}</td>
-                        <td className="p-4 text-slate-400">{trade.strategy}</td>
-                        <td className="p-4 text-right text-slate-300">
-                          {Number(trade.entry_price).toFixed(4)}
-                          <span className="text-[9px] text-slate-500 block">
-                            &rarr; {Number(trade.exit_price).toFixed(4)}
+
+                        {/* Asset / Strategy */}
+                        <td className="p-4 font-bold text-slate-200">
+                          <span className="block text-slate-200">{trade.asset}</span>
+                          <span className="text-[9px] text-slate-500 font-normal block mt-0.5">
+                            {trade.strategy || 'No Strategy'}
                           </span>
                         </td>
-                        <td className={`p-4 text-right font-bold font-mono ${isWin ? 'text-neon-green' : 'text-rose-500'}`}>
-                          {isWin ? '+' : ''}${Number(trade.profit_loss).toFixed(2)}
+
+                        {/* Session Details */}
+                        <td className="p-4 text-slate-300">
+                          <div className="space-y-0.5 text-[10px]">
+                            {trade.emotional_state && (
+                              <div>
+                                <span className="text-slate-500 text-[9px]">Psyche:</span>{' '}
+                                <span className={trade.emotional_state === 'Revenge Trading' || trade.emotional_state === 'fearful' ? 'text-rose-400' : 'text-slate-300'}>
+                                  {trade.emotional_state}
+                                </span>
+                              </div>
+                            )}
+                            {trade.trade_quality && (
+                              <div>
+                                <span className="text-slate-500 text-[9px]">Setup:</span>{' '}
+                                <span className="text-gold-vip font-bold">{trade.trade_quality}</span>
+                              </div>
+                            )}
+                            {trade.execution_grade && (
+                              <div>
+                                <span className="text-slate-500 text-[9px]">Grade:</span>{' '}
+                                <span className="text-slate-300">{trade.execution_grade}</span>
+                              </div>
+                            )}
+                          </div>
                         </td>
+
+                        {/* Trade Parameters */}
+                        <td className="p-4 text-slate-400">
+                          {trade.initial_balance !== null && trade.initial_balance !== undefined ? (
+                            <div className="space-y-0.5 text-[10px]">
+                              <div>
+                                <span className="text-slate-500 text-[9px]">Bal:</span> ${trade.initial_balance}
+                              </div>
+                              {trade.target && (
+                                <div>
+                                  <span className="text-slate-500 text-[9px]">Goal:</span> ${trade.target}
+                                </div>
+                              )}
+                              {trade.percentage && (
+                                <div>
+                                  <span className="text-slate-500 text-[9px]">Return:</span> {trade.percentage}%
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-600">Legacy Price Logic</span>
+                          )}
+                        </td>
+
+                        {/* Profit / Loss */}
+                        <td className={`p-4 text-right font-bold font-mono text-xs ${isWin ? 'text-neon-green' : 'text-rose-500'}`}>
+                          <div className="space-y-0.5">
+                            <div>
+                              {isWin ? '+' : ''}${Number(trade.profit_loss).toFixed(2)}
+                            </div>
+                            {trade.results && (
+                              <div className="text-[8px] uppercase tracking-wider">
+                                {trade.results === 'MTG Win' ? (
+                                  <span className="px-1 py-0.5 rounded bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 font-bold">
+                                    MTG WIN
+                                  </span>
+                                ) : trade.results === 'Win' ? (
+                                  <span className="text-emerald-400 font-bold">WIN</span>
+                                ) : (
+                                  <span className="text-rose-400 font-bold">LOSS</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Chart */}
                         <td className="p-4 text-center">
                           {trade.screenshot_url ? (
                             <button
@@ -556,6 +1086,8 @@ export default function JournalPage() {
                             <span className="text-[9px] text-slate-700">None</span>
                           )}
                         </td>
+
+                        {/* Action buttons */}
                         <td className="p-4 text-right space-x-1.5">
                           <button
                             onClick={() => openEditModal(trade)}

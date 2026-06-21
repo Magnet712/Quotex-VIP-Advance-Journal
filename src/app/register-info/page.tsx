@@ -130,7 +130,7 @@ function RegisterInfoContent() {
         </div>
 
         <div className="text-sm text-slate-400 max-w-sm mx-auto leading-normal">
-          Verification typically completes in <strong className="text-neon-green">1 to 12 hours</strong>. Please contact VIP support at <span className="text-gold-vip font-mono text-xs">vip-support@quotex.journal</span> for rapid activation.
+          Verification typically completes in <strong className="text-neon-green">1 to 12 hours</strong>. Please contact VIP support at <span className="text-gold-vip font-mono text-xs">{process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'vip-support@quotex.journal'}</span> for rapid activation.
         </div>
 
         <div className="pt-4 flex flex-col gap-3">

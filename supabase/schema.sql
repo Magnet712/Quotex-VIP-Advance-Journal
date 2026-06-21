@@ -54,13 +54,13 @@ CREATE POLICY "Admins can view admins"
     ON public.admins 
     FOR SELECT 
     TO authenticated 
-    USING (auth.uid() = id OR EXISTS (SELECT 1 FROM public.admins WHERE id = auth.uid()));
+    USING (auth.uid() = id);
 
 CREATE POLICY "Admins can insert admins" 
     ON public.admins 
     FOR INSERT 
     TO authenticated 
-    WITH CHECK (EXISTS (SELECT 1 FROM public.admins WHERE id = auth.uid()));
+    WITH CHECK (auth.uid() = id);
 
 -- USERS POLICIES
 CREATE POLICY "Users can view their own profile" 

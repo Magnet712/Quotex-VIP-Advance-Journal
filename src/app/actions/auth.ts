@@ -33,22 +33,26 @@ export async function registerTrader(traderId: string, username: string, passwor
 
     const email = getVirtualEmail(traderId);
     const supabase = await createClient();
+    const adminClient = createAdminClient();
 
-    // 1. Sign up the user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // 1. Create the user using the admin client (bypasses signup restrictions)
+    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: {
-          trader_id: traderId,
-          username: username,
-        },
+      email_confirm: true,
+      user_metadata: {
+        trader_id: traderId,
+        username: username,
       },
     });
 
     if (authError) {
       // Check if user already exists
-      if (authError.message.includes('already registered')) {
+      if (
+        authError.message.includes('already registered') ||
+        authError.message.includes('email_exists') ||
+        authError.message.includes('already exists')
+      ) {
         return { success: false, error: 'This Trader ID is already registered.' };
       }
       return { success: false, error: authError.message };
@@ -59,8 +63,8 @@ export async function registerTrader(traderId: string, username: string, passwor
       return { success: false, error: 'Registration failed. Please try again.' };
     }
 
-    // 2. Insert into public.users profile
-    const { error: profileError } = await supabase
+    // 2. Insert into public.users profile using admin client (bypasses RLS before login)
+    const { error: profileError } = await adminClient
       .from('users')
       .insert({
         id: user.id,
@@ -73,9 +77,18 @@ export async function registerTrader(traderId: string, username: string, passwor
     if (profileError) {
       console.error('Profile creation error:', profileError);
       // We attempt to clean up the auth user since profile insertion failed
-      const adminClient = createAdminClient();
       await adminClient.auth.admin.deleteUser(user.id);
       return { success: false, error: 'Failed to create user profile. Please try again.' };
+    }
+
+    // 3. Log the user in to establish the session cookies
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (loginError) {
+      console.error('Auto-login error after registration:', loginError);
     }
 
     return { success: true };

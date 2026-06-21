@@ -2,22 +2,30 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getTrades } from '@/app/actions/trades';
+import { getTrades, eraseTrades } from '@/app/actions/trades';
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
-  Legend, ResponsiveContainer, RadarChart, PolarGrid, 
-  PolarAngleAxis, PolarRadiusAxis, Radar 
+  Legend, ResponsiveContainer 
 } from 'recharts';
 import { 
   TrendingUp, Award, DollarSign, Target, Activity, 
-  Flame, ShieldAlert, BarChart3, Plus, ArrowRight, Loader 
+  Flame, ShieldAlert, BarChart3, Plus, ArrowRight, Loader, Trash2, Calendar
 } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
+  const [isErasing, setIsErasing] = useState(false);
   const [trades, setTrades] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
+
+  // Daily Inspector State
+  const [inspectorDate, setInspectorDate] = useState(() => {
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(today.getTime() - tzOffset)).toISOString().slice(0, 10);
+    return localISOTime;
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -36,11 +44,40 @@ export default function AnalyticsPage() {
     loadTrades();
   }, []);
 
-  if (loading) {
+  const handleEraseData = async () => {
+    const confirmFirst = confirm(
+      "WARNING: This will permanently delete ALL your trading journal records. This action cannot be undone.\n\nDo you want to proceed?"
+    );
+    if (!confirmFirst) return;
+
+    const confirmSecond = confirm(
+      "Are you absolutely sure you want to delete everything? Click OK to permanently erase all your data."
+    );
+    if (!confirmSecond) return;
+
+    setIsErasing(true);
+    try {
+      const res = await eraseTrades();
+      if (res.success) {
+        alert("All trading data has been permanently deleted.");
+        window.location.reload();
+      } else {
+        alert(res.error || "Failed to erase data.");
+      }
+    } catch (err: any) {
+      alert("Error erasing data: " + err.message);
+    } finally {
+      setIsErasing(false);
+    }
+  };
+
+  if (loading || isErasing) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <Loader className="h-8 w-8 animate-spin text-neon-green" />
-        <span className="text-xs font-mono text-slate-500">COMPILING FINANCIAL METRICS...</span>
+        <span className="text-xs font-mono text-slate-500">
+          {isErasing ? "ERASING SYSTEM ARCHIVES..." : "COMPILING FINANCIAL METRICS..."}
+        </span>
       </div>
     );
   }
@@ -70,10 +107,15 @@ export default function AnalyticsPage() {
     );
   }
 
+  // Helper helper to see if a trade is a Win (considers MTG Win as win)
+  const isTradeWin = (t: any) => {
+    return t.profit_loss > 0 || t.results === 'Win' || t.results === 'MTG Win';
+  };
+
   // --- STATS CALCULATIONS ---
   const totalTrades = trades.length;
-  const wins = trades.filter((t) => t.profit_loss > 0);
-  const losses = trades.filter((t) => t.profit_loss <= 0);
+  const wins = trades.filter(isTradeWin);
+  const losses = trades.filter((t) => !isTradeWin(t));
   const winRate = totalTrades > 0 ? (wins.length / totalTrades) * 100 : 0;
   const netProfit = trades.reduce((acc, t) => acc + Number(t.profit_loss), 0);
   const avgTrade = totalTrades > 0 ? netProfit / totalTrades : 0;
@@ -130,7 +172,7 @@ export default function AnalyticsPage() {
     if (!hourlyMap[hour]) hourlyMap[hour] = { count: 0, wins: 0, pl: 0 };
     hourlyMap[hour].count += 1;
     hourlyMap[hour].pl += Number(t.profit_loss);
-    if (t.profit_loss > 0) hourlyMap[hour].wins += 1;
+    if (isTradeWin(t)) hourlyMap[hour].wins += 1;
   });
   const hourlyData = Array.from({ length: 24 }).map((_, h) => {
     const data = hourlyMap[h] || { count: 0, wins: 0, pl: 0 };
@@ -179,13 +221,24 @@ export default function AnalyticsPage() {
   // 10. Consistency Score Line Chart (Cumulative win rate progression)
   let winSum = 0;
   const consistencyProgression = sortedTrades.map((t, index) => {
-    if (t.profit_loss > 0) winSum += 1;
+    if (isTradeWin(t)) winSum += 1;
     const currentRate = (winSum / (index + 1)) * 100;
     return {
       name: `T ${index + 1}`,
       rate: Number(currentRate.toFixed(1)),
     };
   });
+
+  // Daily Inspector Calculations
+  const inspectorTrades = trades.filter((t) => {
+    const tradeLocalDate = new Date(t.trade_date).toLocaleDateString('sv-SE');
+    return tradeLocalDate === inspectorDate;
+  });
+  const inspectorTotal = inspectorTrades.length;
+  const inspectorWins = inspectorTrades.filter(isTradeWin).length;
+  const inspectorLosses = inspectorTrades.filter((t) => !isTradeWin(t)).length;
+  const inspectorNetPL = inspectorTrades.reduce((acc, t) => acc + Number(t.profit_loss), 0);
+  const inspectorWinRate = inspectorTotal > 0 ? (inspectorWins / inspectorTotal) * 100 : 0;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 w-full max-w-7xl mx-auto">
@@ -195,6 +248,12 @@ export default function AnalyticsPage() {
           <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">analytical database</span>
           <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-100">Performance Terminal</h1>
         </div>
+        <button
+          onClick={handleEraseData}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded border border-rose-500/35 hover:bg-rose-950/20 text-rose-400 font-bold text-xs font-mono tracking-wider uppercase transition-all"
+        >
+          <Trash2 className="h-4 w-4" /> ERASE ALL DATA
+        </button>
       </div>
 
       {/* KPI Row */}
@@ -217,6 +276,50 @@ export default function AnalyticsPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Daily Inspector lookup */}
+      <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">daily trade inspector</span>
+            <h2 className="text-base font-bold font-mono text-slate-200">Daily Performance Lookup</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-slate-400" />
+            <input
+              type="date"
+              value={inspectorDate}
+              onChange={(e) => setInspectorDate(e.target.value)}
+              className="bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 font-mono text-xs focus:outline-none focus:border-neon-green/30"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2">
+          <div className="bg-[#020617]/50 border border-glass-border/40 p-3.5 rounded text-center">
+            <div className="text-[8px] font-mono text-slate-500 uppercase">total trades</div>
+            <div className="text-base font-mono font-bold text-slate-200 mt-1">{inspectorTotal}</div>
+          </div>
+          <div className="bg-[#020617]/50 border border-glass-border/40 p-3.5 rounded text-center">
+            <div className="text-[8px] font-mono text-slate-500 uppercase">wins</div>
+            <div className="text-base font-mono font-bold text-neon-green mt-1">{inspectorWins}</div>
+          </div>
+          <div className="bg-[#020617]/50 border border-glass-border/40 p-3.5 rounded text-center">
+            <div className="text-[8px] font-mono text-slate-500 uppercase">losses</div>
+            <div className="text-base font-mono font-bold text-rose-500 mt-1">{inspectorLosses}</div>
+          </div>
+          <div className="bg-[#020617]/50 border border-glass-border/40 p-3.5 rounded text-center">
+            <div className="text-[8px] font-mono text-slate-500 uppercase">win rate</div>
+            <div className="text-base font-mono font-bold text-neon-green mt-1">{inspectorWinRate.toFixed(1)}%</div>
+          </div>
+          <div className="bg-[#020617]/50 border border-glass-border/40 p-3.5 rounded text-center col-span-2 md:col-span-1">
+            <div className="text-[8px] font-mono text-slate-500 uppercase">net p&l</div>
+            <div className={`text-base font-mono font-bold mt-1 ${inspectorNetPL >= 0 ? 'text-neon-green' : 'text-rose-500'}`}>
+              {inspectorNetPL >= 0 ? '+' : ''}${inspectorNetPL.toFixed(2)}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Charts Grid */}
