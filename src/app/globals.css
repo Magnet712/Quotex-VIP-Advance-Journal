@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #020617;
+  --color-foreground: #f8fafc;
+  
+  --color-neon-green: #00E676;
+  --color-neon-green-hover: #00C853;
+  --color-gold-vip: #FFD700;
+  --color-gold-vip-hover: #FFC107;
+  
+  --color-slate-950: #020617;
+  --color-slate-900: #0f172a;
+  --color-slate-800: #1e293b;
+  --color-slate-700: #334155;
+  --color-slate-400: #94a3b8;
+  
+  --color-terminal-bg: #030812;
+  --color-glass-card: rgba(8, 14, 28, 0.65);
+  --color-glass-card-hover: rgba(12, 20, 38, 0.85);
+  --color-glass-border: rgba(255, 255, 255, 0.06);
+  --color-glass-border-hover: rgba(0, 230, 118, 0.25);
+  
+  --color-chart-green: #10B981;
+  --color-chart-red: #EF4444;
+  --color-chart-blue: #3B82F6;
+  --color-chart-yellow: #FFD700;
+  --color-chart-purple: #8B5CF6;
+  
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #020617;
+  color: #f8fafc;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: rgba(6, 11, 23, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5);
+}
+
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-panel-hover:hover {
+  background: rgba(10, 18, 36, 0.8);
+  border-color: rgba(0, 230, 118, 0.2);
+  box-shadow: 0 10px 40px 0 rgba(0, 230, 118, 0.04);
+}
+
+.glass-card-gold {
+  background: rgba(18, 14, 5, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 215, 0, 0.12);
+  box-shadow: 0 10px 40px 0 rgba(255, 215, 0, 0.03);
+}
+
+.glass-card-gold:hover {
+  border-color: rgba(255, 215, 0, 0.35);
+  box-shadow: 0 10px 40px 0 rgba(255, 215, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glow-text-green {
+  text-shadow: 0 0 12px rgba(0, 230, 118, 0.45);
+}
+
+.glow-text-gold {
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00E676;
+}
+
+/* Bloomberg Terminal Overlay Grid */
+.grid-overlay {
+  background-size: 50px 50px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+}
+
+/* Custom Animations */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s infinite ease-in-out;
+}
+
+.glow-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glow-button:hover {
+  box-shadow: 0 0 15px rgba(0, 230, 118, 0.4);
+}
+
+.glow-button-gold {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glow-button-gold:hover {
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.45);
+}
