@@ -65,7 +65,7 @@ export default function HeroCanvas() {
         ctx.beginPath();
         ctx.moveTo(0, height * 0.5);
 
-        for (let i = 0; i < width; i++) {
+        for (let i = 0; i < width; i += 4) {
           const yOffset = Math.sin(i * wave.length + increment) * wave.amplitude * Math.sin(increment * 0.2);
           ctx.lineTo(i, wave.y + yOffset);
         }
@@ -76,27 +76,6 @@ export default function HeroCanvas() {
         ctx.shadowBlur = 8;
         ctx.stroke();
       });
-
-      // Draw faint terminal trading grid lines
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.005)';
-      ctx.lineWidth = 1;
-
-      // Vertical lines
-      for (let x = 0; x < width; x += 60) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-      }
-
-      // Horizontal lines
-      for (let y = 0; y < height; y += 60) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-      }
 
       increment += 0.01;
     };
