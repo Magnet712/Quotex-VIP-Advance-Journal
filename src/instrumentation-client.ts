@@ -7,6 +7,12 @@ import * as Sentry from "@sentry/nextjs";
 Sentry.init({
   dsn: "https://2841d531c5408e3bb1582daa5fe34f79@o4511613795631104.ingest.us.sentry.io/4511613886595072",
 
+  // Ignore common third-party browser extension errors
+  ignoreErrors: [
+    "Cannot read properties of undefined (reading 'addListener')",
+    "Cannot redefine property: ethereum",
+  ],
+
   // Add optional integrations for additional features
   integrations: [Sentry.replayIntegration()],
 
