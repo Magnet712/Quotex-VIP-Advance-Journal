@@ -9,26 +9,43 @@ import {
 
 // ─── All Quotex OTC Pairs ────────────────────────────────────────────────────
 const OTC_PAIRS = [
-  { symbol: 'EUR/USD', short: 'EURUSD', base: 1.08450, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'GBP/USD', short: 'GBPUSD', base: 1.26500, pip: 5, vol: 'HIGH' },
-  { symbol: 'USD/JPY', short: 'USDJPY', base: 149.500, pip: 2, vol: 'MEDIUM' },
-  { symbol: 'AUD/USD', short: 'AUDUSD', base: 0.65200, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'USD/CAD', short: 'USDCAD', base: 1.35800, pip: 5, vol: 'LOW' },
-  { symbol: 'EUR/JPY', short: 'EURJPY', base: 162.100, pip: 2, vol: 'HIGH' },
-  { symbol: 'GBP/JPY', short: 'GBPJPY', base: 189.200, pip: 2, vol: 'HIGH' },
-  { symbol: 'EUR/GBP', short: 'EURGBP', base: 0.85700, pip: 5, vol: 'LOW' },
-  { symbol: 'NZD/USD', short: 'NZDUSD', base: 0.59800, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'USD/CHF', short: 'USDCHF', base: 0.90400, pip: 5, vol: 'LOW' },
-  { symbol: 'EUR/AUD', short: 'EURAUD', base: 1.66200, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'GBP/AUD', short: 'GBPAUD', base: 1.93600, pip: 5, vol: 'HIGH' },
-  { symbol: 'AUD/JPY', short: 'AUDJPY', base: 97.500,  pip: 2, vol: 'HIGH' },
-  { symbol: 'CAD/JPY', short: 'CADJPY', base: 110.200, pip: 2, vol: 'MEDIUM' },
-  { symbol: 'CHF/JPY', short: 'CHFJPY', base: 165.400, pip: 2, vol: 'MEDIUM' },
-  { symbol: 'EUR/CAD', short: 'EURCAD', base: 1.47300, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'GBP/CAD', short: 'GBPCAD', base: 1.71500, pip: 5, vol: 'HIGH' },
-  { symbol: 'USD/SGD', short: 'USDSGD', base: 1.34200, pip: 5, vol: 'LOW' },
-  { symbol: 'USD/INR', short: 'USDINR', base: 83.650,  pip: 2, vol: 'LOW' },
-  { symbol: 'USD/BRL', short: 'USDBRL', base: 4.98500, pip: 3, vol: 'HIGH' },
+  // Major Pairs
+  { symbol: 'EUR/USD', short: 'EURUSD', base: 1.08450,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'GBP/USD', short: 'GBPUSD', base: 1.26500,   pip: 5, vol: 'HIGH'   },
+  { symbol: 'USD/JPY', short: 'USDJPY', base: 149.500,   pip: 2, vol: 'MEDIUM' },
+  { symbol: 'AUD/USD', short: 'AUDUSD', base: 0.65200,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'USD/CAD', short: 'USDCAD', base: 1.35800,   pip: 5, vol: 'LOW'    },
+  { symbol: 'EUR/JPY', short: 'EURJPY', base: 162.100,   pip: 2, vol: 'HIGH'   },
+  { symbol: 'GBP/JPY', short: 'GBPJPY', base: 189.200,  pip: 2, vol: 'HIGH'   },
+  { symbol: 'EUR/GBP', short: 'EURGBP', base: 0.85700,   pip: 5, vol: 'LOW'    },
+  { symbol: 'NZD/USD', short: 'NZDUSD', base: 0.59800,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'USD/CHF', short: 'USDCHF', base: 0.90400,   pip: 5, vol: 'LOW'    },
+  { symbol: 'EUR/AUD', short: 'EURAUD', base: 1.66200,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'GBP/AUD', short: 'GBPAUD', base: 1.93600,  pip: 5, vol: 'HIGH'   },
+  { symbol: 'AUD/JPY', short: 'AUDJPY', base: 97.500,    pip: 2, vol: 'HIGH'   },
+  { symbol: 'CAD/JPY', short: 'CADJPY', base: 110.200,   pip: 2, vol: 'MEDIUM' },
+  { symbol: 'CHF/JPY', short: 'CHFJPY', base: 165.400,   pip: 2, vol: 'MEDIUM' },
+  { symbol: 'EUR/CAD', short: 'EURCAD', base: 1.47300,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'GBP/CAD', short: 'GBPCAD', base: 1.71500,  pip: 5, vol: 'HIGH'   },
+  { symbol: 'USD/SGD', short: 'USDSGD', base: 1.34200,   pip: 5, vol: 'LOW'    },
+  { symbol: 'USD/INR', short: 'USDINR', base: 83.650,    pip: 2, vol: 'LOW'    },
+  { symbol: 'USD/BRL', short: 'USDBRL', base: 4.98500,   pip: 3, vol: 'HIGH'   },
+  // Additional Pairs
+  { symbol: 'USD/MXN', short: 'USDMXN', base: 17.1500,  pip: 3, vol: 'HIGH'   },
+  { symbol: 'EUR/CHF', short: 'EURCHF', base: 0.97800,   pip: 5, vol: 'LOW'    },
+  { symbol: 'GBP/CHF', short: 'GBPCHF', base: 1.13200,  pip: 5, vol: 'MEDIUM' },
+  { symbol: 'AUD/CAD', short: 'AUDCAD', base: 0.89600,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'AUD/NZD', short: 'AUDNZD', base: 1.09100,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'NZD/JPY', short: 'NZDJPY', base: 89.700,    pip: 2, vol: 'HIGH'   },
+  { symbol: 'GBP/NZD', short: 'GBPNZD', base: 2.11500,  pip: 5, vol: 'HIGH'   },
+  { symbol: 'EUR/NZD', short: 'EURNZD', base: 1.81200,  pip: 5, vol: 'MEDIUM' },
+  { symbol: 'CAD/CHF', short: 'CADCHF', base: 0.66600,   pip: 5, vol: 'LOW'    },
+  { symbol: 'USD/ZAR', short: 'USDZAR', base: 18.6500,   pip: 3, vol: 'HIGH'   },
+  { symbol: 'USD/TRY', short: 'USDTRY', base: 32.4500,   pip: 3, vol: 'HIGH'   },
+  // Exotic Emerging Market Pairs
+  { symbol: 'USD/ARS', short: 'USDARS', base: 920.00,    pip: 1, vol: 'HIGH'   },
+  { symbol: 'USD/PKR', short: 'USDPKR', base: 278.50,    pip: 1, vol: 'HIGH'   },
+  { symbol: 'USD/BDT', short: 'USDBDT', base: 109.80,    pip: 1, vol: 'MEDIUM' },
 ];
 
 // ─── Orderflow Patterns (from strategy) ─────────────────────────────────────
@@ -50,6 +67,11 @@ const STRATEGY_TAGS = [
   'Orderflow + EMA Trend',
   'RSI Extreme + Confluence',
   'Multi-Indicator Signal',
+  'SuperTrend + ATR Filter',
+  'SuperTrend + Stoch Cross',
+  'ATR Breakout + Orderflow',
+  'Order Delta + RSI Confirm',
+  'SuperTrend + Delta Volume',
 ];
 
 // ─── Seeded deterministic random ────────────────────────────────────────────
@@ -74,8 +96,14 @@ interface GeneratedSignal {
   smaStatus: string;
   wickBias: string;
   confirmations: number;
-  cvd: number;        // Cumulative Volume Delta (simulated, ±1000)
-  cvdBias: string;   // 'BULLISH' | 'BEARISH' | 'NEUTRAL'
+  cvd: number;
+  cvdBias: string;
+  atr: number;              // ATR value (% of price)
+  atrLevel: string;         // 'HIGH VOLATILITY' | 'LOW VOLATILITY' | 'NORMAL'
+  superTrend: string;       // 'BULLISH' | 'BEARISH'
+  superTrendStrength: string; // 'STRONG' | 'MODERATE'
+  orderDelta: number;       // Order Delta -100 to +100
+  orderDeltaBias: string;   // 'BUY DOMINANT' | 'SELL DOMINANT' | 'BALANCED'
 }
 
 function generateSignal(pairIdx: number, windowSeed: number): GeneratedSignal | null {
@@ -140,23 +168,57 @@ function generateSignal(pairIdx: number, windowSeed: number): GeneratedSignal | 
   const wickBear = upperWick > lowerWick * 1.6;
   const ofBull   = ofRoll > 0.48;
 
+  // ── ATR (Average True Range) ─────────────────────────────────────────
+  // Simulated ATR as % of price (typical range 0.05% – 0.45%)
+  const atrRaw   = 0.05 + sr(s + 20.5) * 0.40; // 0.05–0.45%
+  const atr      = Math.round(atrRaw * 1000) / 1000;
+  const atrLevel = atrRaw > 0.30 ? 'HIGH VOLATILITY' : atrRaw < 0.12 ? 'LOW VOLATILITY' : 'NORMAL';
+  // ATR directional vote: high volatility + seeded roll → bull or bear
+  const atrDirRoll = sr(s + 20.9);
+  const atrBull  = atrRaw > 0.18 && atrDirRoll > 0.50;
+  const atrBear  = atrRaw > 0.18 && atrDirRoll <= 0.50;
+
+  // ── SuperTrend ───────────────────────────────────────────────────────
+  // SuperTrend = price above/below ATR-based band. Multiplier = 3.
+  // We simulate with a seeded directional bias + ATR influence
+  const stRoll        = sr(s + 21.5);
+  const stBullBias    = stRoll > 0.45; // ~55% chance aligns with market
+  const stStrRoll     = sr(s + 22.5);
+  const superTrend    = stBullBias ? 'BULLISH' : 'BEARISH';
+  const superTrendStrength = stStrRoll > 0.5 ? 'STRONG' : 'MODERATE';
+  const stBull = superTrend === 'BULLISH';
+  const stBear = superTrend === 'BEARISH';
+
+  // ── Order Delta (Buy volume - Sell volume, scaled -100 to +100) ──────
+  const odRaw        = (sr(s + 23.5) - 0.5) * 200; // -100 to +100
+  const orderDelta   = Math.round(odRaw);
+  const orderDeltaBull = orderDelta > 15;
+  const orderDeltaBear = orderDelta < -15;
+  const orderDeltaBias =
+    orderDelta > 15  ? 'BUY DOMINANT' :
+    orderDelta < -15 ? 'SELL DOMINANT' : 'BALANCED';
+
+  // ── Final scoring with all 8 indicators ─────────────────────────────
   let bullPts = 0, bearPts = 0;
-  if (rsiBull) bullPts += 3; if (rsiBear) bearPts += 3;
-  if (stochBull) bullPts += 2; if (stochBear) bearPts += 2;
-  if (smaBull) bullPts += 2; if (smaBear) bearPts += 2;
-  if (wickBull) bullPts += 2; if (wickBear) bearPts += 2;
-  if (ofBull)  bullPts += 3; else bearPts += 3;
+  if (rsiBull)         bullPts += 3; if (rsiBear)         bearPts += 3;
+  if (stochBull)       bullPts += 2; if (stochBear)       bearPts += 2;
+  if (smaBull)         bullPts += 2; if (smaBear)         bearPts += 2;
+  if (wickBull)        bullPts += 2; if (wickBear)        bearPts += 2;
+  if (ofBull)          bullPts += 3; else                 bearPts += 3;
+  if (atrBull)         bullPts += 1; if (atrBear)         bearPts += 1;
+  if (stBull)          bullPts += 3; if (stBear)          bearPts += 3;
+  if (orderDeltaBull)  bullPts += 2; if (orderDeltaBear)  bearPts += 2;
 
   const topScore = Math.max(bullPts, bearPts);
 
-  // Need at least confirmations out of possible
-  const confirmations = Math.min(5, Math.floor(topScore / 2.2) + 1);
-  if (topScore < 6 || noiseRoll < 0.28) return null; // filter weak or random
+  // Confirmations out of 8 indicators
+  const confirmations = Math.min(8, Math.floor(topScore / 2.2) + 1);
+  if (topScore < 7 || noiseRoll < 0.28) return null;
 
   const direction: 'CALL' | 'PUT' = bullPts >= bearPts ? 'CALL' : 'PUT';
 
   // Confidence 80–95%
-  const rawConf = topScore / 10;
+  const rawConf = topScore / 16;
   const confidence = Math.min(95, Math.max(80, Math.round(80 + rawConf * 15)));
 
   // Orderflow pattern
@@ -187,12 +249,11 @@ function generateSignal(pairIdx: number, windowSeed: number): GeneratedSignal | 
     wickBear ? 'Upper Wick Strong (Sell Pressure)' : 'Balanced Wicks';
 
   // ── CVD (Cumulative Volume Delta) ────────────────────────────────────
-  // Range: -1000 to +1000. Direction-aligned with slight noise.
-  const cvdBase = direction === 'CALL' ? 1 : -1;
-  const cvdMag  = 200 + Math.round(sr(s + 10.5) * 750); // 200–950 magnitude
+  const cvdBase  = direction === 'CALL' ? 1 : -1;
+  const cvdMag   = 200 + Math.round(sr(s + 10.5) * 750);
   const cvdNoise = Math.round((sr(s + 11.5) - 0.5) * 120);
-  const cvd = Math.round(cvdBase * cvdMag + cvdNoise);
-  const cvdBias = cvd > 80 ? 'BULLISH' : cvd < -80 ? 'BEARISH' : 'NEUTRAL';
+  const cvd      = Math.round(cvdBase * cvdMag + cvdNoise);
+  const cvdBias  = cvd > 80 ? 'BULLISH' : cvd < -80 ? 'BEARISH' : 'NEUTRAL';
 
   return {
     direction, confidence, ofPattern, strategy,
@@ -200,6 +261,9 @@ function generateSignal(pairIdx: number, windowSeed: number): GeneratedSignal | 
     stochK, stochD, stochBias,
     smaStatus, wickBias, confirmations,
     cvd, cvdBias,
+    atr, atrLevel,
+    superTrend, superTrendStrength,
+    orderDelta, orderDeltaBias,
   };
 }
 
@@ -439,7 +503,7 @@ export default function SignalsPage() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'INDICATORS', value: 'RSI · Stoch · SMA21 · EMA50 · OHLC Wick' },
+              { label: 'INDICATORS', value: 'RSI · Stoch · SMA21 · EMA50 · SuperTrend · ATR · Order Delta' },
               { label: 'ENTRY CONFIRM', value: 'Orderflow (5s last candle)' },
               { label: 'EXPIRY', value: '1 MINUTE' },
               { label: 'MARTINGALE', value: '1 Step · 2.5× on Loss' },
@@ -886,6 +950,85 @@ function SignalCard({
               </div>
             </div>
 
+            {/* SuperTrend Row */}
+            <div className="flex items-start gap-2 pt-0.5">
+              <span className="text-[8px] font-mono text-slate-600 w-16 shrink-0 pt-1">SUPERTREND</span>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className={`text-[9px] font-mono font-bold ${
+                    sig.superTrend === 'BULLISH' ? 'text-neon-green' : 'text-rose-400'
+                  }`}>
+                    {sig.superTrend === 'BULLISH' ? '▲' : '▼'} {sig.superTrend}
+                  </span>
+                  <span className={`text-[7px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                    sig.superTrendStrength === 'STRONG'
+                      ? sig.superTrend === 'BULLISH'
+                        ? 'text-neon-green border-neon-green/30 bg-neon-green/5'
+                        : 'text-rose-400 border-rose-500/30 bg-rose-500/5'
+                      : 'text-slate-500 border-slate-700 bg-slate-900/30'
+                  }`}>
+                    {sig.superTrendStrength}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* ATR Row */}
+            <div className="flex items-center gap-2 text-[9px] font-mono pt-0.5">
+              <span className="text-slate-600 w-16 shrink-0">ATR(14)</span>
+              <div className="flex-1 flex items-center justify-between">
+                <span className="text-slate-300">{sig.atr}%</span>
+                <span className={`text-[7px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                  sig.atrLevel === 'HIGH VOLATILITY'
+                    ? 'text-rose-400 border-rose-500/30 bg-rose-500/5'
+                    : sig.atrLevel === 'LOW VOLATILITY'
+                    ? 'text-slate-500 border-slate-700 bg-slate-900/30'
+                    : 'text-amber-400 border-amber-400/30 bg-amber-500/5'
+                }`}>
+                  {sig.atrLevel}
+                </span>
+              </div>
+            </div>
+
+            {/* Order Delta Row */}
+            <div className="flex items-start gap-2 pt-0.5">
+              <span className="text-[8px] font-mono text-slate-600 w-16 shrink-0 pt-1">ORDER Δ</span>
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className={`text-[9px] font-mono font-bold ${
+                    sig.orderDelta > 0 ? 'text-neon-green' : sig.orderDelta < 0 ? 'text-rose-400' : 'text-amber-400'
+                  }`}>
+                    {sig.orderDelta > 0 ? '+' : ''}{sig.orderDelta}
+                  </span>
+                  <span className={`text-[7px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                    sig.orderDeltaBias === 'BUY DOMINANT'
+                      ? 'text-neon-green border-neon-green/30 bg-neon-green/5'
+                      : sig.orderDeltaBias === 'SELL DOMINANT'
+                      ? 'text-rose-400 border-rose-500/30 bg-rose-500/5'
+                      : 'text-slate-500 border-slate-700 bg-slate-900/30'
+                  }`}>
+                    {sig.orderDeltaBias}
+                  </span>
+                </div>
+                {/* Order Delta bar */}
+                <div className="h-1 bg-slate-800 rounded-full overflow-hidden relative">
+                  <div className="absolute inset-y-0 left-1/2 w-px bg-slate-700" />
+                  {sig.orderDelta >= 0 ? (
+                    <div
+                      className="absolute inset-y-0 left-1/2 bg-neon-green rounded-r-full"
+                      style={{ width: `${Math.min(50, (sig.orderDelta / 100) * 50)}%` }}
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-y-0 right-1/2 bg-rose-500 rounded-l-full"
+                      style={{ width: `${Math.min(50, (Math.abs(sig.orderDelta) / 100) * 50)}%` }}
+                    />
+                  )}
+                </div>
+                <div className="text-[7px] font-mono text-slate-700">Buy vs Sell Volume Delta</div>
+              </div>
+            </div>
+
           </div>
 
           {/* Orderflow Pattern */}
@@ -904,13 +1047,13 @@ function SignalCard({
               <span className="text-[9px] font-mono text-gold-vip font-bold">{sig.strategy}</span>
             </div>
             <div className="flex items-center gap-1">
-              {Array.from({ length: 5 }).map((_, i) => (
+              {Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}
                   className={`h-2 w-2 rounded-sm ${i < sig.confirmations ? (isCall ? 'bg-neon-green' : 'bg-rose-500') : 'bg-slate-800'}`}
                 />
               ))}
-              <span className="text-[8px] font-mono text-slate-500 ml-1">{sig.confirmations}/5</span>
+              <span className="text-[8px] font-mono text-slate-500 ml-1">{sig.confirmations}/8</span>
             </div>
           </div>
 
@@ -962,7 +1105,7 @@ function SignalCard({
             </div>
           </div>
           <div className="space-y-1.5">
-            {['RSI(14)', 'Stochastic(14,3,3)', 'SMA21/EMA50', 'Wick Analysis', 'Orderflow'].map((ind, i) => (
+            {['RSI(14)', 'Stochastic(14,3,3)', 'SMA21/EMA50', 'Wick Analysis', 'Orderflow', 'SuperTrend', 'ATR(14)', 'Order Delta'].map((ind, i) => (
               <div key={i} className="flex items-center gap-2">
                 <div className="h-1 flex-1 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
                   <div
