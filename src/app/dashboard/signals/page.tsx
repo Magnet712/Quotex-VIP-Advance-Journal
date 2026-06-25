@@ -223,7 +223,7 @@ function useISTClock() {
 }
 
 // ─── Signal Status Types ─────────────────────────────────────────────────────
-type SignalStatus = 'ACTIVE' | 'SCANNING' | 'NO_SIGNAL';
+type SignalStatus = 'ACTIVE' | 'SCANNING' | 'NO_SIGNAL' | 'LOADING_NEXT';
 
 interface PairSignalState {
   signal: GeneratedSignal | null;
@@ -327,8 +327,8 @@ export default function SignalsPage() {
         setTotalToday(t => t + newStates.filter(s => s.status === 'ACTIVE').length);
 
       } else {
-        // 🛡 Pre-build NEXT minute silently during last 5 seconds
-        if (secsLeft <= 5) {
+        // 🛡 Pre-build NEXT minute silently during last 8 seconds
+        if (secsLeft <= 8) {
           const nextSeed = Math.floor(now / 60000) + 1;
           if (pendingForSeed.current !== nextSeed) {
             pendingStates.current  = buildStates(nextSeed);
@@ -336,9 +336,11 @@ export default function SignalsPage() {
           }
         }
         // Tick down expiry counter
+        // When <=5s left, flip ACTIVE cards to LOADING_NEXT so users never see <5s signals
         setPairStates(prev => prev.map(ps => ({
           ...ps,
           expiresIn: Math.max(0, secsLeft),
+          status: secsLeft <= 5 && ps.status === 'ACTIVE' ? 'LOADING_NEXT' : ps.status,
         })));
       }
 
@@ -659,10 +661,11 @@ function SignalCard({
 }) {
   const isActive = ps.status === 'ACTIVE' && ps.signal;
   const isScanning = ps.status === 'SCANNING';
+  const isLoadingNext = ps.status === 'LOADING_NEXT';
   const sig = ps.signal;
 
   const isCall = sig?.direction === 'CALL';
-  const borderColor = !isActive
+  const borderColor = !isActive && !isLoadingNext
     ? 'border-glass-border'
     : isCall
     ? 'border-neon-green/25 shadow-[0_0_20px_rgba(0,230,118,0.05)]'
@@ -701,6 +704,11 @@ function SignalCard({
             <span className={`text-[10px] font-mono font-extrabold tracking-widest ${isCall ? 'text-neon-green' : 'text-rose-400'}`}>
               LIVE
             </span>
+          </div>
+        ) : isLoadingNext ? (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-neon-green/20 bg-neon-green/5">
+            <div className="h-1.5 w-1.5 rounded-full bg-neon-green animate-ping" />
+            <span className="text-[10px] font-mono font-extrabold text-neon-green tracking-widest">NEXT</span>
           </div>
         ) : isScanning ? (
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-slate-800 bg-slate-900/40">
@@ -922,6 +930,21 @@ function SignalCard({
 
           <div className="text-[8px] font-mono text-slate-600">
             Signal at: <span className="text-slate-500">{ps.generatedAt}</span>
+          </div>
+        </div>
+
+      ) : isLoadingNext ? (
+        /* Loading Next Signal — shown last 5s before new minute */
+        <div className="px-4 pb-4 pt-2">
+          <div className="flex flex-col items-center justify-center py-6 gap-3">
+            <div className="relative">
+              <div className="h-10 w-10 rounded-full border-2 border-neon-green/20 border-t-neon-green animate-spin" />
+              <div className="h-3 w-3 rounded-full bg-neon-green absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+            </div>
+            <div className="text-center space-y-1">
+              <div className="text-[10px] font-mono font-bold text-neon-green tracking-widest">LOADING NEXT SIGNAL</div>
+              <div className="text-[8px] font-mono text-slate-600">New signal generating in {ps.expiresIn}s</div>
+            </div>
           </div>
         </div>
 
