@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { logoutUser } from '@/app/actions/auth';
-import { Menu, X, TrendingUp, ShieldAlert, Award, BarChart3, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, X, TrendingUp, ShieldAlert, Award, BarChart3, LogOut, LayoutDashboard, Radio } from 'lucide-react';
 
 interface NavbarProps {
   isAdminPage?: boolean;
@@ -100,6 +100,14 @@ export default function Navbar({ isAdminPage = false }: NavbarProps) {
                   </Link>
                 )}
                 <Link
+                  href="/dashboard/signals"
+                  className="flex items-center space-x-1 px-3 py-1.5 rounded border border-neon-green/30 bg-neon-green/5 text-neon-green font-semibold hover:bg-neon-green/10 text-xs transition-colors tracking-wide"
+                >
+                  <Radio className="h-3.5 w-3.5" />
+                  <span>Signals</span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-neon-green animate-pulse" />
+                </Link>
+                <Link
                   href="/dashboard"
                   className="flex items-center space-x-1 px-4 py-1.5 rounded bg-neon-green text-slate-950 font-semibold hover:bg-neon-green-hover text-xs transition-colors tracking-wide glow-button"
                 >
@@ -189,6 +197,15 @@ export default function Navbar({ isAdminPage = false }: NavbarProps) {
                     <span>Admin Panel</span>
                   </Link>
                 )}
+                <Link
+                  href="/dashboard/signals"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-center space-x-2 w-full px-4 py-2 rounded border border-neon-green/30 bg-neon-green/5 text-neon-green font-bold text-sm transition-colors text-center"
+                >
+                  <Radio className="h-4 w-4" />
+                  <span>Live Signals</span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-neon-green animate-pulse" />
+                </Link>
                 <Link
                   href="/dashboard"
                   onClick={() => setIsOpen(false)}
