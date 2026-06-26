@@ -208,7 +208,6 @@ export default function AdminDashboardPage() {
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
-        {/* Title */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-glass-border pb-4 gap-4">
           <div>
             <span className="text-[10px] font-mono text-rose-500 font-bold uppercase tracking-wider block">compliance control console</span>
@@ -216,12 +215,20 @@ export default function AdminDashboardPage() {
               Quotex VIP Administration
             </h1>
           </div>
-          <button
-            onClick={loadData}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-glass-border hover:border-neon-green/30 bg-slate-900/40 text-slate-400 hover:text-neon-green text-xs font-mono transition-colors"
-          >
-            <RefreshCw className="h-3.5 w-3.5" /> REFRESH LEDGER
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/admin/signal-analytics')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-glass-border hover:border-rose-500/30 bg-slate-900/40 text-slate-400 hover:text-rose-400 text-xs font-mono transition-colors"
+            >
+              <BarChart2 className="h-3.5 w-3.5 text-rose-500" /> OPTIMIZATION CENTER
+            </button>
+            <button
+              onClick={loadData}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-glass-border hover:border-neon-green/30 bg-slate-900/40 text-slate-400 hover:text-neon-green text-xs font-mono transition-colors"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> REFRESH LEDGER
+            </button>
+          </div>
         </div>
 
         {/* System Message Notifications */}

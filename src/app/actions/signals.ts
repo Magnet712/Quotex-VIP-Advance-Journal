@@ -20,16 +20,19 @@ import { revalidatePath }  from 'next/cache';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 export interface SaveSignalInput {
-  pair:          string;
-  timeframe:     string;
-  direction:     'CALL' | 'PUT';
-  entry_price:   number;
-  entry_time:    Date;
-  expiry_time:   Date;
-  strategy_name: string;
-  confidence:    number;
-  risk_level?:   string;
-  source:        'simulation' | 'live_otc';
+  pair:              string;
+  timeframe:         string;
+  direction:         'CALL' | 'PUT';
+  entry_price:       number;
+  entry_time:        Date;
+  expiry_time:       Date;
+  strategy_name:     string;
+  confidence:        number;
+  risk_level?:       string;
+  source:            'simulation' | 'live_otc';
+  strategy_version?: string;
+  quality_score?:    number;
+  is_premium?:       boolean;
 }
 
 export interface SaveCandleInput {
@@ -85,17 +88,20 @@ export async function saveSignal(input: SaveSignalInput) {
     const { data, error } = await supabase
       .from('signals')
       .insert({
-        pair:          input.pair,
-        timeframe:     input.timeframe,
-        direction:     input.direction,
-        entry_price:   input.entry_price,
-        entry_time:    input.entry_time.toISOString(),
-        expiry_time:   input.expiry_time.toISOString(),
-        strategy_name: input.strategy_name,
-        confidence:    input.confidence,
-        risk_level:    input.risk_level ?? null,
-        result:        'PENDING',
-        source:        input.source,
+        pair:             input.pair,
+        timeframe:        input.timeframe,
+        direction:        input.direction,
+        entry_price:      input.entry_price,
+        entry_time:       input.entry_time.toISOString(),
+        expiry_time:      input.expiry_time.toISOString(),
+        strategy_name:    input.strategy_name,
+        confidence:       input.confidence,
+        risk_level:       input.risk_level ?? null,
+        result:           'PENDING',
+        source:           input.source,
+        strategy_version: input.strategy_version ?? 'v1.0',
+        quality_score:    input.quality_score ?? null,
+        is_premium:       input.is_premium ?? true,
       })
       .select('id')
       .single();
@@ -130,10 +136,10 @@ export async function updateSignalResult(
   try {
     const supabase = await createClient();
 
-    // Fetch the signal to get direction + entry_price
+    // Fetch the signal to get direction + entry_price + source
     const { data: signal, error: fetchError } = await supabase
       .from('signals')
-      .select('direction, entry_price, result')
+      .select('direction, entry_price, result, source')
       .eq('id', signalId)
       .single();
 
@@ -166,6 +172,48 @@ export async function updateSignalResult(
     if (updateError) {
       console.error('[updateSignalResult] Update error:', updateError.message);
       return { success: false, error: updateError.message };
+    }
+
+    // Check consecutive losing streak protection
+    if (result === 'LOSS') {
+      try {
+        const { data: limitSetting } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'losing_streak_limit')
+          .single();
+        const streakLimit = parseInt(limitSetting?.value ?? '3', 10);
+
+        const { data: recentSignals } = await supabase
+          .from('signals')
+          .select('result')
+          .eq('source', signal.source)
+          .neq('result', 'PENDING')
+          .order('entry_time', { ascending: false })
+          .limit(streakLimit);
+
+        if (recentSignals && recentSignals.length === streakLimit) {
+          const allLosses = recentSignals.every(s => s.result === 'LOSS');
+          if (allLosses) {
+            const { data: pauseMinsSetting } = await supabase
+              .from('system_settings')
+              .select('value')
+              .eq('key', 'losing_streak_pause_minutes')
+              .single();
+            const pauseMins = parseInt(pauseMinsSetting?.value ?? '15', 10);
+            const pausedUntil = new Date(Date.now() + pauseMins * 60 * 1000).toISOString();
+
+            await supabase
+              .from('system_settings')
+              .upsert([
+                { key: 'premium_signal_status', value: 'PAUSED', updated_at: new Date().toISOString() },
+                { key: 'paused_until', value: pausedUntil, updated_at: new Date().toISOString() }
+              ]);
+          }
+        }
+      } catch (streakErr) {
+        console.error('[Streak Protection Error]:', streakErr);
+      }
     }
 
     revalidatePath('/dashboard/signal-history');
@@ -330,5 +378,40 @@ export async function getDistinctPairs() {
     return { success: true, pairs };
   } catch {
     return { success: false, pairs: [] };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTION: getPairPerformanceMap
+// Returns a map of pair symbol to its historical win rate percentage.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getPairPerformanceMap() {
+  const { ok } = await checkApproved();
+  if (!ok) return { success: false, performance: {} };
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('signals')
+      .select('pair, result')
+      .neq('result', 'PENDING');
+
+    if (error) throw error;
+
+    const map: Record<string, { wins: number; total: number }> = {};
+    (data ?? []).forEach(s => {
+      if (!map[s.pair]) map[s.pair] = { wins: 0, total: 0 };
+      map[s.pair].total++;
+      if (s.result === 'WIN') map[s.pair].wins++;
+    });
+
+    const performance: Record<string, number> = {};
+    Object.entries(map).forEach(([pair, stats]) => {
+      performance[pair] = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 80;
+    });
+
+    return { success: true, performance };
+  } catch {
+    return { success: false, performance: {} };
   }
 }

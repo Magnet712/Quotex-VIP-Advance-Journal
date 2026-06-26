@@ -17,15 +17,17 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import {
   TrendingUp, TrendingDown, Clock, AlertTriangle, Zap,
   Target, Activity, RefreshCw, Shield, Radio, BarChart2,
-  ChevronUp, ChevronDown, Eye, Filter, Signal, Database
+  ChevronUp, ChevronDown, Eye, Filter, Signal, Database, Award
 } from 'lucide-react';
 
 // ─── Signal persistence actions (data layer — strategy unchanged) ─────────
-import { saveSignal, updateSignalResult, getSignalPerformance } from '@/app/actions/signals';
+import { saveSignal, updateSignalResult, getSignalPerformance, getPairPerformanceMap } from '@/app/actions/signals';
 import { getSignalMode } from '@/app/actions/signal_mode';
+import { getPublicOptimizationSettings, getUserAccessState } from '@/app/actions/admin_optimization';
 
 // ─── All Quotex OTC Pairs ────────────────────────────────────────────────────
 const OTC_PAIRS = [
@@ -310,7 +312,7 @@ function useISTClock() {
 type SignalStatus = 'ACTIVE' | 'SCANNING' | 'NO_SIGNAL' | 'LOADING_NEXT';
 
 interface PairSignalState {
-  signal: GeneratedSignal | null;
+  signal: any;
   status: SignalStatus;
   expiresIn: number; // seconds
   generatedAt: string;
@@ -339,6 +341,21 @@ export default function SignalsPage() {
   const [signalMode, setSignalModeState] = useState<'SIMULATION' | 'LIVE_OTC'>('SIMULATION');
   const [dataSourceOnline, setDataSourceOnline] = useState(true);
 
+  // ── Admin optimization settings & User roles ─────────────────────────────
+  const [userAccess, setUserAccess] = useState<any>({ isLoggedIn: false, isAdmin: false, vipAccess: false, status: 'pending' });
+  const [optSettings, setOptSettings] = useState<Record<string, string>>({
+    min_confidence: '80',
+    allowed_signal_hours: '08:00-12:00,18:00-22:00',
+    losing_streak_limit: '3',
+    losing_streak_pause_minutes: '15',
+    premium_filter_mode: 'PRODUCTION',
+    min_quality_score: '80',
+    disabled_pairs: '',
+    premium_signal_status: 'ACTIVE',
+    paused_until: ''
+  });
+  const [pairPerfMap, setPairPerfMap] = useState<Record<string, number>>({});
+
   // ── Signal ID tracking for result calculation ────────────────────────────
   // Maps pair short-code → { signalId, entryPrice, direction } for expiry resolution
   const activeSignalIds = useRef<Map<string, { id: string; entryPrice: number; direction: 'CALL' | 'PUT' }>>(new Map());
@@ -363,7 +380,7 @@ export default function SignalsPage() {
   const clearAll   = () => setSelectedPairs(new Set());
 
   const buildStates = useCallback((seed: number): PairSignalState[] => {
-    return OTC_PAIRS.map((_, idx) => {
+    return OTC_PAIRS.map((pair, idx) => {
       const sig = generateSignal(idx, seed);
       const now = new Date();
       const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
@@ -379,22 +396,105 @@ export default function SignalsPage() {
           generatedAt: timeStr,
         };
       }
+
+      // Calculate Strategy Version
+      const isV1_1 = [
+        'SuperTrend + ATR Filter',
+        'SuperTrend + Stoch Cross',
+        'ATR Breakout + Orderflow',
+        'Order Delta + RSI Confirm',
+        'SuperTrend + Delta Volume'
+      ].includes(sig.strategy);
+      const strategy_version = isV1_1 ? 'v1.1' : 'v1.0';
+
+      // Calculate Quality Score
+      const pairAccuracy = pairPerfMap[pair.symbol] ?? 80;
+      const overallAccuracy = winRate ?? 80;
+      const recentAccuracy = winRate ?? 80;
+      const quality_score = Math.round((pairAccuracy + overallAccuracy + recentAccuracy + sig.confidence) / 4);
+
+      // Check filters
+      let is_premium = true;
+      let blockedReason = '';
+
+      // 1. Confidence Filter
+      const minConf = parseInt(optSettings.min_confidence ?? '80', 10);
+      if (sig.confidence < minConf) {
+        is_premium = false;
+        blockedReason = `Confidence < ${minConf}%`;
+      }
+
+      // 2. Disabled Pairs Filter
+      const disabledPairsStr = optSettings.disabled_pairs ?? '';
+      const disabledList = disabledPairsStr.split(',').map(p => p.trim()).filter(Boolean);
+      if (disabledList.includes(pair.symbol)) {
+        is_premium = false;
+        blockedReason = 'Pair Disabled';
+      }
+
+      // 3. Time Filter
+      const istHour = ist.getUTCHours();
+      const istMinute = ist.getUTCMinutes();
+      const currentISTMinutes = istHour * 60 + istMinute;
+      const hoursStr = optSettings.allowed_signal_hours ?? '08:00-12:00,18:00-22:00';
+      const ranges = hoursStr.split(',').map(r => r.trim()).filter(Boolean);
+      let isTimeAllowed = ranges.length === 0;
+      for (const range of ranges) {
+        const parts = range.split('-');
+        if (parts.length === 2) {
+          const [startH, startM] = parts[0].split(':').map(Number);
+          const [endH, endM] = parts[1].split(':').map(Number);
+          const startMin = startH * 60 + startM;
+          const endMin = endH * 60 + endM;
+          if (currentISTMinutes >= startMin && currentISTMinutes <= endMin) {
+            isTimeAllowed = true;
+            break;
+          }
+        }
+      }
+      if (!isTimeAllowed) {
+        is_premium = false;
+        blockedReason = 'Outside Allowed Hours';
+      }
+
+      // 4. Losing Streak Pause Filter
+      if (optSettings.premium_signal_status === 'PAUSED') {
+        is_premium = false;
+        blockedReason = 'System Paused (Losing Streak)';
+      }
+
+      // 5. Quality Score Filter
+      const minQuality = parseInt(optSettings.min_quality_score ?? '80', 10);
+      if (quality_score < minQuality) {
+        is_premium = false;
+        blockedReason = `Quality Score < ${minQuality}`;
+      }
+
       return {
-        signal: sig,
+        signal: {
+          ...sig,
+          strategy_version,
+          quality_score,
+          is_premium,
+          blockedReason
+        } as any,
         status: 'ACTIVE',
         expiresIn: 60,
         generatedAt: timeStr,
       };
     });
-  }, []);
+  }, [optSettings, pairPerfMap, winRate]);
 
-  // ── Fetch real win rate + signal mode on mount ───────────────────────────
+  // ── Fetch real win rate + signal mode + admin settings on mount ─────────
   useEffect(() => {
     async function loadMeta() {
       try {
-        const [perfRes, modeRes] = await Promise.all([
+        const [perfRes, modeRes, accessRes, settingsRes, pairPerfRes] = await Promise.all([
           getSignalPerformance('ALL'),
           getSignalMode(),
+          getUserAccessState(),
+          getPublicOptimizationSettings(),
+          getPairPerformanceMap()
         ]);
         if (perfRes.success && perfRes.stats) {
           setWinRate(perfRes.stats.accuracy);
@@ -403,8 +503,17 @@ export default function SignalsPage() {
           setSignalModeState(modeRes.mode);
           setDataSourceOnline(modeRes.mode === 'SIMULATION' || modeRes.success);
         }
-      } catch {
-        // Non-blocking — UI still works if meta fails
+        if (accessRes.success) {
+          setUserAccess(accessRes);
+        }
+        if (settingsRes.success && settingsRes.settings) {
+          setOptSettings(settingsRes.settings);
+        }
+        if (pairPerfRes.success && pairPerfRes.performance) {
+          setPairPerfMap(pairPerfRes.performance);
+        }
+      } catch (err) {
+        console.error('Error loading metadata:', err);
       }
     }
     loadMeta();
@@ -433,16 +542,19 @@ export default function SignalsPage() {
           const sig = ps.signal;
           try {
             const res = await saveSignal({
-              pair:          pair.symbol,
-              timeframe:     '1m',
-              direction:     sig.direction,
-              entry_price:   parseFloat(sig.entryPrice),
-              entry_time:    now,
-              expiry_time:   expiryTime,
-              strategy_name: sig.strategy,
-              confidence:    sig.confidence,
-              risk_level:    sig.risk,
-              source:        signalMode === 'LIVE_OTC' ? 'live_otc' : 'simulation',
+              pair:             pair.symbol,
+              timeframe:        '1m',
+              direction:        sig.direction,
+              entry_price:      parseFloat(sig.entryPrice),
+              entry_time:       now,
+              expiry_time:      expiryTime,
+              strategy_name:    sig.strategy,
+              confidence:       sig.confidence,
+              risk_level:       sig.risk,
+              source:           signalMode === 'LIVE_OTC' ? 'live_otc' : 'simulation',
+              strategy_version: sig.strategy_version,
+              quality_score:    sig.quality_score,
+              is_premium:       sig.is_premium,
             });
             if (res.success && res.signalId) {
               activeSignalIds.current.set(pair.short, {
@@ -517,16 +629,19 @@ export default function SignalsPage() {
               const sig = ps.signal;
               try {
                 const res = await saveSignal({
-                  pair:          pair.symbol,
-                  timeframe:     '1m',
-                  direction:     sig.direction,
-                  entry_price:   parseFloat(sig.entryPrice),
-                  entry_time:    nowDate,
-                  expiry_time:   expiryTime,
-                  strategy_name: sig.strategy,
-                  confidence:    sig.confidence,
-                  risk_level:    sig.risk,
-                  source:        signalMode === 'LIVE_OTC' ? 'live_otc' : 'simulation',
+                  pair:             pair.symbol,
+                  timeframe:        '1m',
+                  direction:        sig.direction,
+                  entry_price:      parseFloat(sig.entryPrice),
+                  entry_time:       nowDate,
+                  expiry_time:      expiryTime,
+                  strategy_name:    sig.strategy,
+                  confidence:       sig.confidence,
+                  risk_level:       sig.risk,
+                  source:           signalMode === 'LIVE_OTC' ? 'live_otc' : 'simulation',
+                  strategy_version: sig.strategy_version,
+                  quality_score:    sig.quality_score,
+                  is_premium:       sig.is_premium,
                 });
                 if (res.success && res.signalId) {
                   activeSignalIds.current.set(pair.short, {
@@ -541,10 +656,14 @@ export default function SignalsPage() {
             }
           }
 
-          // Refresh win rate after results are updated
+          // Refresh win rate + settings after results are updated
           try {
-            const perfRes = await getSignalPerformance('ALL');
+            const [perfRes, settingsRes] = await Promise.all([
+              getSignalPerformance('ALL'),
+              getPublicOptimizationSettings()
+            ]);
             if (perfRes.success && perfRes.stats) setWinRate(perfRes.stats.accuracy);
+            if (settingsRes.success && settingsRes.settings) setOptSettings(settingsRes.settings);
           } catch {
             // Non-blocking
           }
@@ -586,6 +705,10 @@ export default function SignalsPage() {
       if (filterDir !== 'ALL' && ps.signal?.direction !== filterDir) return false;
       if (filterRisk !== 'ALL' && ps.signal?.risk !== filterRisk) return false;
       if (filterConf === '90+' && (!ps.signal || ps.signal.confidence < 90)) return false;
+      
+      // If user is NOT an admin, hide blocked signals
+      if (!userAccess.isAdmin && ps.signal && !ps.signal.is_premium) return false;
+      
       return true;
     });
 
@@ -861,17 +984,46 @@ export default function SignalsPage() {
           </div>
         </div>
 
-        {/* ── Signal Cards Grid ──────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(({ ps, pair, idx }) => (
-            <SignalCard key={pair.short} pair={pair} ps={ps} />
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="text-center py-16 text-slate-600 font-mono text-sm">
-            No signals match your current filter.
+        {/* ── Access Gating Overlay ── */}
+        {!userAccess.isAdmin && optSettings.premium_filter_mode === 'TEST' ? (
+          <div className="glass-panel rounded-xl border border-rose-500/35 bg-slate-900/40 p-12 text-center space-y-4 max-w-2xl mx-auto my-8">
+            <Shield className="h-12 w-12 text-rose-500 animate-pulse mx-auto" />
+            <h2 className="text-base font-bold font-mono text-slate-200 uppercase tracking-widest">SYSTEM IN TEST MODE</h2>
+            <p className="text-xs text-slate-400 leading-relaxed font-mono">
+              Premium signals are currently undergoing validation. Live access is restricted to system administrators. Regular premium service will launch shortly.
+            </p>
           </div>
+        ) : !userAccess.isAdmin && !userAccess.vipAccess ? (
+          <div className="glass-panel rounded-xl border border-gold-vip/35 bg-slate-900/40 p-12 text-center space-y-4 max-w-2xl mx-auto my-8">
+            <Award className="h-12 w-12 text-gold-vip animate-bounce mx-auto" />
+            <h2 className="text-base font-bold font-mono text-gold-vip uppercase tracking-widest">PLATINUM VIP ACCESS REQUIRED</h2>
+            <p className="text-xs text-slate-400 leading-relaxed font-mono">
+              Live signal generation, orderflow indicators, and real-time execution parameters require an active VIP subscription.
+            </p>
+            <div className="pt-4">
+              <Link
+                href="/#vip"
+                className="inline-flex items-center gap-1.5 px-6 py-3 rounded bg-gold-vip text-slate-950 font-bold hover:bg-yellow-500 text-xs font-mono uppercase tracking-wider transition-colors glow-button"
+              >
+                Upgrade to Platinum VIP
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* ── Signal Cards Grid ──────────────────────────────────────────── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filtered.map(({ ps, pair, idx }) => (
+                <SignalCard key={pair.short} pair={pair} ps={ps} userAccess={userAccess} />
+              ))}
+            </div>
+
+            {filtered.length === 0 && (
+              <div className="text-center py-16 text-slate-600 font-mono text-sm">
+                No signals match your current filter.
+              </div>
+            )}
+          </>
         )}
 
         {/* ── Disclaimer ─────────────────────────────────────────────────── */}
@@ -894,9 +1046,11 @@ export default function SignalsPage() {
 function SignalCard({
   pair,
   ps,
+  userAccess,
 }: {
   pair: (typeof OTC_PAIRS)[0];
   ps: PairSignalState;
+  userAccess: any;
 }) {
   const isActive = ps.status === 'ACTIVE' && ps.signal;
   const isScanning = ps.status === 'SCANNING';
@@ -938,11 +1092,22 @@ function SignalCard({
 
         {/* Status Badge */}
         {isActive ? (
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded border ${isCall ? 'bg-neon-green/10 border-neon-green/30' : 'bg-rose-500/10 border-rose-500/30'}`}>
-            <div className={`h-1.5 w-1.5 rounded-full animate-pulse ${isCall ? 'bg-neon-green' : 'bg-rose-500'}`} />
-            <span className={`text-[10px] font-mono font-extrabold tracking-widest ${isCall ? 'text-neon-green' : 'text-rose-400'}`}>
-              LIVE
-            </span>
+          <div className="flex flex-col items-end gap-1">
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded border ${isCall ? 'bg-neon-green/10 border-neon-green/30' : 'bg-rose-500/10 border-rose-500/30'}`}>
+              <div className={`h-1.5 w-1.5 rounded-full animate-pulse ${isCall ? 'bg-neon-green' : 'bg-rose-500'}`} />
+              <span className={`text-[10px] font-mono font-extrabold tracking-widest ${isCall ? 'text-neon-green' : 'text-rose-400'}`}>
+                LIVE
+              </span>
+            </div>
+            {userAccess?.isAdmin && sig && (
+              <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                sig.is_premium
+                  ? 'text-neon-green border-neon-green/30 bg-neon-green/5'
+                  : 'text-rose-400 border-rose-500/30 bg-rose-500/5'
+              }`}>
+                {sig.is_premium ? `PREMIUM (QS: ${sig.quality_score})` : `BLOCKED: ${sig.blockedReason}`}
+              </span>
+            )}
           </div>
         ) : isLoadingNext ? (
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-neon-green/20 bg-neon-green/5">
