@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { logoutUser } from '@/app/actions/auth';
 import { 
   BarChart3, BookOpen, Award, Settings, LogOut, 
-  TrendingUp, Shield, Menu, X, Loader, User, Radio
+  TrendingUp, Shield, Menu, X, Loader, User, Radio, History
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -69,9 +69,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const navItems = [
-    { name: 'Analytics', href: '/dashboard', icon: BarChart3 },
-    { name: 'Journal', href: '/dashboard/journal', icon: BookOpen },
-    { name: 'Signals', href: '/dashboard/signals', icon: Radio },
+    { name: 'Analytics',       href: '/dashboard',               icon: BarChart3  },
+    { name: 'Journal',         href: '/dashboard/journal',        icon: BookOpen   },
+    { name: 'Signals',         href: '/dashboard/signals',        icon: Radio      },
+    { name: 'Signal History',  href: '/dashboard/signal-history', icon: History    },
   ];
 
   if (loading) {

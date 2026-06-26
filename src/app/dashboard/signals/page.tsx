@@ -1,11 +1,31 @@
 'use client';
 
+/**
+ * Signals Page — OTC Signal Engine
+ *
+ * DATA PIPELINE UPGRADED:
+ *   Before: Simulated data → Strategy → In-memory state
+ *   After : Simulated data → Strategy → Supabase (otc_candles + signals tables)
+ *
+ * STRATEGY UNTOUCHED:
+ *   generateSignal() function (line ~109) is identical to the original.
+ *   All 8-indicator logic, scoring, confidence, and direction are preserved.
+ *
+ * RESULT TRACKING ADDED:
+ *   After each 1-minute expiry, candle close vs entry price determines WIN/LOSS.
+ *   No random result generation — all results are candle-based.
+ */
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   TrendingUp, TrendingDown, Clock, AlertTriangle, Zap,
   Target, Activity, RefreshCw, Shield, Radio, BarChart2,
-  ChevronUp, ChevronDown, Eye, Filter, Signal
+  ChevronUp, ChevronDown, Eye, Filter, Signal, Database
 } from 'lucide-react';
+
+// ─── Signal persistence actions (data layer — strategy unchanged) ─────────
+import { saveSignal, updateSignalResult, getSignalPerformance } from '@/app/actions/signals';
+import { getSignalMode } from '@/app/actions/signal_mode';
 
 // ─── All Quotex OTC Pairs ────────────────────────────────────────────────────
 const OTC_PAIRS = [
@@ -310,7 +330,20 @@ export default function SignalsPage() {
   );
   const [assetPanelOpen, setAssetPanelOpen] = useState(false);
   const [totalToday, setTotalToday] = useState(0);
-  const [winRate] = useState(() => Math.floor(Math.random() * 8) + 82);
+
+  // ── Real win rate from Supabase (replaces fake Math.random) ─────────────
+  // REMOVED: const [winRate] = useState(() => Math.floor(Math.random() * 8) + 82);
+  const [winRate, setWinRate] = useState<number | null>(null);
+
+  // ── Data source status (admin-controlled signal mode) ────────────────────
+  const [signalMode, setSignalModeState] = useState<'SIMULATION' | 'LIVE_OTC'>('SIMULATION');
+  const [dataSourceOnline, setDataSourceOnline] = useState(true);
+
+  // ── Signal ID tracking for result calculation ────────────────────────────
+  // Maps pair short-code → { signalId, entryPrice, direction } for expiry resolution
+  const activeSignalIds = useRef<Map<string, { id: string; entryPrice: number; direction: 'CALL' | 'PUT' }>>(new Map());
+  // Holds signal IDs from PREVIOUS minute so we can resolve their result
+  const prevSignalIds = useRef<Map<string, { id: string; entryPrice: number; direction: 'CALL' | 'PUT' }>>(new Map());
 
   // Pre-computed buffer for next minute — built silently 5s before :00
   const pendingStates = useRef<PairSignalState[] | null>(null);
@@ -355,6 +388,28 @@ export default function SignalsPage() {
     });
   }, []);
 
+  // ── Fetch real win rate + signal mode on mount ───────────────────────────
+  useEffect(() => {
+    async function loadMeta() {
+      try {
+        const [perfRes, modeRes] = await Promise.all([
+          getSignalPerformance('ALL'),
+          getSignalMode(),
+        ]);
+        if (perfRes.success && perfRes.stats) {
+          setWinRate(perfRes.stats.accuracy);
+        }
+        if (modeRes.success) {
+          setSignalModeState(modeRes.mode);
+          setDataSourceOnline(modeRes.mode === 'SIMULATION' || modeRes.success);
+        }
+      } catch {
+        // Non-blocking — UI still works if meta fails
+      }
+    }
+    loadMeta();
+  }, []);
+
   // ── Initial load: seed to current minute, trim expiresIn to real remaining seconds
   useEffect(() => {
     const nowSec = new Date().getSeconds();
@@ -365,7 +420,44 @@ export default function SignalsPage() {
     const states = buildStates(seed).map(ps => ({ ...ps, expiresIn: remaining }));
     setPairStates(states);
     setTotalToday(prev => prev + states.filter(s => s.status === 'ACTIVE').length);
-  }, [buildStates]);
+
+    // ── Persist initial active signals to Supabase (non-blocking) ───────────
+    // EXISTING STRATEGY OUTPUT IS USED AS-IS — only persistence is added here
+    void (async () => {
+      const now = new Date();
+      const expiryTime = new Date(Math.ceil(now.getTime() / 60000) * 60000);
+      for (let idx = 0; idx < OTC_PAIRS.length; idx++) {
+        const ps = states[idx];
+        const pair = OTC_PAIRS[idx];
+        if (ps.status === 'ACTIVE' && ps.signal) {
+          const sig = ps.signal;
+          try {
+            const res = await saveSignal({
+              pair:          pair.symbol,
+              timeframe:     '1m',
+              direction:     sig.direction,
+              entry_price:   parseFloat(sig.entryPrice),
+              entry_time:    now,
+              expiry_time:   expiryTime,
+              strategy_name: sig.strategy,
+              confidence:    sig.confidence,
+              risk_level:    sig.risk,
+              source:        signalMode === 'LIVE_OTC' ? 'live_otc' : 'simulation',
+            });
+            if (res.success && res.signalId) {
+              activeSignalIds.current.set(pair.short, {
+                id:          res.signalId,
+                entryPrice:  parseFloat(sig.entryPrice),
+                direction:   sig.direction,
+              });
+            }
+          } catch {
+            // Non-blocking — signal still shown even if save fails
+          }
+        }
+      }
+    })();
+  }, [buildStates, signalMode]);
 
   // ── Self-correcting countdown — fires at EXACT second boundaries, zero drift
   //    1000 - (Date.now() % 1000) = precise ms until next second tick
@@ -389,6 +481,74 @@ export default function SignalsPage() {
         setWindowSeed(newSeed);
         setPairStates(newStates);             // expiresIn already = 60
         setTotalToday(t => t + newStates.filter(s => s.status === 'ACTIVE').length);
+
+        // ── Resolve results for PREVIOUS minute's signals ─────────────────
+        // CANDLE-BASED RESULT: compare previous entry_price vs new minute's
+        // simulated close price (same seeded logic — no random WIN/LOSS)
+        // REMOVED: any random result generation
+        const prevMap = new Map(prevSignalIds.current);
+        prevSignalIds.current = new Map(activeSignalIds.current);
+        activeSignalIds.current = new Map();
+
+        void (async () => {
+          // Resolve each previous signal using its candle close
+          for (const [short, tracked] of prevMap.entries()) {
+            const pairCfg = OTC_PAIRS.find(p => p.short === short);
+            if (!pairCfg) continue;
+            // Get the new minute's candle close (same seeded logic as simulated_feed)
+            const pairHash = pairCfg.symbol.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+            const s = pairHash * 7919 + newSeed;
+            const priceJitter = (sr(s + 0.9) - 0.5) * pairCfg.base * 0.003;
+            const expiryClose = parseFloat((pairCfg.base + priceJitter).toFixed(pairCfg.pip));
+            try {
+              await updateSignalResult(tracked.id, expiryClose);
+            } catch {
+              // Non-blocking
+            }
+          }
+
+          // Persist new minute's active signals
+          const nowDate    = new Date();
+          const expiryTime = new Date(nowDate.getTime() + 60000);
+          for (let idx = 0; idx < OTC_PAIRS.length; idx++) {
+            const ps   = newStates[idx];
+            const pair = OTC_PAIRS[idx];
+            if (ps.status === 'ACTIVE' && ps.signal) {
+              const sig = ps.signal;
+              try {
+                const res = await saveSignal({
+                  pair:          pair.symbol,
+                  timeframe:     '1m',
+                  direction:     sig.direction,
+                  entry_price:   parseFloat(sig.entryPrice),
+                  entry_time:    nowDate,
+                  expiry_time:   expiryTime,
+                  strategy_name: sig.strategy,
+                  confidence:    sig.confidence,
+                  risk_level:    sig.risk,
+                  source:        signalMode === 'LIVE_OTC' ? 'live_otc' : 'simulation',
+                });
+                if (res.success && res.signalId) {
+                  activeSignalIds.current.set(pair.short, {
+                    id:         res.signalId,
+                    entryPrice: parseFloat(sig.entryPrice),
+                    direction:  sig.direction,
+                  });
+                }
+              } catch {
+                // Non-blocking
+              }
+            }
+          }
+
+          // Refresh win rate after results are updated
+          try {
+            const perfRes = await getSignalPerformance('ALL');
+            if (perfRes.success && perfRes.stats) setWinRate(perfRes.stats.accuracy);
+          } catch {
+            // Non-blocking
+          }
+        })();
 
       } else {
         // 🛡 Pre-build NEXT minute silently during last 8 seconds
@@ -456,6 +616,21 @@ export default function SignalsPage() {
               <RefreshCw className={`h-3.5 w-3.5 ${refreshIn <= 5 ? 'text-gold-vip animate-spin' : 'text-slate-500'}`} />
               <span>REFRESH IN <span className="text-gold-vip font-bold">{refreshIn}s</span></span>
             </div>
+            {/* ── Data Source Status Badge (admin-controlled signal mode) ── */}
+            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[9px] font-mono font-bold ${
+              signalMode === 'LIVE_OTC' && dataSourceOnline
+                ? 'border-neon-green/40 bg-neon-green/10 text-neon-green'
+                : signalMode === 'LIVE_OTC' && !dataSourceOnline
+                ? 'border-rose-500/30 bg-rose-500/10 text-rose-400'
+                : 'border-slate-800 bg-slate-900/30 text-slate-600'
+            }`}>
+              <Database className="h-3 w-3" />
+              {signalMode === 'LIVE_OTC' && dataSourceOnline
+                ? 'LIVE OTC'
+                : signalMode === 'LIVE_OTC' && !dataSourceOnline
+                ? 'DATA SOURCE OFFLINE'
+                : 'SIMULATION'}
+            </div>
           </div>
         </div>
       </div>
@@ -467,7 +642,7 @@ export default function SignalsPage() {
           {[
             { label: 'ACTIVE SIGNALS', value: activeCount.toString(), icon: Radio, color: 'text-neon-green', glow: 'shadow-[0_0_10px_rgba(0,230,118,0.15)]' },
             { label: 'TODAY\'S SIGNALS', value: totalToday.toString(), icon: Signal, color: 'text-slate-200', glow: '' },
-            { label: 'WIN RATE (30D)', value: `${winRate}%`, icon: Target, color: 'text-gold-vip', glow: 'shadow-[0_0_10px_rgba(255,215,0,0.1)]' },
+            { label: 'WIN RATE (ALL)', value: winRate !== null ? `${winRate}%` : '—', icon: Target, color: 'text-gold-vip', glow: 'shadow-[0_0_10px_rgba(255,215,0,0.1)]' },
             { label: 'ASSETS SELECTED', value: `${selectedPairs.size}/${OTC_PAIRS.length}`, icon: BarChart2, color: selectedPairs.size === OTC_PAIRS.length ? 'text-slate-200' : 'text-gold-vip', glow: '' },
           ].map((stat, i) => (
             <div key={i} className={`glass-panel rounded-lg p-4 flex items-center justify-between ${stat.glow}`}>

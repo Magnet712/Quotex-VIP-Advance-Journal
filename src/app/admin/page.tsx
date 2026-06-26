@@ -11,8 +11,10 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { 
   ShieldAlert, Check, X, Award, Key, Trash, RefreshCw, 
-  Users, UserCheck, UserPlus, Star, BarChart2, Loader 
+  Users, UserCheck, UserPlus, Star, BarChart2, Loader,
+  Radio, Database, Cpu
 } from 'lucide-react';
+import { getSignalMode, setSignalMode } from '@/app/actions/signal_mode';
 
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -31,6 +33,11 @@ export default function AdminDashboardPage() {
   const [newPassword, setNewPassword] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // ── Signal Mode state (admin control for data pipeline) ────────────────
+  const [signalMode, setSignalModeState] = useState<'SIMULATION' | 'LIVE_OTC'>('SIMULATION');
+  const [modeLoading, setModeLoading] = useState(false);
+  const [modeMessage, setModeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const supabase = createClient();
   const router = useRouter();
@@ -65,6 +72,10 @@ export default function AdminDashboardPage() {
 
       setStats(statsRes.stats);
       setUsers(usersRes.users || []);
+
+      // Load current signal mode
+      const modeRes = await getSignalMode();
+      if (modeRes.success) setSignalModeState(modeRes.mode);
     } catch (err) {
       setAuthError(true);
     } finally {
@@ -132,6 +143,26 @@ export default function AdminDashboardPage() {
       setMessage({ type: 'error', text: err.message || 'Error occurred.' });
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  // ── Signal Mode Switch Handler ─────────────────────────────────────
+  const handleSignalModeChange = async (mode: 'SIMULATION' | 'LIVE_OTC') => {
+    if (mode === signalMode) return;
+    setModeLoading(true);
+    setModeMessage(null);
+    try {
+      const res = await setSignalMode(mode);
+      if (res.success) {
+        setSignalModeState(mode);
+        setModeMessage({ type: 'success', text: `Signal mode switched to ${mode}.` });
+      } else {
+        setModeMessage({ type: 'error', text: res.error || 'Failed to switch mode.' });
+      }
+    } catch (err: any) {
+      setModeMessage({ type: 'error', text: err.message || 'Error occurred.' });
+    } finally {
+      setModeLoading(false);
     }
   };
 
@@ -221,6 +252,92 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* ── Signal Mode Control Panel ───────────────────────────────── */}
+        <div className="glass-panel rounded-xl border border-glass-border p-6 space-y-4">
+          <div className="flex items-center gap-3 border-b border-glass-border/40 pb-4">
+            <Cpu className="h-4 w-4 text-neon-green" />
+            <div>
+              <div className="text-xs font-mono font-bold text-neon-green tracking-widest">SIGNAL ENGINE MODE</div>
+              <div className="text-[9px] font-mono text-slate-500">Controls the data pipeline for all VIP signals</div>
+            </div>
+          </div>
+
+          {modeMessage && (
+            <div className={`px-3 py-2 rounded border text-[10px] font-mono ${
+              modeMessage.type === 'success'
+                ? 'bg-emerald-950/20 border-emerald-500/20 text-emerald-400'
+                : 'bg-rose-950/20 border-rose-500/20 text-rose-400'
+            }`}>
+              {modeMessage.text}
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            {/* Current mode display */}
+            <div className="flex items-center gap-2">
+              <Database className="h-4 w-4 text-slate-500" />
+              <span className="text-[10px] font-mono text-slate-500 tracking-wider">CURRENT MODE:</span>
+              <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded border ${
+                signalMode === 'LIVE_OTC'
+                  ? 'text-neon-green border-neon-green/40 bg-neon-green/10'
+                  : 'text-amber-400 border-amber-400/30 bg-amber-500/10'
+              }`}>
+                {signalMode}
+              </span>
+            </div>
+
+            {/* Mode toggle buttons */}
+            <div className="flex gap-2">
+              <button
+                id="signal-mode-simulation"
+                onClick={() => handleSignalModeChange('SIMULATION')}
+                disabled={modeLoading || signalMode === 'SIMULATION'}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded border text-[10px] font-mono font-bold tracking-wider transition-all ${
+                  signalMode === 'SIMULATION'
+                    ? 'bg-amber-500/15 border-amber-400/50 text-amber-400 cursor-default'
+                    : 'bg-slate-900/40 border-slate-700 text-slate-400 hover:border-amber-400/40 hover:text-amber-400 disabled:opacity-40'
+                }`}
+              >
+                <Database className="h-3.5 w-3.5" />
+                SIMULATION
+              </button>
+              <button
+                id="signal-mode-live-otc"
+                onClick={() => handleSignalModeChange('LIVE_OTC')}
+                disabled={modeLoading || signalMode === 'LIVE_OTC'}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded border text-[10px] font-mono font-bold tracking-wider transition-all ${
+                  signalMode === 'LIVE_OTC'
+                    ? 'bg-neon-green/15 border-neon-green/50 text-neon-green cursor-default'
+                    : 'bg-slate-900/40 border-slate-700 text-slate-400 hover:border-neon-green/40 hover:text-neon-green disabled:opacity-40'
+                }`}
+              >
+                {modeLoading ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Radio className="h-3.5 w-3.5" />
+                )}
+                LIVE OTC
+              </button>
+            </div>
+          </div>
+
+          {/* Explanation */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="px-3 py-2.5 rounded border border-amber-400/20 bg-amber-500/5 space-y-1">
+              <div className="text-[9px] font-mono font-bold text-amber-400 tracking-wider">SIMULATION MODE</div>
+              <div className="text-[8px] font-mono text-slate-500">
+                Uses seeded deterministic candles. Safe for testing. No live market data. Win/Loss calculated from simulated price movement.
+              </div>
+            </div>
+            <div className="px-3 py-2.5 rounded border border-neon-green/20 bg-neon-green/5 space-y-1">
+              <div className="text-[9px] font-mono font-bold text-neon-green tracking-wider">LIVE OTC MODE</div>
+              <div className="text-[8px] font-mono text-slate-500">
+                Uses live OTC candle data when provider is connected. Auto-falls back to simulation if data source is offline. Status shown in signals header.
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Reset Password Modal */}

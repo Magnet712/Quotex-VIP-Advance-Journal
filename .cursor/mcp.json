@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "jetro": {
+      "type": "stdio",
+      "command": "C:\\Users\\BIJOY\\.jetro\\runtime\\node-win32-x64.exe",
+      "args": [
+        "C:\\Users\\BIJOY\\.jetro\\mcp-server\\index.js"
+      ],
+      "env": {
+        "JET_WORKSPACE": "e:\\Antigravity\\Project Completed\\Quotex-VIP-Advance-Journal",
+        "JET_API_URL": "https://api.jetro.ai",
+        "PATH": "C:\\Users\\BIJOY\\.jetro\\runtime;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Users\\Administrator\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Recovery\\OEM\\Backup\\;C:\\Program Files\\dotnet\\;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\Git\\cmd;C:\\Users\\BIJOY\\AppData\\Local\\nvm;C:\\nvm4w\\nodejs;C:\\Users\\BIJOY\\.local\\bin\\claude.exe;C:\\Users\\BIJOY\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\YourName\\AppData\\Roaming\\npm;C:\\Users\\BIJOY\\AppData\\Local\\Programs\\Ollama;C:\\Users\\BIJOY\\.local\\bin;C:\\Users\\BIJOY\\AppData\\Local\\Programs\\Antigravity IDE\\bin;C:\\Users\\BIJOY\\AppData\\Local\\nvm;C:\\nvm4w\\nodejs"
+      }
+    }
+  }
+}
