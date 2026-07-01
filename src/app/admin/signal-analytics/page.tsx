@@ -295,15 +295,16 @@ export default function AdminSignalAnalyticsPage() {
                       className="w-full bg-[#030812] border border-glass-border rounded px-3 py-2 text-slate-200 outline-none"
                     >
                       <option value="ALL">All Pairs</option>
-                      {filters.source === 'live_market' ? (
-                        LIVE_MARKET_PAIRS.map(p => (
-                          <option key={p} value={p}>{p}</option>
-                        ))
-                      ) : (
-                        OTC_PAIRS.map(p => (
-                          <option key={p} value={`${p} OTC`}>{p} OTC</option>
-                        ))
-                      )}
+                      <optgroup label="LIVE FOREX (LIVE MARKET)" className="text-rose-400 bg-slate-950 font-bold">
+                        {LIVE_MARKET_PAIRS.map(p => (
+                          <option key={p} value={p} className="text-slate-200 font-mono font-normal">{p}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="LIVE OTC & SIMULATION" className="text-neon-green bg-slate-950 font-bold">
+                        {OTC_PAIRS.map(p => (
+                          <option key={`${p} OTC`} value={`${p} OTC`} className="text-slate-200 font-mono font-normal">{p} OTC</option>
+                        ))}
+                      </optgroup>
                     </select>
                   </div>
 
