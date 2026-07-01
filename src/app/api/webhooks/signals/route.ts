@@ -8,17 +8,26 @@ import { createClient } from '@supabase/supabase-js';
 // ─────────────────────────────────────────────────────────────────────────────
 export async function POST(request: Request) {
   try {
-    // 1. Authenticate the webhook request
-    const webhookSecret = process.env.WEBHOOK_SECRET || 'quotex-journal-webhook-secret-key-123';
-    const authHeader = request.headers.get('x-webhook-secret');
-    
-    if (authHeader !== webhookSecret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     // 2. Parse payload
     const body = await request.json();
     const action = body.action || 'create';
+    const bodySecret = body.secret;
+
+    // Extract secret from URL query parameters
+    const { searchParams } = new URL(request.url);
+    const querySecret = searchParams.get('secret');
+
+    // 1. Authenticate the webhook request (check header, query parameter, or JSON body)
+    const webhookSecret = process.env.WEBHOOK_SECRET || 'quotex-journal-webhook-secret-key-123';
+    const authHeader = request.headers.get('x-webhook-secret');
+    
+    if (
+      authHeader !== webhookSecret && 
+      querySecret !== webhookSecret && 
+      bodySecret !== webhookSecret
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Clean and format pair name (e.g. EURUSD -> EUR/USD, FX:EURUSD -> EUR/USD)
     let rawPair = body.pair || '';
