@@ -370,7 +370,7 @@ export default function SignalHistoryPage() {
                   { value: 'ALL',         label: 'ALL' },
                   { value: 'simulation',  label: 'SIMULATION' },
                   { value: 'live_otc',    label: 'LIVE OTC' },
-                  { value: 'live_market', label: 'LIVE MARKET (WEBHOOK)' },
+                  { value: 'live_market', label: 'LIVE MARKET' },
                 ] as const).map(s => (
                   <button
                     key={s.value}
