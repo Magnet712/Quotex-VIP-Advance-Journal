@@ -60,6 +60,16 @@ const corePrices = {
   eurgbp: 0.85200
 };
 
+const priceOffsets = {
+  eurusdt: 0,
+  gbpusdt: 0,
+  usdtjpy: 0,
+  audusdt: 0,
+  usdcad: 0,
+  chfusdt: 0,
+  eurgbp: 0
+};
+
 // In-memory historical cache (requires min 60 candles to compute 50 SMA reliably)
 const candleHistory = new Map();
 MONITORED_PAIRS.forEach(p => {
@@ -458,8 +468,69 @@ function evaluateMarketSignals(pairConfig) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. REAL-TIME BINANCE CROSS-RATE WEBSTREAM
+// 6. REAL-TIME BINANCE CROSS-RATE WEBSTREAM & CALIBRATION ENGINE
 // ─────────────────────────────────────────────────────────────────────────────
+function fetchYahooPrice(symbol) {
+  return new Promise((resolve) => {
+    https.get(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const meta = json.chart.result[0].meta;
+          const price = meta.regularMarketPrice;
+          resolve(price);
+        } catch {
+          resolve(null);
+        }
+      });
+    }).on('error', () => resolve(null));
+  });
+}
+
+async function calibrateOffsets() {
+  console.log('[Calibration] Starting price offset calibration against Yahoo Finance...');
+  const mappings = [
+    { yahoo: 'EURUSD=X', binance: 'eurusdt', type: 'direct' },
+    { yahoo: 'GBPUSD=X', binance: 'gbpusdt', type: 'direct' },
+    { yahoo: 'USDJPY=X', binance: 'usdtjpy', type: 'direct' },
+    { yahoo: 'AUDUSD=X', binance: 'audusdt', type: 'direct' },
+    { yahoo: 'USDCAD=X', binance: 'usdcad', type: 'direct' },
+    { yahoo: 'USDCHF=X', binance: 'chfusdt', type: 'chf' },
+    { yahoo: 'EURGBP=X', binance: 'eurgbp', type: 'direct' }
+  ];
+
+  for (const m of mappings) {
+    try {
+      const realPrice = await fetchYahooPrice(m.yahoo);
+      if (!realPrice) continue;
+
+      let binancePrice = corePrices[m.binance];
+      if (m.type === 'chf') {
+        binancePrice = 1 / corePrices.chfusdt;
+      }
+
+      const diff = realPrice - binancePrice;
+      priceOffsets[m.binance] = diff;
+      console.log(`[Calibration] ${m.yahoo} Offset calibrated: ${diff.toFixed(5)} (Real: ${realPrice}, Binance: ${binancePrice.toFixed(5)})`);
+    } catch (err) {
+      console.error(`[Calibration Error] Failed for ${m.yahoo}:`, err.message);
+    }
+  }
+  console.log('[Calibration] Calibration complete. Current offsets:', priceOffsets);
+}
+
+function getCalibratedPrice(symbol) {
+  const raw = corePrices[symbol];
+  if (symbol === 'chfusdt') {
+    const binanceUSDCHF = 1 / raw;
+    const calibratedUSDCHF = binanceUSDCHF + priceOffsets.chfusdt;
+    return 1 / calibratedUSDCHF;
+  }
+  return raw + priceOffsets[symbol];
+}
+
 let binanceWs = null;
 
 function connectBinanceWebSocket() {
@@ -496,17 +567,20 @@ function connectBinanceWebSocket() {
       // Update core price cache
       corePrices[symbol] = price;
       
+      // Calibrate price using calculated offset
+      const calibratedPrice = getCalibratedPrice(symbol);
+      
       // Push tick to core pair buffer
       const buffer = tickBuffer.get(symbol);
       if (buffer) {
-        buffer.ticks.push({ price, delta, time: Date.now() });
+        buffer.ticks.push({ price: calibratedPrice, delta, time: Date.now() });
         buffer.cvdAccumulator += delta;
         buffer.currentVolume += volume;
         
-        if (buffer.open === null) buffer.open = price;
-        buffer.high = Math.max(buffer.high, price);
-        buffer.low = Math.min(buffer.low, price);
-        buffer.close = price;
+        if (buffer.open === null) buffer.open = calibratedPrice;
+        buffer.high = Math.max(buffer.high, calibratedPrice);
+        buffer.low = Math.min(buffer.low, calibratedPrice);
+        buffer.close = calibratedPrice;
       }
       
       // Calculate and push ticks for cross-rates
@@ -546,31 +620,31 @@ function updateCrossRates(changedSymbol, vol, del) {
     const chfusdtBuf = tickBuffer.get('chfusdt');
 
     if (pair.binance === 'eurjpy') {
-      newPrice = corePrices.eurusdt * corePrices.usdtjpy;
+      newPrice = getCalibratedPrice('eurusdt') * getCalibratedPrice('usdtjpy');
       componentVolume = ((eurusdtBuf?.currentVolume || 0) + (usdtjpyBuf?.currentVolume || 0)) / 2;
       componentDelta = ((eurusdtBuf?.cvdAccumulator || 0) + (usdtjpyBuf?.cvdAccumulator || 0)) / 2;
     } else if (pair.binance === 'cadjpy') {
-      newPrice = (1 / corePrices.usdcad) * corePrices.usdtjpy;
+      newPrice = (1 / getCalibratedPrice('usdcad')) * getCalibratedPrice('usdtjpy');
       componentVolume = ((usdcadBuf?.currentVolume || 0) + (usdtjpyBuf?.currentVolume || 0)) / 2;
       componentDelta = (-(usdcadBuf?.cvdAccumulator || 0) + (usdtjpyBuf?.cvdAccumulator || 0)) / 2;
     } else if (pair.binance === 'gbpjpy') {
-      newPrice = corePrices.gbpusdt * corePrices.usdtjpy;
+      newPrice = getCalibratedPrice('gbpusdt') * getCalibratedPrice('usdtjpy');
       componentVolume = ((gbpusdtBuf?.currentVolume || 0) + (usdtjpyBuf?.currentVolume || 0)) / 2;
       componentDelta = ((gbpusdtBuf?.cvdAccumulator || 0) + (usdtjpyBuf?.cvdAccumulator || 0)) / 2;
     } else if (pair.binance === 'audcad') {
-      newPrice = corePrices.audusdt * corePrices.usdcad;
+      newPrice = getCalibratedPrice('audusdt') * getCalibratedPrice('usdcad');
       componentVolume = ((audusdtBuf?.currentVolume || 0) + (usdcadBuf?.currentVolume || 0)) / 2;
       componentDelta = ((audusdtBuf?.cvdAccumulator || 0) + (usdcadBuf?.cvdAccumulator || 0)) / 2;
     } else if (pair.binance === 'audchf') {
-      newPrice = corePrices.audusdt / corePrices.chfusdt;
+      newPrice = getCalibratedPrice('audusdt') / getCalibratedPrice('chfusdt');
       componentVolume = ((audusdtBuf?.currentVolume || 0) + (chfusdtBuf?.currentVolume || 0)) / 2;
       componentDelta = ((audusdtBuf?.cvdAccumulator || 0) - (chfusdtBuf?.cvdAccumulator || 0)) / 2;
     } else if (pair.binance === 'gbpaud') {
-      newPrice = corePrices.gbpusdt / corePrices.audusdt;
+      newPrice = getCalibratedPrice('gbpusdt') / getCalibratedPrice('audusdt');
       componentVolume = ((gbpusdtBuf?.currentVolume || 0) + (audusdtBuf?.currentVolume || 0)) / 2;
       componentDelta = ((gbpusdtBuf?.cvdAccumulator || 0) - (audusdtBuf?.cvdAccumulator || 0)) / 2;
     } else if (pair.binance === 'eurchf') {
-      newPrice = corePrices.eurusdt / corePrices.chfusdt;
+      newPrice = getCalibratedPrice('eurusdt') / getCalibratedPrice('chfusdt');
       componentVolume = ((eurusdtBuf?.currentVolume || 0) + (chfusdtBuf?.currentVolume || 0)) / 2;
       componentDelta = ((eurusdtBuf?.cvdAccumulator || 0) - (chfusdtBuf?.cvdAccumulator || 0)) / 2;
     }
@@ -758,23 +832,26 @@ async function bootstrap() {
   } catch (err) {
     console.warn('[Worker Warning] Failed to fetch Binance REST prices, falling back to config baseline:', err.message);
   }
+
+  // Run initial Yahoo Finance offset calibration to align premium/spread pips
+  await calibrateOffsets();
   
-  // Calculate starting prices for all 12 pairs
+  // Calculate calibrated starting prices for all 12 pairs
   MONITORED_PAIRS.forEach(pair => {
     let startPrice = pair.basePrice;
     
-    if (pair.binance === 'eurusdt') startPrice = corePrices.eurusdt;
-    else if (pair.binance === 'gbpusdt') startPrice = corePrices.gbpusdt;
-    else if (pair.binance === 'usdtjpy') startPrice = corePrices.usdtjpy;
-    else if (pair.binance === 'audusdt') startPrice = corePrices.audusdt;
-    else if (pair.binance === 'eurgbp') startPrice = corePrices.eurgbp;
-    else if (pair.binance === 'eurjpy') startPrice = corePrices.eurusdt * corePrices.usdtjpy;
-    else if (pair.binance === 'cadjpy') startPrice = (1 / corePrices.usdcad) * corePrices.usdtjpy;
-    else if (pair.binance === 'gbpjpy') startPrice = corePrices.gbpusdt * corePrices.usdtjpy;
-    else if (pair.binance === 'audcad') startPrice = corePrices.audusdt * corePrices.usdcad;
-    else if (pair.binance === 'audchf') startPrice = corePrices.audusdt / corePrices.chfusdt;
-    else if (pair.binance === 'gbpaud') startPrice = corePrices.gbpusdt / corePrices.audusdt;
-    else if (pair.binance === 'eurchf') startPrice = corePrices.eurusdt / corePrices.chfusdt;
+    if (pair.binance === 'eurusdt') startPrice = getCalibratedPrice('eurusdt');
+    else if (pair.binance === 'gbpusdt') startPrice = getCalibratedPrice('gbpusdt');
+    else if (pair.binance === 'usdtjpy') startPrice = getCalibratedPrice('usdtjpy');
+    else if (pair.binance === 'audusdt') startPrice = getCalibratedPrice('audusdt');
+    else if (pair.binance === 'eurgbp') startPrice = getCalibratedPrice('eurgbp');
+    else if (pair.binance === 'eurjpy') startPrice = getCalibratedPrice('eurusdt') * getCalibratedPrice('usdtjpy');
+    else if (pair.binance === 'cadjpy') startPrice = (1 / getCalibratedPrice('usdcad')) * getCalibratedPrice('usdtjpy');
+    else if (pair.binance === 'gbpjpy') startPrice = getCalibratedPrice('gbpusdt') * getCalibratedPrice('usdtjpy');
+    else if (pair.binance === 'audcad') startPrice = getCalibratedPrice('audusdt') * getCalibratedPrice('usdcad');
+    else if (pair.binance === 'audchf') startPrice = getCalibratedPrice('audusdt') / getCalibratedPrice('chfusdt');
+    else if (pair.binance === 'gbpaud') startPrice = getCalibratedPrice('gbpusdt') / getCalibratedPrice('audusdt');
+    else if (pair.binance === 'eurchf') startPrice = getCalibratedPrice('eurusdt') / getCalibratedPrice('chfusdt');
     
     pair.basePrice = startPrice;
     
@@ -785,6 +862,9 @@ async function bootstrap() {
   
   connectBinanceWebSocket();
   startCandleAggregator();
+
+  // Start 5-minute calibration interval
+  setInterval(calibrateOffsets, 5 * 60 * 1000);
 }
 
 bootstrap();
