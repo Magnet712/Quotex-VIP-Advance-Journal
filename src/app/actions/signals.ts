@@ -451,3 +451,11 @@ export async function getActiveLiveMarketSignals() {
     return { success: false, error: err.message, signals: [] };
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTION: getServerTime
+// Returns the absolute current timestamp of the server.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getServerTime() {
+  return { success: true, timestamp: Date.now() };
+}

@@ -28,7 +28,8 @@ import {
 // ─── Signal persistence actions (data layer — strategy unchanged) ─────────
 import { 
   saveSignal, updateSignalResult, getSignalPerformance, 
-  getPairPerformanceMap, getActiveLiveMarketSignals 
+  getPairPerformanceMap, getActiveLiveMarketSignals,
+  getServerTime
 } from '@/app/actions/signals';
 import { getSignalMode } from '@/app/actions/signal_mode';
 import { getPublicOptimizationSettings, getUserAccessState } from '@/app/actions/admin_optimization';
@@ -310,11 +311,11 @@ function generateSignal(pairIdx: number, windowSeed: number): GeneratedSignal | 
 }
 
 // ─── IST Clock ───────────────────────────────────────────────────────────────
-function useISTClock() {
+function useISTClock(timeOffset: number) {
   const [time, setTime] = useState('');
   useEffect(() => {
     const update = () => {
-      const now = new Date();
+      const now = new Date(Date.now() + timeOffset);
       const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
       const h = ist.getUTCHours().toString().padStart(2, '0');
       const m = ist.getUTCMinutes().toString().padStart(2, '0');
@@ -324,7 +325,7 @@ function useISTClock() {
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [timeOffset]);
   return time;
 }
 
@@ -340,7 +341,9 @@ interface PairSignalState {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function SignalsPage() {
-  const istTime = useISTClock();
+  const [timeOffset, setTimeOffset] = useState(0);
+  const timeOffsetRef = useRef(0);
+  const istTime = useISTClock(timeOffset);
   const supabase = createClient();
   const [subTab, setSubTab] = useState<'otc_sim' | 'live_market'>('otc_sim');
   const [liveMarketSignals, setLiveMarketSignals] = useState<any[]>([]);
@@ -542,11 +545,28 @@ export default function SignalsPage() {
   useEffect(() => {
     async function loadMeta() {
       try {
-        const [modeRes, accessRes, pairPerfRes] = await Promise.all([
+        const [modeRes, accessRes, pairPerfRes, serverTimeRes] = await Promise.all([
           getSignalMode(),
           getUserAccessState(),
-          getPairPerformanceMap()
+          getPairPerformanceMap(),
+          getServerTime()
         ]);
+        if (serverTimeRes.success) {
+          const clientTime = Date.now();
+          const offset = serverTimeRes.timestamp - clientTime;
+          setTimeOffset(offset);
+          timeOffsetRef.current = offset;
+          
+          // Re-sync initial seeds and timer states with synchronized time
+          const now = clientTime + offset;
+          const nowSec = new Date(now).getUTCSeconds();
+          const remaining = Math.max(1, 60 - nowSec);
+          const seed = Math.floor(now / 60000);
+          setWindowSeed(seed);
+          windowSeedRef.current = seed;
+          setRefreshIn(remaining);
+          setPairStates(buildStates(seed).map(ps => ({ ...ps, expiresIn: remaining })));
+        }
         if (modeRes.success) {
           setSignalModeState(modeRes.mode);
           setDataSourceOnline(modeRes.mode === 'SIMULATION' || modeRes.success);
@@ -686,8 +706,8 @@ export default function SignalsPage() {
   //    1000 - (Date.now() % 1000) = precise ms until next second tick
   useEffect(() => {
     function tick() {
-      const now  = Date.now();
-      const nowSec  = new Date(now).getSeconds();
+      const now  = Date.now() + timeOffsetRef.current;
+      const nowSec  = new Date(now).getUTCSeconds();
       const secsLeft = nowSec === 0 ? 60 : 60 - nowSec;
       const currentSeed = Math.floor(now / 60000);
 
