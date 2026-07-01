@@ -29,7 +29,7 @@ export interface SaveSignalInput {
   strategy_name:     string;
   confidence:        number;
   risk_level?:       string;
-  source:            'simulation' | 'live_otc';
+  source:            'simulation' | 'live_otc' | 'live_market';
   strategy_version?: string;
   quality_score?:    number;
   is_premium?:       boolean;
@@ -52,7 +52,7 @@ export interface SignalHistoryFilters {
   pair?:         string;
   strategy?:     string;
   result?:       'ALL' | 'PENDING' | 'WIN' | 'LOSS';
-  source?:       'ALL' | 'simulation' | 'live_otc';
+  source?:       'ALL' | 'simulation' | 'live_otc' | 'live_market';
   page?:         number;
   page_size?:    number;
 }
@@ -319,7 +319,7 @@ export async function getSignalHistory(filters: SignalHistoryFilters = {}) {
 // Returns aggregated stats for the signal dashboard and history page.
 // Premium accuracy is calculated from live_otc source only.
 // ─────────────────────────────────────────────────────────────────────────────
-export async function getSignalPerformance(source?: 'simulation' | 'live_otc' | 'ALL') {
+export async function getSignalPerformance(source?: 'simulation' | 'live_otc' | 'live_market' | 'ALL') {
   const { ok } = await checkApproved();
   if (!ok) return { success: false, error: 'Unauthorized' };
 
@@ -413,5 +413,31 @@ export async function getPairPerformanceMap() {
     return { success: true, performance };
   } catch {
     return { success: false, performance: {} };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTION: getActiveLiveMarketSignals
+// Returns active (unexpired) live market signals from the database.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getActiveLiveMarketSignals() {
+  const { ok } = await checkApproved();
+  if (!ok) return { success: false, error: 'Unauthorized', signals: [] };
+
+  try {
+    const supabase = await createClient();
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('signals')
+      .select('*')
+      .eq('source', 'live_market')
+      .gt('expiry_time', now)
+      .order('entry_time', { ascending: false });
+
+    if (error) throw error;
+    return { success: true, signals: data ?? [] };
+  } catch (err: any) {
+    console.error('[getActiveLiveMarketSignals] Error:', err.message);
+    return { success: false, error: err.message, signals: [] };
   }
 }

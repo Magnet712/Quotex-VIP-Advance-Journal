@@ -18,6 +18,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 import {
   TrendingUp, TrendingDown, Clock, AlertTriangle, Zap,
   Target, Activity, RefreshCw, Shield, Radio, BarChart2,
@@ -25,7 +26,10 @@ import {
 } from 'lucide-react';
 
 // ─── Signal persistence actions (data layer — strategy unchanged) ─────────
-import { saveSignal, updateSignalResult, getSignalPerformance, getPairPerformanceMap } from '@/app/actions/signals';
+import { 
+  saveSignal, updateSignalResult, getSignalPerformance, 
+  getPairPerformanceMap, getActiveLiveMarketSignals 
+} from '@/app/actions/signals';
 import { getSignalMode } from '@/app/actions/signal_mode';
 import { getPublicOptimizationSettings, getUserAccessState } from '@/app/actions/admin_optimization';
 
@@ -321,6 +325,9 @@ interface PairSignalState {
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function SignalsPage() {
   const istTime = useISTClock();
+  const supabase = createClient();
+  const [subTab, setSubTab] = useState<'otc_sim' | 'live_market'>('otc_sim');
+  const [liveMarketSignals, setLiveMarketSignals] = useState<any[]>([]);
   const [windowSeed, setWindowSeed] = useState(0);
   const [pairStates, setPairStates] = useState<PairSignalState[]>([]);
   const [refreshIn, setRefreshIn] = useState(() => 60 - new Date().getSeconds());
@@ -519,6 +526,57 @@ export default function SignalsPage() {
     loadMeta();
   }, []);
 
+  // ── Load and subscribe to Live Market Webhook Signals ──────────────────
+  useEffect(() => {
+    async function loadLiveMarket() {
+      try {
+        const res = await getActiveLiveMarketSignals();
+        if (res.success && res.signals) {
+          setLiveMarketSignals(res.signals);
+        }
+      } catch (err) {
+        console.error('Error loading live market signals:', err);
+      }
+    }
+    loadLiveMarket();
+
+    // Listen for real-time Postgres insertions/updates to 'signals' table source='live_market'
+    const channel = supabase
+      .channel('live-market-db-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'signals',
+          filter: 'source=eq.live_market'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newSig = payload.new;
+            // Only add if it's still active (not expired)
+            if (new Date(newSig.expiry_time).getTime() > Date.now()) {
+              setLiveMarketSignals(prev => {
+                if (prev.some(s => s.id === newSig.id)) return prev;
+                return [newSig, ...prev];
+              });
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedSig = payload.new;
+            setLiveMarketSignals(prev => prev.map(s => s.id === updatedSig.id ? updatedSig : s));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedSig = payload.old;
+            setLiveMarketSignals(prev => prev.filter(s => s.id !== deletedSig.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
+
   // ── Initial load: seed to current minute, trim expiresIn to real remaining seconds
   useEffect(() => {
     const nowSec = new Date().getSeconds();
@@ -687,6 +745,9 @@ export default function SignalsPage() {
         })));
       }
 
+      // Prune expired live market signals from local state on every tick
+      setLiveMarketSignals(prev => prev.filter(s => new Date(s.expiry_time).getTime() > Date.now()));
+
       // Schedule NEXT tick at exactly the next second boundary (no drift)
       timerRef.current = setTimeout(tick, 1000 - (Date.now() % 1000));
     }
@@ -696,7 +757,9 @@ export default function SignalsPage() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [buildStates]);
 
-  const activeCount = pairStates.filter(p => p.status === 'ACTIVE').length;
+  const activeCount = subTab === 'otc_sim'
+    ? pairStates.filter(p => p.status === 'ACTIVE').length
+    : liveMarketSignals.length;
 
   const filtered = pairStates
     .map((ps, idx) => ({ ps, pair: OTC_PAIRS[idx], idx }))
@@ -711,6 +774,13 @@ export default function SignalsPage() {
       
       return true;
     });
+
+  const filteredLiveMarket = liveMarketSignals.filter(sig => {
+    if (filterDir !== 'ALL' && sig.direction !== filterDir) return false;
+    if (filterRisk !== 'ALL' && sig.risk_level !== filterRisk) return false;
+    if (filterConf === '90+' && Number(sig.confidence) < 90) return false;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
@@ -793,112 +863,119 @@ export default function SignalsPage() {
           </div>
         </div>
 
-        {/* ── Strategy Info ──────────────────────────────────────────────── */}
-        <div className="glass-panel rounded-lg p-4 border border-neon-green/10">
-          <div className="flex items-center gap-2 mb-3">
-            <Activity className="h-4 w-4 text-neon-green" />
-            <span className="text-xs font-mono font-bold text-neon-green tracking-wider">ACTIVE STRATEGY PARAMETERS</span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: 'INDICATORS', value: 'RSI · Stoch · SMA21 · EMA50 · SuperTrend · ATR · Order Delta' },
-              { label: 'ENTRY CONFIRM', value: 'Orderflow (5s last candle)' },
-              { label: 'EXPIRY', value: '1 MINUTE' },
-              { label: 'MARTINGALE', value: '1 Step · 2.5× on Loss' },
-            ].map((item, i) => (
-              <div key={i} className="space-y-1">
-                <div className="text-[8px] font-mono text-slate-600 tracking-widest">{item.label}</div>
-                <div className="text-[10px] font-mono text-slate-300 font-semibold">{item.value}</div>
-              </div>
-            ))}
-          </div>
+        {/* ── Sub-Tab Selector (Live OTC vs Live Market) ───────────────────── */}
+        <div className="flex flex-wrap gap-2 border-b border-slate-900 pb-3">
+          <button
+            onClick={() => setSubTab('otc_sim')}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${
+              subTab === 'otc_sim'
+                ? 'bg-neon-green/10 border-neon-green/30 text-neon-green shadow-[0_0_15px_rgba(0,230,118,0.05)]'
+                : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
+            }`}
+          >
+            <Radio className="h-3.5 w-3.5 animate-pulse text-neon-green" />
+            LIVE OTC & SIMULATION
+          </button>
+          <button
+            onClick={() => setSubTab('live_market')}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${
+              subTab === 'live_market'
+                ? 'bg-gold-vip/10 border-gold-vip/30 text-gold-vip shadow-[0_0_15px_rgba(255,215,0,0.05)]'
+                : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
+            }`}
+          >
+            <Zap className="h-3.5 w-3.5 text-gold-vip" />
+            LIVE MARKET (WEBHOOK)
+          </button>
         </div>
 
         {/* ── Asset (OTC) Selector ────────────────────────────────────────── */}
-        <div className="glass-panel rounded-xl border border-slate-800 overflow-hidden">
-          {/* Header toggle */}
-          <button
-            onClick={() => setAssetPanelOpen(o => !o)}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-900/40 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <BarChart2 className="h-4 w-4 text-gold-vip" />
-              <span className="text-xs font-mono font-bold text-gold-vip tracking-widest">ASSET (OTC) SELECTOR</span>
-              <span className="text-[9px] font-mono text-slate-600 border border-slate-800 px-1.5 py-0.5 rounded">
-                {selectedPairs.size}/{OTC_PAIRS.length} SELECTED
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              {selectedPairs.size < OTC_PAIRS.length && (
-                <span className="text-[9px] font-mono text-amber-400 font-bold">CUSTOM</span>
-              )}
-              <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${assetPanelOpen ? 'rotate-180' : ''}`} />
-            </div>
-          </button>
-
-          {/* Expandable pair grid */}
-          {assetPanelOpen && (
-            <div className="border-t border-slate-800 px-4 pt-3 pb-4 space-y-3">
-              {/* Quick actions */}
+        {subTab === 'otc_sim' && (
+          <div className="glass-panel rounded-xl border border-slate-800 overflow-hidden">
+            {/* Header toggle */}
+            <button
+              onClick={() => setAssetPanelOpen(o => !o)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-900/40 transition-colors"
+            >
               <div className="flex items-center gap-2">
-                <span className="text-[9px] font-mono text-slate-600 tracking-wider">QUICK SELECT:</span>
-                <button
-                  onClick={selectAll}
-                  className="px-2.5 py-1 rounded text-[9px] font-mono font-bold border border-neon-green/30 text-neon-green bg-neon-green/5 hover:bg-neon-green/10 transition-colors"
-                >
-                  ALL PAIRS
-                </button>
-                <button
-                  onClick={clearAll}
-                  className="px-2.5 py-1 rounded text-[9px] font-mono font-bold border border-slate-700 text-slate-400 hover:border-rose-500/40 hover:text-rose-400 transition-colors"
-                >
-                  CLEAR ALL
-                </button>
-                {/* Volatility quick filters */}
-                {(['HIGH','MEDIUM','LOW'] as const).map(v => (
-                  <button
-                    key={v}
-                    onClick={() => setSelectedPairs(new Set(OTC_PAIRS.filter(p => p.vol === v).map(p => p.short)))}
-                    className={`px-2.5 py-1 rounded text-[9px] font-mono font-bold border transition-colors ${
-                      v === 'HIGH' ? 'border-rose-500/30 text-rose-400 bg-rose-500/5 hover:bg-rose-500/10'
-                      : v === 'MEDIUM' ? 'border-amber-400/30 text-amber-400 bg-amber-500/5 hover:bg-amber-500/10'
-                      : 'border-slate-700 text-slate-400 hover:border-slate-600'
-                    }`}
-                  >
-                    {v} VOL
-                  </button>
-                ))}
+                <BarChart2 className="h-4 w-4 text-gold-vip" />
+                <span className="text-xs font-mono font-bold text-gold-vip tracking-widest">ASSET (OTC) SELECTOR</span>
+                <span className="text-[9px] font-mono text-slate-600 border border-slate-800 px-1.5 py-0.5 rounded">
+                  {selectedPairs.size}/{OTC_PAIRS.length} SELECTED
+                </span>
               </div>
+              <div className="flex items-center gap-3">
+                {selectedPairs.size < OTC_PAIRS.length && (
+                  <span className="text-[9px] font-mono text-amber-400 font-bold">CUSTOM</span>
+                )}
+                <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${assetPanelOpen ? 'rotate-180' : ''}`} />
+              </div>
+            </button>
 
-              {/* Pair toggle chips */}
-              <div className="flex flex-wrap gap-2">
-                {OTC_PAIRS.map(pair => {
-                  const isSelected = selectedPairs.has(pair.short);
-                  const volColor = pair.vol === 'HIGH' ? 'text-rose-400' : pair.vol === 'LOW' ? 'text-slate-500' : 'text-amber-400';
-                  return (
+            {/* Expandable pair grid */}
+            {assetPanelOpen && (
+              <div className="border-t border-slate-800 px-4 pt-3 pb-4 space-y-3">
+                {/* Quick actions */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-mono text-slate-600 tracking-wider">QUICK SELECT:</span>
+                  <button
+                    onClick={selectAll}
+                    className="px-2.5 py-1 rounded text-[9px] font-mono font-bold border border-neon-green/30 text-neon-green bg-neon-green/5 hover:bg-neon-green/10 transition-colors"
+                  >
+                    ALL PAIRS
+                  </button>
+                  <button
+                    onClick={clearAll}
+                    className="px-2.5 py-1 rounded text-[9px] font-mono font-bold border border-slate-700 text-slate-400 hover:border-rose-500/40 hover:text-rose-400 transition-colors"
+                  >
+                    CLEAR ALL
+                  </button>
+                  {/* Volatility quick filters */}
+                  {(['HIGH','MEDIUM','LOW'] as const).map(v => (
                     <button
-                      key={pair.short}
-                      onClick={() => togglePair(pair.short)}
-                      className={`group relative px-3 py-2 rounded-lg border text-[10px] font-mono font-bold tracking-wide transition-all duration-150 ${
-                        isSelected
-                          ? 'bg-neon-green/10 border-neon-green/35 text-neon-green shadow-[0_0_8px_rgba(0,230,118,0.08)]'
-                          : 'bg-slate-900/40 border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-400'
+                      key={v}
+                      onClick={() => setSelectedPairs(new Set(OTC_PAIRS.filter(p => p.vol === v).map(p => p.short)))}
+                      className={`px-2.5 py-1 rounded text-[9px] font-mono font-bold border transition-colors ${
+                        v === 'HIGH' ? 'border-rose-500/30 text-rose-400 bg-rose-500/5 hover:bg-rose-500/10'
+                        : v === 'MEDIUM' ? 'border-amber-400/30 text-amber-400 bg-amber-500/5 hover:bg-amber-500/10'
+                        : 'border-slate-700 text-slate-400 hover:border-slate-600'
                       }`}
                     >
-                      <div className="flex items-center gap-1.5">
-                        {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-neon-green" />}
-                        <span>{pair.symbol}</span>
-                      </div>
-                      <div className={`text-[7px] font-normal mt-0.5 ${isSelected ? volColor : 'text-slate-700'}`}>
-                        OTC · {pair.vol}
-                      </div>
+                      {v} VOL
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
+
+                {/* Pair toggle chips */}
+                <div className="flex flex-wrap gap-2">
+                  {OTC_PAIRS.map(pair => {
+                    const isSelected = selectedPairs.has(pair.short);
+                    const volColor = pair.vol === 'HIGH' ? 'text-rose-400' : pair.vol === 'LOW' ? 'text-slate-500' : 'text-amber-400';
+                    return (
+                      <button
+                        key={pair.short}
+                        onClick={() => togglePair(pair.short)}
+                        className={`group relative px-3 py-2 rounded-lg border text-[10px] font-mono font-bold tracking-wide transition-all duration-150 ${
+                          isSelected
+                            ? 'bg-neon-green/10 border-neon-green/35 text-neon-green shadow-[0_0_8px_rgba(0,230,118,0.08)]'
+                            : 'bg-slate-900/40 border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-neon-green" />}
+                          <span>{pair.symbol}</span>
+                        </div>
+                        <div className={`text-[7px] font-normal mt-0.5 ${isSelected ? volColor : 'text-slate-700'}`}>
+                          OTC · {pair.vol}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* ── Filters ────────────────────────────────────────────────────── */}
         <div className="glass-panel rounded-xl border border-slate-800 px-4 py-3">
@@ -1012,16 +1089,35 @@ export default function SignalsPage() {
         ) : (
           <>
             {/* ── Signal Cards Grid ──────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filtered.map(({ ps, pair, idx }) => (
-                <SignalCard key={pair.short} pair={pair} ps={ps} userAccess={userAccess} />
-              ))}
-            </div>
+            {subTab === 'otc_sim' ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filtered.map(({ ps, pair, idx }) => (
+                    <SignalCard key={pair.short} pair={pair} ps={ps} userAccess={userAccess} />
+                  ))}
+                </div>
 
-            {filtered.length === 0 && (
-              <div className="text-center py-16 text-slate-600 font-mono text-sm">
-                No signals match your current filter.
-              </div>
+                {filtered.length === 0 && (
+                  <div className="text-center py-16 text-slate-600 font-mono text-sm">
+                    No OTC signals match your current filter.
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filteredLiveMarket.map((sig) => (
+                    <LiveMarketSignalCard key={sig.id} signal={sig} userAccess={userAccess} />
+                  ))}
+                </div>
+
+                {filteredLiveMarket.length === 0 && (
+                  <div className="text-center py-16 text-slate-600 font-mono text-sm space-y-2">
+                    <div>No live market signals active.</div>
+                    <div className="text-[10px] text-slate-600">Awaiting TradingView webhook alerts...</div>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -1474,6 +1570,162 @@ function SignalCard({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Live Market Webhook Signal Card Component ──────────────────────────────
+function LiveMarketSignalCard({
+  signal,
+  userAccess
+}: {
+  signal: any;
+  userAccess: any;
+}) {
+  const isCall = signal.direction === 'CALL';
+  const isActive = signal.result === 'PENDING';
+  
+  // Calculate remaining seconds
+  const [expiresIn, setExpiresIn] = useState(() => {
+    return Math.max(0, Math.round((new Date(signal.expiry_time).getTime() - Date.now()) / 1000));
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setExpiresIn(prev => {
+        const next = Math.max(0, Math.round((new Date(signal.expiry_time).getTime() - Date.now()) / 1000));
+        if (next === 0) clearInterval(timer);
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [signal.expiry_time]);
+
+  const borderColor = !isActive
+    ? (signal.result === 'WIN' ? 'border-neon-green/25 bg-neon-green/[0.02]' : 'border-rose-500/25 bg-rose-500/[0.02]')
+    : isCall
+    ? 'border-neon-green/25 shadow-[0_0_20px_rgba(0,230,118,0.05)]'
+    : 'border-rose-500/25 shadow-[0_0_20px_rgba(239,68,68,0.05)]';
+
+  const riskColor =
+    signal.risk_level === 'LOW' ? 'text-neon-green' :
+    signal.risk_level === 'MEDIUM' ? 'text-amber-400' : 'text-rose-400';
+
+  const riskBg =
+    signal.risk_level === 'LOW' ? 'bg-neon-green/10 border-neon-green/20' :
+    signal.risk_level === 'MEDIUM' ? 'bg-amber-500/10 border-amber-400/20' :
+    'bg-rose-500/10 border-rose-400/20';
+
+  return (
+    <div className={`glass-panel rounded-xl border transition-all duration-500 overflow-hidden ${borderColor}`}>
+      {/* Card Header */}
+      <div className={`px-4 pt-4 pb-3 flex items-start justify-between ${isActive ? (isCall ? 'bg-neon-green/[0.03]' : 'bg-rose-500/[0.03]') : ''}`}>
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-extrabold font-mono text-slate-100 tracking-wider">
+              {signal.pair}
+            </span>
+            <span className="text-[8px] font-mono text-gold-vip border border-gold-vip/30 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">LIVE MARKET</span>
+          </div>
+          <div className="text-[9px] font-mono text-slate-600">
+            STRATEGY: <span className="text-slate-400 font-bold uppercase">{signal.strategy_name}</span>
+          </div>
+        </div>
+        
+        {/* Status indicator */}
+        <div className="flex flex-col items-end gap-1">
+          {isActive ? (
+            <span className="flex items-center gap-1 text-[8px] font-mono font-bold text-neon-green bg-neon-green/10 px-1.5 py-0.5 rounded border border-neon-green/20">
+              <span className="h-1.5 w-1.5 rounded-full bg-neon-green animate-ping" />
+              ACTIVE
+            </span>
+          ) : (
+            <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+              signal.result === 'WIN' 
+                ? 'text-neon-green bg-neon-green/10 border-neon-green/20' 
+                : 'text-rose-400 bg-rose-500/10 border-rose-500/20'
+            }`}>
+              {signal.result}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Card Body */}
+      <div className="px-4 pb-4 pt-1 space-y-4">
+        {/* Signal Direction Area */}
+        <div className="grid grid-cols-2 gap-3 items-center">
+          <div className={`flex flex-col justify-center items-center py-2.5 rounded-lg border ${
+            isCall 
+              ? 'bg-neon-green/5 border-neon-green/10 text-neon-green' 
+              : 'bg-rose-500/5 border-rose-500/10 text-rose-400'
+          }`}>
+            <span className="text-[8px] font-mono text-slate-500 tracking-wider">DIRECTION</span>
+            <span className="text-sm font-extrabold font-mono flex items-center gap-0.5">
+              {isCall ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+              {signal.direction}
+            </span>
+          </div>
+
+          <div className="flex flex-col justify-center items-center py-2.5 rounded-lg border border-slate-900 bg-slate-950/30">
+            <span className="text-[8px] font-mono text-slate-500 tracking-wider">EXPIRY</span>
+            <span className="text-sm font-extrabold font-mono text-slate-200">
+              {isActive ? (
+                expiresIn > 0 ? (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 animate-spin" />
+                    {expiresIn}s
+                  </span>
+                ) : (
+                  'RESOLVING...'
+                )
+              ) : (
+                'CLOSED'
+              )}
+            </span>
+          </div>
+        </div>
+
+        {/* Trade Details List */}
+        <div className="bg-slate-950/60 border border-glass-border/30 rounded-lg p-3 space-y-2.5 text-xs font-mono">
+          <div className="flex justify-between border-b border-slate-900 pb-1.5">
+            <span className="text-slate-500">ENTRY PRICE:</span>
+            <span className="text-slate-200 font-bold">{signal.entry_price}</span>
+          </div>
+          {signal.expiry_price && (
+            <div className="flex justify-between border-b border-slate-900 pb-1.5">
+              <span className="text-slate-500">CLOSE PRICE:</span>
+              <span className={`font-bold ${signal.result === 'WIN' ? 'text-neon-green' : 'text-rose-400'}`}>
+                {signal.expiry_price}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-between border-b border-slate-900 pb-1.5">
+            <span className="text-slate-500">QUALITY SCORE:</span>
+            <span className="text-slate-200 font-bold">{signal.quality_score}%</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-slate-500">RISK LEVEL:</span>
+            <span className={`px-2 py-0.5 rounded text-[9px] border font-bold ${riskColor} ${riskBg}`}>
+              {signal.risk_level}
+            </span>
+          </div>
+        </div>
+
+        {/* Confidence Indicator */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-[10px] font-mono">
+            <span className="text-slate-500">CONFIDENCE ACCURACY:</span>
+            <span className="text-gold-vip font-bold">{signal.confidence}%</span>
+          </div>
+          <div className="h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-950">
+            <div 
+              className="h-full bg-gradient-to-r from-amber-500 to-gold-vip rounded-full transition-all duration-1000"
+              style={{ width: `${signal.confidence}%` }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
