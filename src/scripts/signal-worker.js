@@ -472,15 +472,26 @@ function evaluateMarketSignals(pairConfig) {
 // ─────────────────────────────────────────────────────────────────────────────
 function fetchYahooPrice(symbol) {
   return new Promise((resolve) => {
-    https.get(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`, (res) => {
+    const options = {
+      hostname: 'query1.finance.yahoo.com',
+      path: `/v8/finance/chart/${symbol}`,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+      }
+    };
+    https.get(options, (res) => {
       let data = '';
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
         try {
           const json = JSON.parse(data);
-          const meta = json.chart.result[0].meta;
-          const price = meta.regularMarketPrice;
-          resolve(price);
+          if (json.chart && json.chart.result && json.chart.result[0]) {
+            const meta = json.chart.result[0].meta;
+            resolve(meta.regularMarketPrice);
+          } else {
+            resolve(null);
+          }
         } catch {
           resolve(null);
         }
