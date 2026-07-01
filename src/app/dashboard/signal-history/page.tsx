@@ -619,7 +619,7 @@ function SignalRow({ sig }: { sig: Signal }) {
             ? 'text-neon-green border-neon-green/30 bg-neon-green/5'
             : 'text-slate-600 border-slate-800 bg-slate-900/30'
         }`}>
-          {sig.source === 'live_market' ? 'WEBHOOK' : sig.source === 'live_otc' ? 'LIVE' : 'SIM'}
+          {sig.source === 'live_market' ? 'LIVE MARKET' : sig.source === 'live_otc' ? 'LIVE' : 'SIM'}
         </span>
       </td>
     </tr>
