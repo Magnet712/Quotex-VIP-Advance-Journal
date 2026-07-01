@@ -806,10 +806,6 @@ export default function SignalsPage() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [buildStates]);
 
-  const activeCount = subTab === 'otc_sim'
-    ? pairStates.filter(p => p.status === 'ACTIVE').length
-    : liveMarketSignals.length;
-
   const filtered = pairStates
     .map((ps, idx) => ({ ps, pair: OTC_PAIRS[idx], idx }))
     .filter(({ ps, pair }) => {
@@ -825,8 +821,8 @@ export default function SignalsPage() {
     });
 
   const filteredLiveMarket = liveMarketSignals.filter(sig => {
-    // Map live market pair name (e.g. 'EUR/USD') to OTC short-code (e.g. 'EURUSD_OTC') to check selection state
-    const shortCode = sig.pair.replace('/', '') + '_OTC';
+    // Map live market pair name (e.g. 'EUR/USD') to selection state (e.g. 'EURUSD')
+    const shortCode = sig.pair.replace('/', '');
     if (!selectedPairs.has(shortCode)) return false;
 
     if (filterDir !== 'ALL' && sig.direction !== filterDir) return false;
@@ -834,6 +830,10 @@ export default function SignalsPage() {
     if (filterConf === '90+' && Number(sig.confidence) < 90) return false;
     return true;
   });
+
+  const activeCount = subTab === 'otc_sim'
+    ? pairStates.filter(p => p.status === 'ACTIVE').length
+    : filteredLiveMarket.length;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
