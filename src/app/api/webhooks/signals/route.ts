@@ -20,6 +20,19 @@ export async function POST(request: Request) {
     const body = await request.json();
     const action = body.action || 'create';
 
+    // Clean and format pair name (e.g. EURUSD -> EUR/USD, FX:EURUSD -> EUR/USD)
+    let rawPair = body.pair || '';
+    let pair = String(rawPair).toUpperCase().trim();
+    if (pair.includes(':')) {
+      pair = pair.split(':')[1];
+    }
+    if (pair.includes('.')) {
+      pair = pair.split('.')[0];
+    }
+    if (pair.length === 6 && !pair.includes('/')) {
+      pair = `${pair.substring(0, 3)}/${pair.substring(3, 6)}`;
+    }
+
     // Initialize Supabase Admin client using service role key (bypasses RLS)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -30,7 +43,7 @@ export async function POST(request: Request) {
     // Resolves the most recent pending signal for this pair using close price
     // ─────────────────────────────────────────────────────────────────────────
     if (action === 'resolve') {
-      const { pair, expiry_price } = body;
+      const { expiry_price } = body;
       if (!pair || expiry_price === undefined) {
         return NextResponse.json({ error: 'Missing required resolution fields' }, { status: 400 });
       }
@@ -87,7 +100,7 @@ export async function POST(request: Request) {
     // Creates a new pending signal
     // ─────────────────────────────────────────────────────────────────────────
     const { 
-      pair, direction, entry_price, confidence, 
+      direction, entry_price, confidence, 
       strategy_name, timeframe = '1m', risk_level 
     } = body;
 
