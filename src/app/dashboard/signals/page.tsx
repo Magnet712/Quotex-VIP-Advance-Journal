@@ -33,6 +33,22 @@ import {
 import { getSignalMode } from '@/app/actions/signal_mode';
 import { getPublicOptimizationSettings, getUserAccessState } from '@/app/actions/admin_optimization';
 
+// ─── Live Market (Webhook) Forex Pairs ─────────────────────────────────────────
+const LIVE_MARKET_PAIRS = [
+  { symbol: 'EUR/USD', short: 'EURUSD', vol: 'MEDIUM' },
+  { symbol: 'GBP/USD', short: 'GBPUSD', vol: 'HIGH' },
+  { symbol: 'USD/JPY', short: 'USDJPY', vol: 'MEDIUM' },
+  { symbol: 'AUD/USD', short: 'AUDUSD', vol: 'MEDIUM' },
+  { symbol: 'EUR/GBP', short: 'EURGBP', vol: 'LOW' },
+  { symbol: 'EUR/JPY', short: 'EURJPY', vol: 'HIGH' },
+  { symbol: 'CAD/JPY', short: 'CADJPY', vol: 'MEDIUM' },
+  { symbol: 'GBP/JPY', short: 'GBPJPY', vol: 'HIGH' },
+  { symbol: 'AUD/CAD', short: 'AUDCAD', vol: 'MEDIUM' },
+  { symbol: 'AUD/CHF', short: 'AUDCHF', vol: 'LOW' },
+  { symbol: 'GBP/AUD', short: 'GBPAUD', vol: 'HIGH' },
+  { symbol: 'EUR/CHF', short: 'EURCHF', vol: 'LOW' }
+];
+
 // ─── All Quotex OTC Pairs ────────────────────────────────────────────────────
 const OTC_PAIRS = [
   // Major Pairs
@@ -383,7 +399,10 @@ export default function SignalsPage() {
     });
   };
 
-  const selectAll  = () => setSelectedPairs(new Set(OTC_PAIRS.map(p => p.short)));
+  const selectAll = () => {
+    const list = subTab === 'otc_sim' ? OTC_PAIRS : LIVE_MARKET_PAIRS;
+    setSelectedPairs(new Set(list.map(p => p.short)));
+  };
   const clearAll   = () => setSelectedPairs(new Set());
 
   const buildStates = useCallback((seed: number): PairSignalState[] => {
@@ -906,7 +925,10 @@ export default function SignalsPage() {
                 {subTab === 'otc_sim' ? 'ASSET (OTC) SELECTOR' : 'LIVE MARKET ASSETS'}
               </span>
               <span className="text-[9px] font-mono text-slate-600 border border-slate-800 px-1.5 py-0.5 rounded">
-                {selectedPairs.size}/{OTC_PAIRS.length} SELECTED
+                {subTab === 'otc_sim' 
+                  ? `${selectedPairs.size}/${OTC_PAIRS.length}` 
+                  : `${Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length}/${LIVE_MARKET_PAIRS.length}`
+                } SELECTED
               </span>
             </div>
               <div className="flex items-center gap-3">
@@ -939,7 +961,10 @@ export default function SignalsPage() {
                   {(['HIGH','MEDIUM','LOW'] as const).map(v => (
                     <button
                       key={v}
-                      onClick={() => setSelectedPairs(new Set(OTC_PAIRS.filter(p => p.vol === v).map(p => p.short)))}
+                      onClick={() => {
+                        const list = subTab === 'otc_sim' ? OTC_PAIRS : LIVE_MARKET_PAIRS;
+                        setSelectedPairs(new Set(list.filter(p => p.vol === v).map(p => p.short)));
+                      }}
                       className={`px-2.5 py-1 rounded text-[9px] font-mono font-bold border transition-colors ${
                         v === 'HIGH' ? 'border-rose-500/30 text-rose-400 bg-rose-500/5 hover:bg-rose-500/10'
                         : v === 'MEDIUM' ? 'border-amber-400/30 text-amber-400 bg-amber-500/5 hover:bg-amber-500/10'
@@ -953,7 +978,7 @@ export default function SignalsPage() {
 
                 {/* Pair toggle chips */}
                 <div className="flex flex-wrap gap-2">
-                  {OTC_PAIRS.map(pair => {
+                  {(subTab === 'otc_sim' ? OTC_PAIRS : LIVE_MARKET_PAIRS).map(pair => {
                     const isSelected = selectedPairs.has(pair.short);
                     const volColor = pair.vol === 'HIGH' ? 'text-rose-400' : pair.vol === 'LOW' ? 'text-slate-500' : 'text-amber-400';
                     return (
@@ -971,7 +996,7 @@ export default function SignalsPage() {
                           <span>{pair.symbol}</span>
                         </div>
                         <div className={`text-[7px] font-normal mt-0.5 ${isSelected ? volColor : 'text-slate-700'}`}>
-                          OTC · {pair.vol}
+                          {subTab === 'otc_sim' ? 'OTC' : 'LIVE'} · {pair.vol}
                         </div>
                       </button>
                     );
