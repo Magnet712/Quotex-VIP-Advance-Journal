@@ -53,7 +53,7 @@ const MONITORED_PAIRS = [
 const corePrices = {
   eurusdt: 1.08550,
   gbpusdt: 1.26500,
-  usdtjpy: 158.200,
+  usdjpy: 158.200,
   audusdt: 0.66500,
   usdcad: 1.35800,
   chfusdt: 0.88000,
@@ -63,7 +63,7 @@ const corePrices = {
 const priceOffsets = {
   eurusdt: 0,
   gbpusdt: 0,
-  usdtjpy: 0,
+  usdjpy: 0,
   audusdt: 0,
   usdcad: 0,
   chfusdt: 0,
@@ -505,7 +505,7 @@ async function calibrateOffsets() {
   const mappings = [
     { yahoo: 'EURUSD=X', binance: 'eurusdt', type: 'direct' },
     { yahoo: 'GBPUSD=X', binance: 'gbpusdt', type: 'direct' },
-    { yahoo: 'USDJPY=X', binance: 'usdtjpy', type: 'direct' },
+    { yahoo: 'USDJPY=X', binance: 'usdjpy', type: 'direct' },
     { yahoo: 'AUDUSD=X', binance: 'audusdt', type: 'direct' },
     { yahoo: 'USDCAD=X', binance: 'usdcad', type: 'direct' },
     { yahoo: 'USDCHF=X', binance: 'chfusdt', type: 'chf' },
@@ -548,7 +548,7 @@ function connectBinanceWebSocket() {
   const streams = [
     'eurusdt@trade',
     'gbpusdt@trade',
-    'usdtjpy@trade',
+    'usdjpy@trade',
     'audusdt@trade',
     'usdcad@trade',
     'chfusdt@trade',
@@ -615,7 +615,7 @@ function connectBinanceWebSocket() {
 function updateCrossRates(changedSymbol, vol, del) {
   MONITORED_PAIRS.forEach(pair => {
     // Skip core pairs
-    if (['eurusdt', 'gbpusdt', 'usdtjpy', 'audusdt', 'usdcad', 'chfusdt', 'eurgbp'].includes(pair.binance)) {
+    if (['eurusdt', 'gbpusdt', 'usdjpy', 'audusdt', 'usdcad', 'chfusdt', 'eurgbp'].includes(pair.binance)) {
       return;
     }
     
@@ -624,24 +624,24 @@ function updateCrossRates(changedSymbol, vol, del) {
     let componentDelta = del;
     
     const eurusdtBuf = tickBuffer.get('eurusdt');
-    const usdtjpyBuf = tickBuffer.get('usdtjpy');
+    const usdjpyBuf = tickBuffer.get('usdjpy');
     const usdcadBuf = tickBuffer.get('usdcad');
     const gbpusdtBuf = tickBuffer.get('gbpusdt');
     const audusdtBuf = tickBuffer.get('audusdt');
     const chfusdtBuf = tickBuffer.get('chfusdt');
 
     if (pair.binance === 'eurjpy') {
-      newPrice = getCalibratedPrice('eurusdt') * getCalibratedPrice('usdtjpy');
-      componentVolume = ((eurusdtBuf?.currentVolume || 0) + (usdtjpyBuf?.currentVolume || 0)) / 2;
-      componentDelta = ((eurusdtBuf?.cvdAccumulator || 0) + (usdtjpyBuf?.cvdAccumulator || 0)) / 2;
+      newPrice = getCalibratedPrice('eurusdt') * getCalibratedPrice('usdjpy');
+      componentVolume = ((eurusdtBuf?.currentVolume || 0) + (usdjpyBuf?.currentVolume || 0)) / 2;
+      componentDelta = ((eurusdtBuf?.cvdAccumulator || 0) + (usdjpyBuf?.cvdAccumulator || 0)) / 2;
     } else if (pair.binance === 'cadjpy') {
-      newPrice = (1 / getCalibratedPrice('usdcad')) * getCalibratedPrice('usdtjpy');
-      componentVolume = ((usdcadBuf?.currentVolume || 0) + (usdtjpyBuf?.currentVolume || 0)) / 2;
-      componentDelta = (-(usdcadBuf?.cvdAccumulator || 0) + (usdtjpyBuf?.cvdAccumulator || 0)) / 2;
+      newPrice = (1 / getCalibratedPrice('usdcad')) * getCalibratedPrice('usdjpy');
+      componentVolume = ((usdcadBuf?.currentVolume || 0) + (usdjpyBuf?.currentVolume || 0)) / 2;
+      componentDelta = (-(usdcadBuf?.cvdAccumulator || 0) + (usdjpyBuf?.cvdAccumulator || 0)) / 2;
     } else if (pair.binance === 'gbpjpy') {
-      newPrice = getCalibratedPrice('gbpusdt') * getCalibratedPrice('usdtjpy');
-      componentVolume = ((gbpusdtBuf?.currentVolume || 0) + (usdtjpyBuf?.currentVolume || 0)) / 2;
-      componentDelta = ((gbpusdtBuf?.cvdAccumulator || 0) + (usdtjpyBuf?.cvdAccumulator || 0)) / 2;
+      newPrice = getCalibratedPrice('gbpusdt') * getCalibratedPrice('usdjpy');
+      componentVolume = ((gbpusdtBuf?.currentVolume || 0) + (usdjpyBuf?.currentVolume || 0)) / 2;
+      componentDelta = ((gbpusdtBuf?.cvdAccumulator || 0) + (usdjpyBuf?.cvdAccumulator || 0)) / 2;
     } else if (pair.binance === 'audcad') {
       newPrice = getCalibratedPrice('audusdt') * getCalibratedPrice('usdcad');
       componentVolume = ((audusdtBuf?.currentVolume || 0) + (usdcadBuf?.currentVolume || 0)) / 2;
@@ -833,7 +833,7 @@ async function bootstrap() {
     // Set initial core prices
     if (prices.eurusdt) corePrices.eurusdt = prices.eurusdt;
     if (prices.gbpusdt) corePrices.gbpusdt = prices.gbpusdt;
-    if (prices.usdtjpy) corePrices.usdtjpy = prices.usdtjpy;
+    if (prices.usdjpy)  corePrices.usdjpy  = prices.usdjpy;
     if (prices.audusdt) corePrices.audusdt = prices.audusdt;
     if (prices.usdcad)   corePrices.usdcad   = prices.usdcad;
     if (prices.chfusdt)  corePrices.chfusdt  = prices.chfusdt;
@@ -853,12 +853,12 @@ async function bootstrap() {
     
     if (pair.binance === 'eurusdt') startPrice = getCalibratedPrice('eurusdt');
     else if (pair.binance === 'gbpusdt') startPrice = getCalibratedPrice('gbpusdt');
-    else if (pair.binance === 'usdtjpy') startPrice = getCalibratedPrice('usdtjpy');
+    else if (pair.binance === 'usdjpy')  startPrice = getCalibratedPrice('usdjpy');
     else if (pair.binance === 'audusdt') startPrice = getCalibratedPrice('audusdt');
     else if (pair.binance === 'eurgbp') startPrice = getCalibratedPrice('eurgbp');
-    else if (pair.binance === 'eurjpy') startPrice = getCalibratedPrice('eurusdt') * getCalibratedPrice('usdtjpy');
-    else if (pair.binance === 'cadjpy') startPrice = (1 / getCalibratedPrice('usdcad')) * getCalibratedPrice('usdtjpy');
-    else if (pair.binance === 'gbpjpy') startPrice = getCalibratedPrice('gbpusdt') * getCalibratedPrice('usdtjpy');
+    else if (pair.binance === 'eurjpy') startPrice = getCalibratedPrice('eurusdt') * getCalibratedPrice('usdjpy');
+    else if (pair.binance === 'cadjpy') startPrice = (1 / getCalibratedPrice('usdcad')) * getCalibratedPrice('usdjpy');
+    else if (pair.binance === 'gbpjpy') startPrice = getCalibratedPrice('gbpusdt') * getCalibratedPrice('usdjpy');
     else if (pair.binance === 'audcad') startPrice = getCalibratedPrice('audusdt') * getCalibratedPrice('usdcad');
     else if (pair.binance === 'audchf') startPrice = getCalibratedPrice('audusdt') / getCalibratedPrice('chfusdt');
     else if (pair.binance === 'gbpaud') startPrice = getCalibratedPrice('gbpusdt') / getCalibratedPrice('audusdt');
