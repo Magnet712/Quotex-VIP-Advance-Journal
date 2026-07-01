@@ -37,7 +37,16 @@ const supabase = createClient(supabaseUrl, supabaseServiceRole);
 const MONITORED_PAIRS = [
   { binance: 'eurusdt', symbol: 'EUR/USD' },
   { binance: 'gbpusdt', symbol: 'GBP/USD' },
-  { binance: 'btcusdt', symbol: 'BTC/USD' }
+  { binance: 'usdjpy',  symbol: 'USD/JPY' },
+  { binance: 'audusdt', symbol: 'AUD/USD' },
+  { binance: 'eurgbp',  symbol: 'EUR/GBP' },
+  { binance: 'eurjpy',  symbol: 'EUR/JPY' },
+  { binance: 'cadjpy',  symbol: 'CAD/JPY' },
+  { binance: 'gbpjpy',  symbol: 'GBP/JPY' },
+  { binance: 'audcad',  symbol: 'AUD/CAD' },
+  { binance: 'audchf',  symbol: 'AUD/CHF' },
+  { binance: 'gbpaud',  symbol: 'GBP/AUD' },
+  { binance: 'eurchf',  symbol: 'EUR/CHF' }
 ];
 
 // In-memory historical cache (requires min 60 candles to compute 50 SMA reliably)
