@@ -908,7 +908,7 @@ export default function SignalsPage() {
             }`}
           >
             <Zap className="h-3.5 w-3.5 text-gold-vip" />
-            LIVE MARKET (WEBHOOK)
+            LIVE MARKET
           </button>
         </div>
 
@@ -1143,7 +1143,7 @@ export default function SignalsPage() {
                 {filteredLiveMarket.length === 0 && (
                   <div className="text-center py-16 text-slate-600 font-mono text-sm space-y-2">
                     <div>No live market signals active.</div>
-                    <div className="text-[10px] text-slate-600">Awaiting TradingView webhook alerts...</div>
+                    <div className="text-[10px] text-slate-600">Awaiting orderflow signal triggers...</div>
                   </div>
                 )}
               </>
