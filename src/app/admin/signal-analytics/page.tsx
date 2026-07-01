@@ -24,6 +24,11 @@ const OTC_PAIRS = [
   'USD/PKR', 'USD/BDT'
 ];
 
+const LIVE_MARKET_PAIRS = [
+  'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'EUR/GBP', 'EUR/JPY',
+  'CAD/JPY', 'GBP/JPY', 'AUD/CAD', 'AUD/CHF', 'GBP/AUD', 'EUR/CHF'
+];
+
 export default function AdminSignalAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
@@ -290,9 +295,15 @@ export default function AdminSignalAnalyticsPage() {
                       className="w-full bg-[#030812] border border-glass-border rounded px-3 py-2 text-slate-200 outline-none"
                     >
                       <option value="ALL">All Pairs</option>
-                      {OTC_PAIRS.map(p => (
-                        <option key={p} value={p}>{p} OTC</option>
-                      ))}
+                      {filters.source === 'live_market' ? (
+                        LIVE_MARKET_PAIRS.map(p => (
+                          <option key={p} value={p}>{p}</option>
+                        ))
+                      ) : (
+                        OTC_PAIRS.map(p => (
+                          <option key={p} value={`${p} OTC`}>{p} OTC</option>
+                        ))
+                      )}
                     </select>
                   </div>
 
@@ -455,7 +466,7 @@ export default function AdminSignalAnalyticsPage() {
                     }`}
                   >
                     <div>
-                      <div className="font-bold text-slate-200">{item.pair} OTC</div>
+                      <div className="font-bold text-slate-200">{item.pair.endsWith('OTC') ? item.pair : item.pair}</div>
                       <div className="text-[9px] text-slate-500 mt-1">
                         Signals: {item.total} &bull; Acc: <span className={`font-bold ${item.accuracy >= 80 ? 'text-neon-green' : item.accuracy >= 70 ? 'text-amber-400' : 'text-rose-400'}`}>{item.accuracy}%</span>
                       </div>

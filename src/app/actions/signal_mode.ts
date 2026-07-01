@@ -79,8 +79,10 @@ export async function setSignalMode(mode: SignalMode): Promise<{
     return { success: false, error: 'Unauthorized. Admin access required.' };
   }
 
-  if (mode !== 'SIMULATION' && mode !== 'LIVE_OTC' && mode !== 'LIVE_MARKET') {
-    return { success: false, error: 'Invalid signal mode.' };
+  const modes = mode.split(',').map(m => m.trim()).filter(Boolean);
+  const invalid = modes.some(m => m !== 'SIMULATION' && m !== 'LIVE_OTC' && m !== 'LIVE_MARKET');
+  if (invalid || modes.length === 0) {
+    return { success: false, error: 'Invalid signal mode selection.' };
   }
 
   try {

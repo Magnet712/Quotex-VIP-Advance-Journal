@@ -361,7 +361,7 @@ export default function SignalsPage() {
   const [winRate, setWinRate] = useState<number | null>(null);
 
   // ── Data source status (admin-controlled signal mode) ────────────────────
-  const [signalMode, setSignalModeState] = useState<'SIMULATION' | 'LIVE_OTC' | 'LIVE_MARKET'>('SIMULATION');
+  const [signalMode, setSignalModeState] = useState<string>('SIMULATION');
   const [dataSourceOnline, setDataSourceOnline] = useState(true);
 
   // ── Admin optimization settings & User roles ─────────────────────────────
@@ -544,6 +544,19 @@ export default function SignalsPage() {
     }
     loadMeta();
   }, []);
+
+  // Auto-set the active sub-tab based on allowed admin modes
+  useEffect(() => {
+    if (signalMode) {
+      const activeOtc = signalMode.includes('LIVE_OTC') || signalMode.includes('SIMULATION');
+      const activeLive = signalMode.includes('LIVE_MARKET');
+      if (activeLive && !activeOtc) {
+        setSubTab('live_market');
+      } else if (!activeLive && activeOtc) {
+        setSubTab('otc_sim');
+      }
+    }
+  }, [signalMode]);
 
   // ── Load and subscribe to Live Market Webhook Signals ──────────────────
   useEffect(() => {
@@ -888,28 +901,32 @@ export default function SignalsPage() {
 
         {/* ── Sub-Tab Selector (Live OTC vs Live Market) ───────────────────── */}
         <div className="flex flex-wrap gap-2 border-b border-slate-900 pb-3">
-          <button
-            onClick={() => setSubTab('otc_sim')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${
-              subTab === 'otc_sim'
-                ? 'bg-neon-green/10 border-neon-green/30 text-neon-green shadow-[0_0_15px_rgba(0,230,118,0.05)]'
-                : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
-            }`}
-          >
-            <Radio className="h-3.5 w-3.5 animate-pulse text-neon-green" />
-            LIVE OTC & SIMULATION
-          </button>
-          <button
-            onClick={() => setSubTab('live_market')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${
-              subTab === 'live_market'
-                ? 'bg-gold-vip/10 border-gold-vip/30 text-gold-vip shadow-[0_0_15px_rgba(255,215,0,0.05)]'
-                : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
-            }`}
-          >
-            <Zap className="h-3.5 w-3.5 text-gold-vip" />
-            LIVE MARKET
-          </button>
+          {(signalMode.includes('LIVE_OTC') || signalMode.includes('SIMULATION')) && (
+            <button
+              onClick={() => setSubTab('otc_sim')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${
+                subTab === 'otc_sim'
+                  ? 'bg-neon-green/10 border-neon-green/30 text-neon-green shadow-[0_0_15px_rgba(0,230,118,0.05)]'
+                  : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
+              }`}
+            >
+              <Radio className="h-3.5 w-3.5 animate-pulse text-neon-green" />
+              LIVE OTC & SIMULATION
+            </button>
+          )}
+          {signalMode.includes('LIVE_MARKET') && (
+            <button
+              onClick={() => setSubTab('live_market')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${
+                subTab === 'live_market'
+                  ? 'bg-gold-vip/10 border-gold-vip/30 text-gold-vip shadow-[0_0_15px_rgba(255,215,0,0.05)]'
+                  : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
+              }`}
+            >
+              <Zap className="h-3.5 w-3.5 text-gold-vip" />
+              LIVE MARKET
+            </button>
+          )}
         </div>
 
         {/* ── Asset Selector ────────────────────────────────────────── */}

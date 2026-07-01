@@ -35,7 +35,7 @@ export default function AdminDashboardPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // ── Signal Mode state (admin control for data pipeline) ────────────────
-  const [signalMode, setSignalModeState] = useState<'SIMULATION' | 'LIVE_OTC' | 'LIVE_MARKET'>('SIMULATION');
+  const [signalMode, setSignalModeState] = useState<string>('SIMULATION');
   const [modeLoading, setModeLoading] = useState(false);
   const [modeMessage, setModeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -147,17 +147,28 @@ export default function AdminDashboardPage() {
   };
 
   // ── Signal Mode Switch Handler ─────────────────────────────────────
-  const handleSignalModeChange = async (mode: 'SIMULATION' | 'LIVE_OTC' | 'LIVE_MARKET') => {
-    if (mode === signalMode) return;
+  const handleSignalModeToggle = async (modeToToggle: 'SIMULATION' | 'LIVE_OTC' | 'LIVE_MARKET') => {
     setModeLoading(true);
     setModeMessage(null);
     try {
-      const res = await setSignalMode(mode);
-      if (res.success) {
-        setSignalModeState(mode);
-        setModeMessage({ type: 'success', text: `Signal mode switched to ${mode}.` });
+      let currentModes = signalMode.split(',').map(m => m.trim()).filter(Boolean);
+      if (currentModes.includes(modeToToggle)) {
+        if (currentModes.length === 1) {
+          setModeMessage({ type: 'error', text: 'At least one signal engine mode must remain active.' });
+          setModeLoading(false);
+          return;
+        }
+        currentModes = currentModes.filter(m => m !== modeToToggle);
       } else {
-        setModeMessage({ type: 'error', text: res.error || 'Failed to switch mode.' });
+        currentModes.push(modeToToggle);
+      }
+      const newModeStr = currentModes.join(',');
+      const res = await setSignalMode(newModeStr);
+      if (res.success) {
+        setSignalModeState(newModeStr);
+        setModeMessage({ type: 'success', text: `Active signal pipelines updated to: ${currentModes.join(' & ')}.` });
+      } else {
+        setModeMessage({ type: 'error', text: res.error || 'Failed to update signal modes.' });
       }
     } catch (err: any) {
       setModeMessage({ type: 'error', text: err.message || 'Error occurred.' });
@@ -282,30 +293,31 @@ export default function AdminDashboardPage() {
           )}
 
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            {/* Current mode display */}
+            {/* Current active pipelines */}
             <div className="flex items-center gap-2">
               <Database className="h-4 w-4 text-slate-500" />
-              <span className="text-[10px] font-mono text-slate-500 tracking-wider">CURRENT MODE:</span>
-              <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded border ${
-                signalMode === 'LIVE_OTC'
-                  ? 'text-neon-green border-neon-green/40 bg-neon-green/10'
-                  : signalMode === 'LIVE_MARKET'
-                  ? 'text-rose-400 border-rose-500/40 bg-rose-500/10'
-                  : 'text-amber-400 border-amber-400/30 bg-amber-500/10'
-              }`}>
-                {signalMode}
-              </span>
+              <span className="text-[10px] font-mono text-slate-500 tracking-wider">ACTIVE PIPELINES:</span>
+              <div className="flex gap-1.5 flex-wrap">
+                {signalMode.split(',').map(m => (
+                  <span key={m} className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                    m === 'LIVE_OTC' ? 'text-neon-green border-neon-green/30 bg-neon-green/10' :
+                    m === 'LIVE_MARKET' ? 'text-rose-400 border-rose-500/30 bg-rose-500/10' :
+                    'text-amber-400 border-amber-400/30 bg-amber-500/10'
+                  }`}>
+                    {m === 'LIVE_OTC' ? 'OTC' : m === 'LIVE_MARKET' ? 'LIVE' : 'SIMULATION'}
+                  </span>
+                ))}
+              </div>
             </div>
 
             {/* Mode toggle buttons */}
             <div className="flex gap-2">
               <button
-                id="signal-mode-simulation"
-                onClick={() => handleSignalModeChange('SIMULATION')}
-                disabled={modeLoading || signalMode === 'SIMULATION'}
+                onClick={() => handleSignalModeToggle('SIMULATION')}
+                disabled={modeLoading}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded border text-[10px] font-mono font-bold tracking-wider transition-all ${
-                  signalMode === 'SIMULATION'
-                    ? 'bg-amber-500/15 border-amber-400/50 text-amber-400 cursor-default'
+                  signalMode.split(',').includes('SIMULATION')
+                    ? 'bg-amber-500/15 border-amber-400/50 text-amber-400'
                     : 'bg-slate-900/40 border-slate-700 text-slate-400 hover:border-amber-400/40 hover:text-amber-400 disabled:opacity-40'
                 }`}
               >
@@ -313,37 +325,27 @@ export default function AdminDashboardPage() {
                 SIMULATION
               </button>
               <button
-                id="signal-mode-live-otc"
-                onClick={() => handleSignalModeChange('LIVE_OTC')}
-                disabled={modeLoading || signalMode === 'LIVE_OTC'}
+                onClick={() => handleSignalModeToggle('LIVE_OTC')}
+                disabled={modeLoading}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded border text-[10px] font-mono font-bold tracking-wider transition-all ${
-                  signalMode === 'LIVE_OTC'
-                    ? 'bg-neon-green/15 border-neon-green/50 text-neon-green cursor-default'
+                  signalMode.split(',').includes('LIVE_OTC')
+                    ? 'bg-neon-green/15 border-neon-green/50 text-neon-green'
                     : 'bg-slate-900/40 border-slate-700 text-slate-400 hover:border-neon-green/40 hover:text-neon-green disabled:opacity-40'
                 }`}
               >
-                {modeLoading && signalMode !== 'LIVE_OTC' ? (
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Radio className="h-3.5 w-3.5" />
-                )}
+                <Radio className="h-3.5 w-3.5" />
                 LIVE OTC
               </button>
               <button
-                id="signal-mode-live-market"
-                onClick={() => handleSignalModeChange('LIVE_MARKET')}
-                disabled={modeLoading || signalMode === 'LIVE_MARKET'}
+                onClick={() => handleSignalModeToggle('LIVE_MARKET')}
+                disabled={modeLoading}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded border text-[10px] font-mono font-bold tracking-wider transition-all ${
-                  signalMode === 'LIVE_MARKET'
-                    ? 'bg-rose-500/15 border-rose-500/50 text-rose-400 cursor-default'
+                  signalMode.split(',').includes('LIVE_MARKET')
+                    ? 'bg-rose-500/15 border-rose-500/50 text-rose-400'
                     : 'bg-slate-900/40 border-slate-700 text-slate-400 hover:border-rose-400/40 hover:text-rose-400 disabled:opacity-40'
                 }`}
               >
-                {modeLoading && signalMode !== 'LIVE_MARKET' ? (
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Cpu className="h-3.5 w-3.5 text-rose-400" />
-                )}
+                <Cpu className="h-3.5 w-3.5 text-rose-400" />
                 LIVE MARKET
               </button>
             </div>
