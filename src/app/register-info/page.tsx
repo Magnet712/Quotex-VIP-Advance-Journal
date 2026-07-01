@@ -19,6 +19,7 @@ function RegisterInfoContent() {
   const [isPendingView, setIsPendingView] = useState(false);
   const [sessionUser, setSessionUser] = useState<any>(null);
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Form states
   const [traderId, setTraderId] = useState('');
@@ -93,7 +94,12 @@ function RegisterInfoContent() {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const executeLogout = async () => {
+    setShowLogoutConfirm(false);
     await logoutUser();
     setIsPendingView(false);
     setSessionUser(null);
@@ -104,7 +110,8 @@ function RegisterInfoContent() {
 
   if (isPendingView || success) {
     return (
-      <div className="w-full max-w-lg glass-panel p-8 rounded-xl border border-glass-border space-y-6 relative text-center">
+      <>
+        <div className="w-full max-w-lg glass-panel p-8 rounded-xl border border-glass-border space-y-6 relative text-center">
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-gold-vip/5 rounded-full blur-3xl pointer-events-none" />
         
         <div className="inline-flex items-center justify-center p-3 rounded-full bg-gold-vip/10 border border-gold-vip/30 text-gold-vip animate-pulse mb-2">
@@ -150,11 +157,44 @@ function RegisterInfoContent() {
           </button>
         </div>
       </div>
+      
+      {/* Custom Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-sm glass-panel p-6 rounded-xl border border-glass-border space-y-4 text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-500">
+              <LogOut className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-mono font-bold text-slate-200">CONFIRM LOGOUT</h3>
+              <p className="text-[10px] text-slate-500 font-mono">
+                Are you sure you want to end your current session?
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={executeLogout}
+                className="flex-1 py-2 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs font-mono uppercase tracking-wider transition-colors"
+              >
+                Yes, Logout
+              </button>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2 rounded bg-slate-900 border border-glass-border hover:bg-slate-800 text-slate-400 text-xs font-mono font-bold transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
     );
   }
 
   return (
-    <div className="w-full max-w-3xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+    <>
+      <div className="w-full max-w-3xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
       {/* Instructions Pane */}
       <div className="lg:col-span-5 glass-panel p-6 rounded-xl border border-glass-border flex flex-col justify-between space-y-6">
         <div className="space-y-4">
@@ -299,7 +339,39 @@ function RegisterInfoContent() {
         </div>
       </div>
     </div>
-  );
+    
+    {/* Custom Logout Confirmation Modal */}
+    {showLogoutConfirm && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
+        <div className="w-full max-w-sm glass-panel p-6 rounded-xl border border-glass-border space-y-4 text-center">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-500">
+            <LogOut className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-mono font-bold text-slate-200">CONFIRM LOGOUT</h3>
+            <p className="text-[10px] text-slate-500 font-mono">
+              Are you sure you want to end your current session?
+            </p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={executeLogout}
+              className="flex-1 py-2 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs font-mono uppercase tracking-wider transition-colors"
+            >
+              Yes, Logout
+            </button>
+            <button
+              onClick={() => setShowLogoutConfirm(false)}
+              className="flex-1 py-2 rounded bg-slate-900 border border-glass-border hover:bg-slate-800 text-slate-400 text-xs font-mono font-bold transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
+);
 }
 
 export default function RegisterInfoPage() {
