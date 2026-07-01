@@ -328,7 +328,7 @@ export async function getSignalPerformance(source?: 'simulation' | 'live_otc' | 
 
     let query = supabase
       .from('signals')
-      .select('result, source');
+      .select('result, source, entry_time');
 
     if (source && source !== 'ALL') {
       query = query.eq('source', source);
@@ -341,6 +341,16 @@ export async function getSignalPerformance(source?: 'simulation' | 'live_otc' | 
     }
 
     const signals = data ?? [];
+    
+    // Calculate start of today in IST
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(now.getTime() + istOffset);
+    const istTodayStart = new Date(Date.UTC(istNow.getUTCFullYear(), istNow.getUTCMonth(), istNow.getUTCDate(), 0, 0, 0, 0));
+    const todayStartUtc = new Date(istTodayStart.getTime() - istOffset);
+
+    const totalToday = signals.filter(s => s.entry_time && new Date(s.entry_time).getTime() >= todayStartUtc.getTime()).length;
+
     const total   = signals.length;
     const wins    = signals.filter(s => s.result === 'WIN').length;
     const losses  = signals.filter(s => s.result === 'LOSS').length;
@@ -350,7 +360,7 @@ export async function getSignalPerformance(source?: 'simulation' | 'live_otc' | 
 
     return {
       success: true,
-      stats: { total, wins, losses, pending, accuracy },
+      stats: { total, wins, losses, pending, accuracy, totalToday },
     };
   } catch (err: any) {
     return { success: false, error: err.message };

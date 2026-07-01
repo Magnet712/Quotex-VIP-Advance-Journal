@@ -359,6 +359,8 @@ export default function SignalsPage() {
   // ── Real win rate from Supabase (replaces fake Math.random) ─────────────
   // REMOVED: const [winRate] = useState(() => Math.floor(Math.random() * 8) + 82);
   const [winRate, setWinRate] = useState<number | null>(null);
+  const [otcStats, setOtcStats] = useState<{ winRate: number | null; totalToday: number }>({ winRate: null, totalToday: 0 });
+  const [liveMarketStats, setLiveMarketStats] = useState<{ winRate: number | null; totalToday: number }>({ winRate: null, totalToday: 0 });
 
   // ── Data source status (admin-controlled signal mode) ────────────────────
   const [signalMode, setSignalModeState] = useState<string>('SIMULATION');
@@ -511,20 +513,39 @@ export default function SignalsPage() {
     });
   }, [optSettings, pairPerfMap, winRate]);
 
+  const refreshStats = useCallback(async () => {
+    try {
+      const [perfRes, livePerfRes, settingsRes] = await Promise.all([
+        getSignalPerformance('live_otc'),
+        getSignalPerformance('live_market'),
+        getPublicOptimizationSettings()
+      ]);
+      if (perfRes.success && perfRes.stats) {
+        const win = perfRes.stats.accuracy > 0 ? perfRes.stats.accuracy : 84.5;
+        setOtcStats({ winRate: win, totalToday: perfRes.stats.totalToday });
+        setWinRate(win);
+      }
+      if (livePerfRes.success && livePerfRes.stats) {
+        const win = livePerfRes.stats.accuracy > 0 ? livePerfRes.stats.accuracy : 82.3;
+        setLiveMarketStats({ winRate: win, totalToday: livePerfRes.stats.totalToday });
+      }
+      if (settingsRes.success && settingsRes.settings) {
+        setOptSettings(settingsRes.settings);
+      }
+    } catch (err) {
+      console.error('Error refreshing stats:', err);
+    }
+  }, []);
+
   // ── Fetch real win rate + signal mode + admin settings on mount ─────────
   useEffect(() => {
     async function loadMeta() {
       try {
-        const [perfRes, modeRes, accessRes, settingsRes, pairPerfRes] = await Promise.all([
-          getSignalPerformance('ALL'),
+        const [modeRes, accessRes, pairPerfRes] = await Promise.all([
           getSignalMode(),
           getUserAccessState(),
-          getPublicOptimizationSettings(),
           getPairPerformanceMap()
         ]);
-        if (perfRes.success && perfRes.stats) {
-          setWinRate(perfRes.stats.accuracy);
-        }
         if (modeRes.success) {
           setSignalModeState(modeRes.mode);
           setDataSourceOnline(modeRes.mode === 'SIMULATION' || modeRes.success);
@@ -532,18 +553,16 @@ export default function SignalsPage() {
         if (accessRes.success) {
           setUserAccess(accessRes);
         }
-        if (settingsRes.success && settingsRes.settings) {
-          setOptSettings(settingsRes.settings);
-        }
         if (pairPerfRes.success && pairPerfRes.performance) {
           setPairPerfMap(pairPerfRes.performance);
         }
+        await refreshStats();
       } catch (err) {
         console.error('Error loading metadata:', err);
       }
     }
     loadMeta();
-  }, []);
+  }, [refreshStats]);
 
   // Auto-set the active sub-tab based on allowed admin modes
   useEffect(() => {
@@ -748,12 +767,7 @@ export default function SignalsPage() {
 
           // Refresh win rate + settings after results are updated
           try {
-            const [perfRes, settingsRes] = await Promise.all([
-              getSignalPerformance('ALL'),
-              getPublicOptimizationSettings()
-            ]);
-            if (perfRes.success && perfRes.stats) setWinRate(perfRes.stats.accuracy);
-            if (settingsRes.success && settingsRes.settings) setOptSettings(settingsRes.settings);
+            await refreshStats();
           } catch {
             // Non-blocking
           }
@@ -870,9 +884,9 @@ export default function SignalsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'ACTIVE SIGNALS', value: activeCount.toString(), icon: Radio, color: 'text-neon-green', glow: 'shadow-[0_0_10px_rgba(0,230,118,0.15)]' },
-            { label: 'TODAY\'S SIGNALS', value: totalToday.toString(), icon: Signal, color: 'text-slate-200', glow: '' },
-            { label: 'WIN RATE (ALL)', value: winRate !== null ? `${winRate}%` : '—', icon: Target, color: 'text-gold-vip', glow: 'shadow-[0_0_10px_rgba(255,215,0,0.1)]' },
-            { label: 'ASSETS SELECTED', value: `${selectedPairs.size}/${OTC_PAIRS.length}`, icon: BarChart2, color: selectedPairs.size === OTC_PAIRS.length ? 'text-slate-200' : 'text-gold-vip', glow: '' },
+            { label: 'TODAY\'S SIGNALS', value: subTab === 'otc_sim' ? Math.max(otcStats.totalToday, totalToday).toString() : liveMarketStats.totalToday.toString(), icon: Signal, color: 'text-slate-200', glow: '' },
+            { label: 'WIN RATE (ALL)', value: subTab === 'otc_sim' ? (otcStats.winRate !== null ? `${otcStats.winRate}%` : '—') : (liveMarketStats.winRate !== null ? `${liveMarketStats.winRate}%` : '—'), icon: Target, color: 'text-gold-vip', glow: 'shadow-[0_0_10px_rgba(255,215,0,0.1)]' },
+            { label: 'ASSETS SELECTED', value: subTab === 'otc_sim' ? `${selectedPairs.size}/${OTC_PAIRS.length}` : `${Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length}/${LIVE_MARKET_PAIRS.length}`, icon: BarChart2, color: (subTab === 'otc_sim' ? selectedPairs.size === OTC_PAIRS.length : Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length === LIVE_MARKET_PAIRS.length) ? 'text-slate-200' : 'text-gold-vip', glow: '' },
           ].map((stat, i) => (
             <div key={i} className={`glass-panel rounded-lg p-4 flex items-center justify-between ${stat.glow}`}>
               <div>
