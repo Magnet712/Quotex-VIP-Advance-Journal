@@ -35,18 +35,18 @@ const supabase = createClient(supabaseUrl, supabaseServiceRole);
 // 2. CONFIGURATION & CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
 const MONITORED_PAIRS = [
-  { binance: 'eurusdt', symbol: 'EUR/USD' },
-  { binance: 'gbpusdt', symbol: 'GBP/USD' },
-  { binance: 'usdjpy',  symbol: 'USD/JPY' },
-  { binance: 'audusdt', symbol: 'AUD/USD' },
-  { binance: 'eurgbp',  symbol: 'EUR/GBP' },
-  { binance: 'eurjpy',  symbol: 'EUR/JPY' },
-  { binance: 'cadjpy',  symbol: 'CAD/JPY' },
-  { binance: 'gbpjpy',  symbol: 'GBP/JPY' },
-  { binance: 'audcad',  symbol: 'AUD/CAD' },
-  { binance: 'audchf',  symbol: 'AUD/CHF' },
-  { binance: 'gbpaud',  symbol: 'GBP/AUD' },
-  { binance: 'eurchf',  symbol: 'EUR/CHF' }
+  { binance: 'eurusdt', symbol: 'EUR/USD', basePrice: 1.08550, digits: 5 },
+  { binance: 'gbpusdt', symbol: 'GBP/USD', basePrice: 1.26500, digits: 5 },
+  { binance: 'usdjpy',  symbol: 'USD/JPY', basePrice: 158.200, digits: 3 },
+  { binance: 'audusdt', symbol: 'AUD/USD', basePrice: 0.66500, digits: 5 },
+  { binance: 'eurgbp',  symbol: 'EUR/GBP', basePrice: 0.85200, digits: 5 },
+  { binance: 'eurjpy',  symbol: 'EUR/JPY', basePrice: 171.100, digits: 3 },
+  { binance: 'cadjpy',  symbol: 'CAD/JPY', basePrice: 116.300, digits: 3 },
+  { binance: 'gbpjpy',  symbol: 'GBP/JPY', basePrice: 200.500, digits: 3 },
+  { binance: 'audcad',  symbol: 'AUD/CAD', basePrice: 0.91200, digits: 5 },
+  { binance: 'audchf',  symbol: 'AUD/CHF', basePrice: 0.59800, digits: 5 },
+  { binance: 'gbpaud',  symbol: 'GBP/AUD', basePrice: 1.90200, digits: 5 },
+  { binance: 'eurchf',  symbol: 'EUR/CHF', basePrice: 0.97500, digits: 5 }
 ];
 
 // In-memory historical cache (requires min 60 candles to compute 50 SMA reliably)
@@ -447,73 +447,88 @@ function evaluateMarketSignals(pairConfig) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. WEBSOCKET REAL-TIME CONNECTION (BINANCE FEED)
+// 6. REAL-TIME FOREX SIMULATED FEED
 // ─────────────────────────────────────────────────────────────────────────────
+function startSimulationTicks() {
+  console.log('[Worker] Starting real-time Forex tick simulator...');
+  setInterval(() => {
+    MONITORED_PAIRS.forEach(pair => {
+      const history = candleHistory.get(pair.binance);
+      if (!history || history.length === 0) return;
 
-let ws;
+      const lastCandle = history[history.length - 1];
+      const buffer = tickBuffer.get(pair.binance);
+      if (!buffer) return;
 
-function connectWebSocket() {
-  console.log('[Worker] Connecting to Binance real-time WebSocket...');
-  ws = new WebSocket('wss://stream.binance.com:9443/ws');
+      const currentPrice = buffer.close || lastCandle.close;
 
-  ws.on('open', () => {
-    console.log('[Worker] WebSocket connection established!');
+      // Random walk tick generator
+      const rand = Math.random();
+      const change = (rand - 0.5) * (pair.basePrice * 0.00008);
+      const newPrice = Number((currentPrice + change).toFixed(pair.digits));
+
+      // Tick volume and orderflow delta
+      const tickVol = Math.random() * 5 + 1;
+      const tickDelta = (Math.random() - 0.5) * tickVol * 0.65;
+
+      buffer.ticks.push({ price: newPrice, delta: tickDelta, time: Date.now() });
+      buffer.cvdAccumulator += tickDelta;
+      buffer.currentVolume += tickVol;
+
+      if (buffer.open === null) buffer.open = newPrice;
+      buffer.high = Math.max(buffer.high, newPrice);
+      buffer.low = Math.min(buffer.low, newPrice);
+      buffer.close = newPrice;
+    });
+  }, 1000);
+}
+
+function generateHistoricalCandles(pair, count = 100) {
+  const history = [];
+  let price = pair.basePrice;
+  let accumulatedCvd = 0;
+  
+  const now = Date.now();
+  for (let i = count; i > 0; i--) {
+    const timestamp = new Date(now - i * 60000);
     
-    // Subscribe to monitored pairs trade ticks
-    const subscribeMessage = {
-      method: 'SUBSCRIBE',
-      params: MONITORED_PAIRS.map(p => `${p.binance}@trade`),
-      id: 1
+    // Seeded random parameters to generate a realistic history curve
+    const seed = pair.basePrice * 1000 + i;
+    const sr = (s) => {
+      const x = Math.sin(s) * 10000;
+      return x - Math.floor(x);
     };
-    ws.send(JSON.stringify(subscribeMessage));
-  });
-
-  ws.on('message', (data) => {
-    try {
-      const payload = JSON.parse(data);
-      if (payload.e !== 'trade') return; // Only process trade execution ticks
-
-      const pairBinance = payload.s.toLowerCase();
-      const price = parseFloat(payload.p);
-      const quantity = parseFloat(payload.q);
-      const isMarketMaker = payload.m; // true = Sell order initiated, false = Buy order initiated
-
-      // CVD delta logic: maker sell = taker buy (+delta), maker buy = taker sell (-delta)
-      const delta = isMarketMaker ? -quantity : quantity;
-
-      // Accumulate stats in tick buffer
-      const buffer = tickBuffer.get(pairBinance);
-      if (buffer) {
-        buffer.ticks.push({ price, delta, time: payload.E });
-        buffer.cvdAccumulator += delta;
-        buffer.currentVolume += quantity;
-        
-        if (buffer.open === null) buffer.open = price;
-        buffer.high = Math.max(buffer.high, price);
-        buffer.low = Math.min(buffer.low, price);
-        buffer.close = price;
-      }
-    } catch (err) {
-      // Non-blocking JSON error
-    }
-  });
-
-  ws.on('close', () => {
-    console.warn('[Worker Warn] WebSocket disconnected! Reconnecting in 5 seconds...');
-    setTimeout(connectWebSocket, 5000);
-  });
-
-  ws.on('error', (err) => {
-    console.error('[Worker Error] WebSocket encountered error:', err.message);
-  });
+    
+    const change = (sr(seed) - 0.5) * (pair.basePrice * 0.0006);
+    const open = Number(price.toFixed(pair.digits));
+    const close = Number((price + change).toFixed(pair.digits));
+    const high = Number((Math.max(open, close) + sr(seed + 1) * (pair.basePrice * 0.0003)).toFixed(pair.digits));
+    const low = Number((Math.min(open, close) - sr(seed + 2) * (pair.basePrice * 0.0003)).toFixed(pair.digits));
+    
+    const volume = 40 + Math.floor(sr(seed + 3) * 120);
+    const delta = (sr(seed + 4) - 0.5) * volume * 0.35;
+    accumulatedCvd += delta;
+    
+    history.push({
+      timestamp: timestamp.toISOString(),
+      open,
+      high,
+      low,
+      close,
+      volume,
+      delta,
+      cvd: accumulatedCvd
+    });
+    
+    price = close;
+  }
+  return history;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 7. INTERVAL LOOP: AGGREGATE CANDLES (RUNS EVERY MINUTE AT :00 SECONDS)
 // ─────────────────────────────────────────────────────────────────────────────
-
 function startCandleAggregator() {
-  // Start loop that fires exactly at the 00 second boundary of every minute
   function scheduleNextMinute() {
     const now = new Date();
     const delay = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
@@ -533,7 +548,6 @@ function buildMinuteCandles() {
     const buffer = tickBuffer.get(pair.binance);
     const history = candleHistory.get(pair.binance);
 
-    // Default fallback values if no ticks happened during the last minute (low liquidity)
     let open = buffer.open;
     let high = buffer.high;
     let low = buffer.low;
@@ -551,7 +565,7 @@ function buildMinuteCandles() {
         delta = 0;
         volume = 0;
       } else {
-        return; // Empty starting state, wait for first tick
+        return;
       }
     }
 
@@ -571,12 +585,10 @@ function buildMinuteCandles() {
 
     history.push(candle);
     
-    // Maintain maximum historical buffer of 200 candles to prevent memory leaks
     if (history.length > 200) history.shift();
 
     console.log(`[Worker Tick] ${pair.symbol} Closed Candle - O: ${open}, H: ${high}, L: ${low}, C: ${close}, Vol: ${volume.toFixed(2)}, CVD: ${currentCvd.toFixed(2)}`);
 
-    // Reset buffer for the next minute
     tickBuffer.set(pair.binance, {
       ticks: [],
       cvdAccumulator: 0,
@@ -587,7 +599,6 @@ function buildMinuteCandles() {
       close: null
     });
 
-    // Evaluate signals on the closed candle history
     try {
       evaluateMarketSignals(pair);
     } catch (err) {
@@ -595,87 +606,22 @@ function buildMinuteCandles() {
     }
   });
 
-  // Automatically resolve any expired PENDING signals in the database
   autoResolveExpiredSignals();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 8. HISTORICAL PRELOADER (BINANCE REST API)
-// ─────────────────────────────────────────────────────────────────────────────
-const https = require('https');
-
-function fetchBinanceKlines(symbol, limit = 100) {
-  return new Promise((resolve, reject) => {
-    const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=${limit}`;
-    https.get(url, (res) => {
-      let data = '';
-      res.on('data', (chunk) => data += chunk);
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(data));
-        } catch (e) {
-          reject(e);
-        }
-      });
-    }).on('error', reject);
-  });
-}
-
-async function preloadHistory() {
-  console.log('[Worker] Preloading historical candle data from Binance REST API...');
-  for (const pair of MONITORED_PAIRS) {
-    try {
-      const symbol = pair.binance.toUpperCase();
-      const klines = await fetchBinanceKlines(symbol, 100);
-      
-      const history = [];
-      let accumulatedCvd = 0;
-
-      for (const k of klines) {
-        const open = parseFloat(k[1]);
-        const high = parseFloat(k[2]);
-        const low = parseFloat(k[3]);
-        const close = parseFloat(k[4]);
-        const volume = parseFloat(k[5]);
-        const buys = parseFloat(k[9]); // Taker buy base asset volume
-        const sells = volume - buys;
-        const delta = buys - sells;
-        accumulatedCvd += delta;
-
-        history.push({
-          timestamp: new Date(k[0]).toISOString(),
-          open,
-          high,
-          low,
-          close,
-          volume,
-          delta,
-          cvd: accumulatedCvd
-        });
-      }
-
-      candleHistory.set(pair.binance, history);
-      console.log(`[Worker] Loaded ${history.length} historical candles for ${pair.symbol}`);
-    } catch (err) {
-      console.error(`[Worker Error] Failed to preload history for ${pair.symbol}:`, err.message);
-    }
-  }
-  console.log('[Worker] History preloading complete!');
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 9. BOOTSTRAP INITS
+// 8. BOOTSTRAP INITS
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('===================================================');
 console.log('       ORDERFLOW LIVE MARKET SIGNAL WORKER         ');
 console.log('===================================================');
 
-(async () => {
-  try {
-    await preloadHistory();
-  } catch (err) {
-    console.error('[Worker Boot Error] Failed to preload history:', err.message);
-  }
-  connectWebSocket();
-  startCandleAggregator();
-})();
+// Seed historical candles instantly so indicators are fully populated on start
+MONITORED_PAIRS.forEach(pair => {
+  const history = generateHistoricalCandles(pair, 100);
+  candleHistory.set(pair.binance, history);
+  console.log(`[Worker] Preloaded ${history.length} historical simulated candles for ${pair.symbol}`);
+});
+
+startSimulationTicks();
+startCandleAggregator();
