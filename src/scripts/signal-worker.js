@@ -600,11 +600,82 @@ function buildMinuteCandles() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 8. BOOTSTRAP INITS
+// 8. HISTORICAL PRELOADER (BINANCE REST API)
+// ─────────────────────────────────────────────────────────────────────────────
+const https = require('https');
+
+function fetchBinanceKlines(symbol, limit = 100) {
+  return new Promise((resolve, reject) => {
+    const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=${limit}`;
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).on('error', reject);
+  });
+}
+
+async function preloadHistory() {
+  console.log('[Worker] Preloading historical candle data from Binance REST API...');
+  for (const pair of MONITORED_PAIRS) {
+    try {
+      const symbol = pair.binance.toUpperCase();
+      const klines = await fetchBinanceKlines(symbol, 100);
+      
+      const history = [];
+      let accumulatedCvd = 0;
+
+      for (const k of klines) {
+        const open = parseFloat(k[1]);
+        const high = parseFloat(k[2]);
+        const low = parseFloat(k[3]);
+        const close = parseFloat(k[4]);
+        const volume = parseFloat(k[5]);
+        const buys = parseFloat(k[9]); // Taker buy base asset volume
+        const sells = volume - buys;
+        const delta = buys - sells;
+        accumulatedCvd += delta;
+
+        history.push({
+          timestamp: new Date(k[0]).toISOString(),
+          open,
+          high,
+          low,
+          close,
+          volume,
+          delta,
+          cvd: accumulatedCvd
+        });
+      }
+
+      candleHistory.set(pair.binance, history);
+      console.log(`[Worker] Loaded ${history.length} historical candles for ${pair.symbol}`);
+    } catch (err) {
+      console.error(`[Worker Error] Failed to preload history for ${pair.symbol}:`, err.message);
+    }
+  }
+  console.log('[Worker] History preloading complete!');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. BOOTSTRAP INITS
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('===================================================');
 console.log('       ORDERFLOW LIVE MARKET SIGNAL WORKER         ');
 console.log('===================================================');
 
-connectWebSocket();
-startCandleAggregator();
+(async () => {
+  try {
+    await preloadHistory();
+  } catch (err) {
+    console.error('[Worker Boot Error] Failed to preload history:', err.message);
+  }
+  connectWebSocket();
+  startCandleAggregator();
+})();
