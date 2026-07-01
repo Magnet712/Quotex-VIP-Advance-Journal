@@ -417,28 +417,6 @@ function isTradingAllowed() {
     return false;
   }
 
-  // Allowed hours filter
-  if (cachedSettings.allowed_signal_hours) {
-    const intervals = cachedSettings.allowed_signal_hours.split(',');
-    let matches = false;
-    for (const interval of intervals) {
-      const parts = interval.split('-');
-      if (parts.length === 2) {
-        const [startH, startM] = parts[0].split(':').map(Number);
-        const [endH, endM] = parts[1].split(':').map(Number);
-        
-        const startMinutes = startH * 60 + startM;
-        const endMinutes = endH * 60 + endM;
-        
-        if (istMinutes >= startMinutes && istMinutes <= endMinutes) {
-          matches = true;
-          break;
-        }
-      }
-    }
-    return matches;
-  }
-
   return true;
 }
 
