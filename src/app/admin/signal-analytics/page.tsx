@@ -305,6 +305,7 @@ export default function AdminSignalAnalyticsPage() {
                     >
                       <option value="ALL">All Sources</option>
                       <option value="live_otc">Live OTC</option>
+                      <option value="live_market">Live Market</option>
                       <option value="simulation">Simulation</option>
                     </select>
                   </div>

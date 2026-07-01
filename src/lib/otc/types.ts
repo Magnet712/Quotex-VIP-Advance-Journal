@@ -22,7 +22,7 @@ export interface OTCCandle {
 export type CandleSource = 'simulation' | 'live_otc' | 'manual';
 
 // ─── Signal mode (admin-controlled) ───────────────────────────────────────
-export type SignalMode = 'SIMULATION' | 'LIVE_OTC';
+export type SignalMode = 'SIMULATION' | 'LIVE_OTC' | 'LIVE_MARKET';
 
 // ─── Signal result ─────────────────────────────────────────────────────────
 export type SignalResult = 'PENDING' | 'WIN' | 'LOSS';

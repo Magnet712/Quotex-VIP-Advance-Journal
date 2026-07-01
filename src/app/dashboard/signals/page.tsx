@@ -361,7 +361,7 @@ export default function SignalsPage() {
   const [winRate, setWinRate] = useState<number | null>(null);
 
   // ── Data source status (admin-controlled signal mode) ────────────────────
-  const [signalMode, setSignalModeState] = useState<'SIMULATION' | 'LIVE_OTC'>('SIMULATION');
+  const [signalMode, setSignalModeState] = useState<'SIMULATION' | 'LIVE_OTC' | 'LIVE_MARKET'>('SIMULATION');
   const [dataSourceOnline, setDataSourceOnline] = useState(true);
 
   // ── Admin optimization settings & User roles ─────────────────────────────

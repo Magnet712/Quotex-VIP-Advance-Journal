@@ -79,7 +79,7 @@ export async function setSignalMode(mode: SignalMode): Promise<{
     return { success: false, error: 'Unauthorized. Admin access required.' };
   }
 
-  if (mode !== 'SIMULATION' && mode !== 'LIVE_OTC') {
+  if (mode !== 'SIMULATION' && mode !== 'LIVE_OTC' && mode !== 'LIVE_MARKET') {
     return { success: false, error: 'Invalid signal mode.' };
   }
 

@@ -35,7 +35,7 @@ export default function AdminDashboardPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // ── Signal Mode state (admin control for data pipeline) ────────────────
-  const [signalMode, setSignalModeState] = useState<'SIMULATION' | 'LIVE_OTC'>('SIMULATION');
+  const [signalMode, setSignalModeState] = useState<'SIMULATION' | 'LIVE_OTC' | 'LIVE_MARKET'>('SIMULATION');
   const [modeLoading, setModeLoading] = useState(false);
   const [modeMessage, setModeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -147,7 +147,7 @@ export default function AdminDashboardPage() {
   };
 
   // ── Signal Mode Switch Handler ─────────────────────────────────────
-  const handleSignalModeChange = async (mode: 'SIMULATION' | 'LIVE_OTC') => {
+  const handleSignalModeChange = async (mode: 'SIMULATION' | 'LIVE_OTC' | 'LIVE_MARKET') => {
     if (mode === signalMode) return;
     setModeLoading(true);
     setModeMessage(null);
@@ -289,6 +289,8 @@ export default function AdminDashboardPage() {
               <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded border ${
                 signalMode === 'LIVE_OTC'
                   ? 'text-neon-green border-neon-green/40 bg-neon-green/10'
+                  : signalMode === 'LIVE_MARKET'
+                  ? 'text-rose-400 border-rose-500/40 bg-rose-500/10'
                   : 'text-amber-400 border-amber-400/30 bg-amber-500/10'
               }`}>
                 {signalMode}
@@ -320,18 +322,35 @@ export default function AdminDashboardPage() {
                     : 'bg-slate-900/40 border-slate-700 text-slate-400 hover:border-neon-green/40 hover:text-neon-green disabled:opacity-40'
                 }`}
               >
-                {modeLoading ? (
+                {modeLoading && signalMode !== 'LIVE_OTC' ? (
                   <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Radio className="h-3.5 w-3.5" />
                 )}
                 LIVE OTC
               </button>
+              <button
+                id="signal-mode-live-market"
+                onClick={() => handleSignalModeChange('LIVE_MARKET')}
+                disabled={modeLoading || signalMode === 'LIVE_MARKET'}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded border text-[10px] font-mono font-bold tracking-wider transition-all ${
+                  signalMode === 'LIVE_MARKET'
+                    ? 'bg-rose-500/15 border-rose-500/50 text-rose-400 cursor-default'
+                    : 'bg-slate-900/40 border-slate-700 text-slate-400 hover:border-rose-400/40 hover:text-rose-400 disabled:opacity-40'
+                }`}
+              >
+                {modeLoading && signalMode !== 'LIVE_MARKET' ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Cpu className="h-3.5 w-3.5 text-rose-400" />
+                )}
+                LIVE MARKET
+              </button>
             </div>
           </div>
 
           {/* Explanation */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
             <div className="px-3 py-2.5 rounded border border-amber-400/20 bg-amber-500/5 space-y-1">
               <div className="text-[9px] font-mono font-bold text-amber-400 tracking-wider">SIMULATION MODE</div>
               <div className="text-[8px] font-mono text-slate-500">
@@ -342,6 +361,12 @@ export default function AdminDashboardPage() {
               <div className="text-[9px] font-mono font-bold text-neon-green tracking-wider">LIVE OTC MODE</div>
               <div className="text-[8px] font-mono text-slate-500">
                 Uses live OTC candle data when provider is connected. Auto-falls back to simulation if data source is offline. Status shown in signals header.
+              </div>
+            </div>
+            <div className="px-3 py-2.5 rounded border border-rose-500/20 bg-rose-500/5 space-y-1">
+              <div className="text-[9px] font-mono font-bold text-rose-400 tracking-wider">LIVE MARKET MODE</div>
+              <div className="text-[8px] font-mono text-slate-500">
+                Uses the high-fidelity real-time Forex simulator. Evaluates standard currency pairs based on live orderflow calculations 24/7.
               </div>
             </div>
           </div>

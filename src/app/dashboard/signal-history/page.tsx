@@ -96,7 +96,7 @@ export default function SignalHistoryPage() {
   const [stats,      setStats]      = useState<PerformanceStats | null>(null);
   const [pairs,      setPairs]      = useState<string[]>([]);
   const [loading,    setLoading]    = useState(true);
-  const [signalMode, setSignalMode] = useState<'SIMULATION' | 'LIVE_OTC'>('SIMULATION');
+  const [signalMode, setSignalMode] = useState<'SIMULATION' | 'LIVE_OTC' | 'LIVE_MARKET'>('SIMULATION');
 
   // Filters
   const [dateFrom,   setDateFrom]   = useState('');
