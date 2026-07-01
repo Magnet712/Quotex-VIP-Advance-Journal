@@ -56,7 +56,7 @@ interface Signal {
   confidence:    number;
   risk_level:    string | null;
   result:        'PENDING' | 'WIN' | 'LOSS';
-  source:        'simulation' | 'live_otc';
+  source:        'simulation' | 'live_otc' | 'live_market';
   created_at:    string;
 }
 
@@ -104,7 +104,7 @@ export default function SignalHistoryPage() {
   const [selPair,    setSelPair]    = useState('ALL');
   const [selStrategy, setSelStrategy] = useState('ALL');
   const [selResult,  setSelResult]  = useState<'ALL' | 'PENDING' | 'WIN' | 'LOSS'>('ALL');
-  const [selSource,  setSelSource]  = useState<'ALL' | 'simulation' | 'live_otc'>('ALL');
+  const [selSource,  setSelSource]  = useState<'ALL' | 'simulation' | 'live_otc' | 'live_market'>('ALL');
   const [page,       setPage]       = useState(1);
   const PAGE_SIZE = 50;
 
@@ -367,17 +367,19 @@ export default function SignalHistoryPage() {
               <div className="text-[9px] font-mono text-slate-600 tracking-wider">SOURCE</div>
               <div className="flex gap-1 flex-wrap">
                 {([
-                  { value: 'ALL',        label: 'ALL' },
-                  { value: 'simulation', label: 'SIMULATION' },
-                  { value: 'live_otc',   label: 'LIVE OTC' },
+                  { value: 'ALL',         label: 'ALL' },
+                  { value: 'simulation',  label: 'SIMULATION' },
+                  { value: 'live_otc',    label: 'LIVE OTC' },
+                  { value: 'live_market', label: 'LIVE MARKET (WEBHOOK)' },
                 ] as const).map(s => (
                   <button
                     key={s.value}
                     onClick={() => applyFilter(() => setSelSource(s.value))}
                     className={`px-3 py-1.5 rounded text-[9px] font-mono font-bold tracking-wider border transition-all ${
                       selSource === s.value
-                        ? s.value === 'live_otc'   ? 'bg-neon-green/10 border-neon-green/40 text-neon-green'
-                        : s.value === 'simulation' ? 'bg-amber-500/10 border-amber-400/40 text-amber-400'
+                        ? s.value === 'live_otc'    ? 'bg-neon-green/10 border-neon-green/40 text-neon-green'
+                        : s.value === 'live_market' ? 'bg-sky-500/10 border-sky-500/40 text-sky-400'
+                        : s.value === 'simulation'  ? 'bg-amber-500/10 border-amber-400/40 text-amber-400'
                         : 'bg-slate-800 border-slate-700 text-slate-200'
                         : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700'
                     }`}
@@ -547,7 +549,9 @@ function SignalRow({ sig }: { sig: Signal }) {
       <td className="px-3 py-2.5">
         <div className="flex items-center gap-1.5">
           <span className="text-slate-200 font-bold">{sig.pair}</span>
-          <span className="text-[7px] text-slate-700 border border-slate-800 px-1 rounded">OTC</span>
+          <span className="text-[7px] text-slate-700 border border-slate-800 px-1 rounded">
+            {sig.source === 'live_market' ? 'LIVE' : 'OTC'}
+          </span>
         </div>
       </td>
 
@@ -609,11 +613,13 @@ function SignalRow({ sig }: { sig: Signal }) {
       {/* Source */}
       <td className="px-3 py-2.5">
         <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border ${
-          sig.source === 'live_otc'
+          sig.source === 'live_market'
+            ? 'text-sky-400 border-sky-500/30 bg-sky-500/5'
+            : sig.source === 'live_otc'
             ? 'text-neon-green border-neon-green/30 bg-neon-green/5'
             : 'text-slate-600 border-slate-800 bg-slate-900/30'
         }`}>
-          {sig.source === 'live_otc' ? 'LIVE' : 'SIM'}
+          {sig.source === 'live_market' ? 'WEBHOOK' : sig.source === 'live_otc' ? 'LIVE' : 'SIM'}
         </span>
       </td>
     </tr>
@@ -629,6 +635,9 @@ function MobileSignalCard({ sig }: { sig: Signal }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono font-bold text-slate-200">{sig.pair}</span>
+          <span className="text-[7px] text-slate-600 border border-slate-800 px-1 rounded">
+            {sig.source === 'live_market' ? 'LIVE' : sig.source === 'live_otc' ? 'OTC' : 'SIM'}
+          </span>
           <div className={`flex items-center gap-1 px-2 py-0.5 rounded border text-[9px] font-mono font-bold ${
             isCall
               ? 'bg-neon-green/10 border-neon-green/30 text-neon-green'
