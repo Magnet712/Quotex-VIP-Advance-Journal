@@ -776,6 +776,10 @@ export default function SignalsPage() {
     });
 
   const filteredLiveMarket = liveMarketSignals.filter(sig => {
+    // Map live market pair name (e.g. 'EUR/USD') to OTC short-code (e.g. 'EURUSD_OTC') to check selection state
+    const shortCode = sig.pair.replace('/', '') + '_OTC';
+    if (!selectedPairs.has(shortCode)) return false;
+
     if (filterDir !== 'ALL' && sig.direction !== filterDir) return false;
     if (filterRisk !== 'ALL' && sig.risk_level !== filterRisk) return false;
     if (filterConf === '90+' && Number(sig.confidence) < 90) return false;
@@ -889,21 +893,22 @@ export default function SignalsPage() {
           </button>
         </div>
 
-        {/* ── Asset (OTC) Selector ────────────────────────────────────────── */}
-        {subTab === 'otc_sim' && (
-          <div className="glass-panel rounded-xl border border-slate-800 overflow-hidden">
-            {/* Header toggle */}
-            <button
-              onClick={() => setAssetPanelOpen(o => !o)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-900/40 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <BarChart2 className="h-4 w-4 text-gold-vip" />
-                <span className="text-xs font-mono font-bold text-gold-vip tracking-widest">ASSET (OTC) SELECTOR</span>
-                <span className="text-[9px] font-mono text-slate-600 border border-slate-800 px-1.5 py-0.5 rounded">
-                  {selectedPairs.size}/{OTC_PAIRS.length} SELECTED
-                </span>
-              </div>
+        {/* ── Asset Selector ────────────────────────────────────────── */}
+        <div className="glass-panel rounded-xl border border-slate-800 overflow-hidden">
+          {/* Header toggle */}
+          <button
+            onClick={() => setAssetPanelOpen(o => !o)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-900/40 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <BarChart2 className="h-4 w-4 text-gold-vip" />
+              <span className="text-xs font-mono font-bold text-gold-vip tracking-widest">
+                {subTab === 'otc_sim' ? 'ASSET (OTC) SELECTOR' : 'LIVE MARKET ASSETS'}
+              </span>
+              <span className="text-[9px] font-mono text-slate-600 border border-slate-800 px-1.5 py-0.5 rounded">
+                {selectedPairs.size}/{OTC_PAIRS.length} SELECTED
+              </span>
+            </div>
               <div className="flex items-center gap-3">
                 {selectedPairs.size < OTC_PAIRS.length && (
                   <span className="text-[9px] font-mono text-amber-400 font-bold">CUSTOM</span>
@@ -975,7 +980,6 @@ export default function SignalsPage() {
               </div>
             )}
           </div>
-        )}
 
         {/* ── Filters ────────────────────────────────────────────────────── */}
         <div className="glass-panel rounded-xl border border-slate-800 px-4 py-3">
