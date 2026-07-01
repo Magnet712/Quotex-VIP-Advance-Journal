@@ -382,21 +382,21 @@ function evaluateMarketSignals(pairConfig) {
   const maxCvdRange = Math.max(...cvdSlice);
   const minCvdRange = Math.min(...cvdSlice);
 
-  // Delta Aggression Bubble boundary (3x standard deviation of volume)
+  // Delta Aggression Bubble boundary (1.3x average volume)
   const averageVolume = volumes.slice(idx - 14).reduce((a,b)=>a+b, 0) / 14;
   const currentCandleVolume = volumes[idx];
   const currentCandleDelta = history[idx].delta;
 
-  const isAggressiveBuy = currentCandleDelta > 0 && currentCandleVolume > (averageVolume * 2.2);
-  const isAggressiveSell = currentCandleDelta < 0 && currentCandleVolume > (averageVolume * 2.2);
+  const isAggressiveBuy = currentCandleDelta > 0 && currentCandleVolume > (averageVolume * 1.3);
+  const isAggressiveSell = currentCandleDelta < 0 && currentCandleVolume > (averageVolume * 1.3);
 
   // 3. Candle wick sizes for absorption check
   const bodySize = Math.abs(closes[idx] - history[idx].open);
   const upperWick = highs[idx] - Math.max(closes[idx], history[idx].open);
   const lowerWick = Math.min(closes[idx], history[idx].open) - lows[idx];
   
-  const isAbsorptionSelling = upperWick > (bodySize * 1.5) && isAggressiveBuy;
-  const isAbsorptionBuying = lowerWick > (bodySize * 1.5) && isAggressiveSell;
+  const isAbsorptionSelling = upperWick > (bodySize * 0.8) && isAggressiveBuy;
+  const isAbsorptionBuying = lowerWick > (bodySize * 0.8) && isAggressiveSell;
 
   // ─── RULE 1: CVD Range Breakout & Delta Aggression (Continuation) ───────
   if (isBullishTrend && lastCvd > maxCvdRange && isAggressiveBuy && supertrend.trend[idx] === 1) {
@@ -432,14 +432,14 @@ function evaluateMarketSignals(pairConfig) {
   if (isBullishTrend && stoch.k[idx] > stoch.d[idx] && stoch.k[idx] < 70 && cci[idx] > 0 && cci[idx] < 100) {
     // Volatility check (ensure ATR is healthy and market is active)
     const atrPct = (atr[idx] / currentPrice) * 100;
-    if (atrPct > 0.02) {
+    if (atrPct > 0.005) {
       triggerSignal(pairConfig.symbol, 'CALL', currentPrice, 'Trend Oscillator Followup', 86);
       return;
     }
   }
   if (isBearishTrend && stoch.k[idx] < stoch.d[idx] && stoch.k[idx] > 30 && cci[idx] < 0 && cci[idx] > -100) {
     const atrPct = (atr[idx] / currentPrice) * 100;
-    if (atrPct > 0.02) {
+    if (atrPct > 0.005) {
       triggerSignal(pairConfig.symbol, 'PUT', currentPrice, 'Trend Oscillator Followup', 85);
       return;
     }
