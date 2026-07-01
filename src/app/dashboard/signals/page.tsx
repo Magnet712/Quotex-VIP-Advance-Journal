@@ -345,6 +345,7 @@ export default function SignalsPage() {
   const [subTab, setSubTab] = useState<'otc_sim' | 'live_market'>('otc_sim');
   const [liveMarketSignals, setLiveMarketSignals] = useState<any[]>([]);
   const [windowSeed, setWindowSeed] = useState(0);
+  const windowSeedRef = useRef(0);
   const [pairStates, setPairStates] = useState<PairSignalState[]>([]);
   const [refreshIn, setRefreshIn] = useState(() => 60 - new Date().getSeconds());
   const [filterDir, setFilterDir] = useState<'ALL' | 'CALL' | 'PUT'>('ALL');
@@ -634,6 +635,7 @@ export default function SignalsPage() {
     const remaining = Math.max(1, 60 - nowSec);
     const seed = Math.floor(Date.now() / 60000);
     setWindowSeed(seed);
+    windowSeedRef.current = seed;
     setRefreshIn(remaining);
     const states = buildStates(seed).map(ps => ({ ...ps, expiresIn: remaining }));
     setPairStates(states);
@@ -687,19 +689,20 @@ export default function SignalsPage() {
       const now  = Date.now();
       const nowSec  = new Date(now).getSeconds();
       const secsLeft = nowSec === 0 ? 60 : 60 - nowSec;
+      const currentSeed = Math.floor(now / 60000);
 
       setRefreshIn(secsLeft);
 
-      if (nowSec === 0) {
+      if (currentSeed !== windowSeedRef.current) {
         // ⚡ Minute boundary — flash pre-computed signals INSTANTLY
-        const newSeed = Math.floor(now / 60000);
         const newStates =
-          pendingStates.current && pendingForSeed.current === newSeed
+          pendingStates.current && pendingForSeed.current === currentSeed
             ? pendingStates.current           // ← already built, zero delay
-            : buildStates(newSeed);           // ← fallback (tab was sleeping etc.)
+            : buildStates(currentSeed);       // ← fallback (tab was sleeping etc.)
         pendingStates.current  = null;
         pendingForSeed.current = -1;
-        setWindowSeed(newSeed);
+        setWindowSeed(currentSeed);
+        windowSeedRef.current = currentSeed;
         setPairStates(newStates);             // expiresIn already = 60
         setTotalToday(t => t + newStates.filter(s => s.status === 'ACTIVE').length);
 
@@ -718,7 +721,7 @@ export default function SignalsPage() {
             if (!pairCfg) continue;
             // Get the new minute's candle close (same seeded logic as simulated_feed)
             const pairHash = pairCfg.symbol.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-            const s = pairHash * 7919 + newSeed;
+            const s = pairHash * 7919 + currentSeed;
             const priceJitter = (sr(s + 0.9) - 0.5) * pairCfg.base * 0.003;
             const expiryClose = parseFloat((pairCfg.base + priceJitter).toFixed(pairCfg.pip));
             try {
