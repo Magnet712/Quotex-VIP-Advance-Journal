@@ -237,11 +237,11 @@ function calculateSuperTrend(highs, lows, closes, atrPeriod = 10, multiplier = 3
 // 4. SIGNAL TRIGGERS & STRATEGIES
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function triggerSignal(pairName, direction, entryPrice, strategy, confidence) {
+async function triggerSignal(pairName, direction, entryPrice, strategy, confidence, qualityScore) {
   const entryTime = new Date();
   const expiryTime = new Date(entryTime.getTime() + 60 * 1000); // 1 minute expiry
 
-  console.log(`[Worker Signal] Triggered ${direction} for ${pairName} at ${entryPrice}`);
+  console.log(`[Worker Signal] Triggered ${direction} for ${pairName} at ${entryPrice} (Quality: ${qualityScore})`);
 
   const { data, error } = await supabase
     .from('signals')
@@ -254,11 +254,11 @@ async function triggerSignal(pairName, direction, entryPrice, strategy, confiden
       expiry_time:      expiryTime.toISOString(),
       strategy_name:    strategy,
       confidence:       confidence,
-      risk_level:       confidence >= 91 ? 'LOW' : confidence >= 86 ? 'MEDIUM' : 'HIGH',
+      risk_level:       qualityScore >= 90 ? 'LOW' : qualityScore >= 85 ? 'MEDIUM' : 'HIGH',
       result:           'PENDING',
       source:           'live_market',
-      strategy_version: 'v2.1',
-      quality_score:    Math.round((80 + 80 + 80 + confidence) / 4),
+      strategy_version: 'v2.2',
+      quality_score:    qualityScore,
       is_premium:       true
     })
     .select('id')
@@ -371,7 +371,129 @@ async function autoResolveExpiredSignals() {
 // 5. SIGNAL ENGINE PROCESSOR (RUNS EVALUATION RULES)
 // ─────────────────────────────────────────────────────────────────────────────
 
+let cachedSettings = {
+  min_quality_score: 80,
+  allowed_signal_hours: '',
+  premium_signal_status: 'ACTIVE'
+};
+
+async function refreshSystemSettings() {
+  try {
+    const { data, error } = await supabase
+      .from('system_settings')
+      .select('key, value');
+    
+    if (!error && data) {
+      data.forEach(item => {
+        if (item.key === 'min_quality_score') {
+          cachedSettings.min_quality_score = parseInt(item.value) || 80;
+        } else if (item.key === 'allowed_signal_hours') {
+          cachedSettings.allowed_signal_hours = item.value || '';
+        } else if (item.key === 'premium_signal_status') {
+          cachedSettings.premium_signal_status = item.value || 'ACTIVE';
+        }
+      });
+      console.log('[Worker Settings] Refreshed system settings:', cachedSettings);
+    }
+  } catch (err) {
+    console.error('[Worker Settings Cache Error]:', err.message);
+  }
+}
+
+function isTradingAllowed() {
+  if (cachedSettings.premium_signal_status !== 'ACTIVE') return false;
+
+  const now = new Date();
+  const options = { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false };
+  const istStr = now.toLocaleTimeString('en-US', options);
+  const [istHour, istMin] = istStr.split(':').map(Number);
+  const istMinutes = istHour * 60 + istMin;
+
+  // Rollover protection (02:30 IST - 04:30 IST)
+  const rolloverStart = 2 * 60 + 30; // 02:30 AM IST
+  const rolloverEnd = 4 * 60 + 30;   // 04:30 AM IST
+  if (istMinutes >= rolloverStart && istMinutes <= rolloverEnd) {
+    console.log('[Worker] Low-liquidity market rollover block active (02:30 - 04:30 IST)');
+    return false;
+  }
+
+  // Allowed hours filter
+  if (cachedSettings.allowed_signal_hours) {
+    const intervals = cachedSettings.allowed_signal_hours.split(',');
+    let matches = false;
+    for (const interval of intervals) {
+      const parts = interval.split('-');
+      if (parts.length === 2) {
+        const [startH, startM] = parts[0].split(':').map(Number);
+        const [endH, endM] = parts[1].split(':').map(Number);
+        
+        const startMinutes = startH * 60 + startM;
+        const endMinutes = endH * 60 + endM;
+        
+        if (istMinutes >= startMinutes && istMinutes <= endMinutes) {
+          matches = true;
+          break;
+        }
+      }
+    }
+    return matches;
+  }
+
+  return true;
+}
+
+function calculateQualityScore(pairConfig, direction, currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx) {
+  let score = 70; // Base score
+  
+  const isCall = direction === 'CALL';
+  const isBullish = ema21[idx] > sma50[idx];
+  const isBearish = ema21[idx] < sma50[idx];
+  
+  if (isCall && isBullish) score += 10;
+  if (!isCall && isBearish) score += 10;
+  
+  const stTrend = supertrend.trend[idx];
+  if (isCall && stTrend === 1) score += 10;
+  if (!isCall && stTrend === -1) score += 10;
+  
+  if (isCall) {
+    if (stoch.k[idx] > stoch.d[idx]) score += 5;
+    if (rsi[idx] > 30 && rsi[idx] < 60) score += 5;
+  } else {
+    if (stoch.k[idx] < stoch.d[idx]) score += 5;
+    if (rsi[idx] < 70 && rsi[idx] > 40) score += 5;
+  }
+  
+  const atrPct = (atr[idx] / currentPrice) * 100;
+  if (atrPct > 0.008) score += 5;
+  
+  if (isCall && isAggressiveBuy) score += 15;
+  if (!isCall && isAggressiveSell) score += 15;
+  
+  if (isCall && isAbsorptionBuying) score += 10;
+  if (!isCall && isAbsorptionSelling) score += 10;
+  
+  return Math.min(100, score);
+}
+
+function getMartingaleAdvice(direction, isBullishTrend, isBearishTrend, stTrend, rsiVal) {
+  if (direction === 'CALL') {
+    if (isBullishTrend && stTrend === 1) {
+      if (rsiVal < 60) return '[M2 Safe]';
+      return '[M1 Safe]';
+    }
+  } else {
+    if (isBearishTrend && stTrend === -1) {
+      if (rsiVal > 40) return '[M2 Safe]';
+      return '[M1 Safe]';
+    }
+  }
+  return '[No Martingale]';
+}
+
 function evaluateMarketSignals(pairConfig) {
+  if (!isTradingAllowed()) return;
+
   const history = candleHistory.get(pairConfig.binance);
   if (history.length < 52) return; // Ensure we have enough history for 50 SMA
 
@@ -422,47 +544,74 @@ function evaluateMarketSignals(pairConfig) {
   // ─── RULE 1: CVD Range Breakout & Delta Aggression (Continuation) ───────
   if (isBullishTrend && lastCvd > maxCvdRange && isAggressiveBuy && supertrend.trend[idx] === 1) {
     if (rsi[idx] < 68 && cci[idx] > 50) {
-      triggerSignal(pairConfig.symbol, 'CALL', currentPrice, 'CVD Range Breakout + Buying Aggression', 92);
-      return;
+      const qScore = calculateQualityScore(pairConfig, 'CALL', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
+      if (qScore >= cachedSettings.min_quality_score) {
+        const martingale = getMartingaleAdvice('CALL', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
+        const strategy = `CVD Range Breakout + Buying Aggression ${martingale}`;
+        triggerSignal(pairConfig.symbol, 'CALL', currentPrice, strategy, 92, qScore);
+        return;
+      }
     }
   }
   if (isBearishTrend && lastCvd < minCvdRange && isAggressiveSell && supertrend.trend[idx] === -1) {
     if (rsi[idx] > 32 && cci[idx] < -50) {
-      triggerSignal(pairConfig.symbol, 'PUT', currentPrice, 'CVD Range Breakout + Selling Aggression', 91);
-      return;
+      const qScore = calculateQualityScore(pairConfig, 'PUT', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
+      if (qScore >= cachedSettings.min_quality_score) {
+        const martingale = getMartingaleAdvice('PUT', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
+        const strategy = `CVD Range Breakout + Selling Aggression ${martingale}`;
+        triggerSignal(pairConfig.symbol, 'PUT', currentPrice, strategy, 91, qScore);
+        return;
+      }
     }
   }
 
   // ─── RULE 2: Absorption at extremes (Reversals) ─────────────────────────
-  // Reversal Sell Alert (Overbought extremes + buying absorption)
   if (rsi[idx] > 70 || cci[idx] > 150 || stoch.k[idx] > 80) {
     if (isAbsorptionSelling) {
-      triggerSignal(pairConfig.symbol, 'PUT', currentPrice, 'Delta Aggression Absorption (Reversal)', 88);
-      return;
+      const qScore = calculateQualityScore(pairConfig, 'PUT', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
+      if (qScore >= cachedSettings.min_quality_score) {
+        const martingale = getMartingaleAdvice('PUT', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
+        const strategy = `Delta Aggression Absorption (Reversal) ${martingale}`;
+        triggerSignal(pairConfig.symbol, 'PUT', currentPrice, strategy, 88, qScore);
+        return;
+      }
     }
   }
-  // Reversal Buy Alert (Oversold extremes + selling absorption)
   if (rsi[idx] < 30 || cci[idx] < -150 || stoch.k[idx] < 20) {
     if (isAbsorptionBuying) {
-      triggerSignal(pairConfig.symbol, 'CALL', currentPrice, 'Delta Aggression Absorption (Reversal)', 89);
-      return;
+      const qScore = calculateQualityScore(pairConfig, 'CALL', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
+      if (qScore >= cachedSettings.min_quality_score) {
+        const martingale = getMartingaleAdvice('CALL', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
+        const strategy = `Delta Aggression Absorption (Reversal) ${martingale}`;
+        triggerSignal(pairConfig.symbol, 'CALL', currentPrice, strategy, 89, qScore);
+        return;
+      }
     }
   }
 
   // ─── RULE 3: Stochastic + CCI Follow-up (Trend Continuation) ────────────
   if (isBullishTrend && stoch.k[idx] > stoch.d[idx] && stoch.k[idx] < 70 && cci[idx] > 0 && cci[idx] < 100) {
-    // Volatility check (ensure ATR is healthy and market is active)
     const atrPct = (atr[idx] / currentPrice) * 100;
     if (atrPct > 0.005) {
-      triggerSignal(pairConfig.symbol, 'CALL', currentPrice, 'Trend Oscillator Followup', 86);
-      return;
+      const qScore = calculateQualityScore(pairConfig, 'CALL', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
+      if (qScore >= cachedSettings.min_quality_score) {
+        const martingale = getMartingaleAdvice('CALL', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
+        const strategy = `Trend Oscillator Followup ${martingale}`;
+        triggerSignal(pairConfig.symbol, 'CALL', currentPrice, strategy, 86, qScore);
+        return;
+      }
     }
   }
   if (isBearishTrend && stoch.k[idx] < stoch.d[idx] && stoch.k[idx] > 30 && cci[idx] < 0 && cci[idx] > -100) {
     const atrPct = (atr[idx] / currentPrice) * 100;
     if (atrPct > 0.005) {
-      triggerSignal(pairConfig.symbol, 'PUT', currentPrice, 'Trend Oscillator Followup', 85);
-      return;
+      const qScore = calculateQualityScore(pairConfig, 'PUT', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
+      if (qScore >= cachedSettings.min_quality_score) {
+        const martingale = getMartingaleAdvice('PUT', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
+        const strategy = `Trend Oscillator Followup ${martingale}`;
+        triggerSignal(pairConfig.symbol, 'PUT', currentPrice, strategy, 85, qScore);
+        return;
+      }
     }
   }
 }
@@ -906,6 +1055,10 @@ async function bootstrap() {
     console.log(`[Worker] Preloaded ${history.length} historical candles for ${pair.symbol} starting at ${startPrice}`);
   });
   
+  // Load system settings
+  await refreshSystemSettings();
+  setInterval(refreshSystemSettings, 60 * 1000); // refresh settings cache every 1 minute
+
   connectBinanceWebSocket();
   startInactiveSymbolTicks();
   startCandleAggregator();
