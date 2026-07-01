@@ -118,8 +118,17 @@ export async function POST(request: Request) {
     }
 
     const entryTime = new Date();
-    // Default to 1-minute expiry range for standard signals
-    const expiryTime = new Date(entryTime.getTime() + 60 * 1000); 
+    // Parse duration based on timeframe (e.g. 5m, 15m, 1h)
+    let durationMs = 60 * 1000; // default 1m
+    const match = timeframe.match(/^(\d+)([mhd])$/);
+    if (match) {
+      const val = parseInt(match[1], 10);
+      const unit = match[2];
+      if (unit === 'm') durationMs = val * 60 * 1000;
+      else if (unit === 'h') durationMs = val * 60 * 60 * 1000;
+      else if (unit === 'd') durationMs = val * 24 * 60 * 60 * 1000;
+    }
+    const expiryTime = new Date(entryTime.getTime() + durationMs); 
 
     const { data, error } = await supabase
       .from('signals')
