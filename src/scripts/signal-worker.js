@@ -285,6 +285,67 @@ async function resolveSignal(signalId, pairName, entryPrice, direction) {
   }
 }
 
+// Self-healing database auto-resolver for expired pending webhook signals
+async function autoResolveExpiredSignals() {
+  try {
+    const now = new Date().toISOString();
+    const { data: expiredSignals, error } = await supabase
+      .from('signals')
+      .select('*')
+      .eq('result', 'PENDING')
+      .lte('expiry_time', now);
+
+    if (error) {
+      console.error('[Worker Auto-Resolve Error]:', error.message);
+      return;
+    }
+
+    if (!expiredSignals || expiredSignals.length === 0) return;
+
+    console.log(`[Worker Auto-Resolve] Found ${expiredSignals.length} expired pending signals. Resolving...`);
+
+    for (const sig of expiredSignals) {
+      const pairConfig = MONITORED_PAIRS.find(p => p.symbol === sig.pair);
+      if (!pairConfig) continue;
+
+      const history = candleHistory.get(pairConfig.binance);
+      if (!history || history.length === 0) continue;
+
+      const expiryTimestamp = new Date(sig.expiry_time).getTime();
+      let closestCandle = history[history.length - 1]; // fallback
+      
+      // Find closest candle within 70 seconds matching the expiry timestamp
+      for (let i = history.length - 1; i >= 0; i--) {
+        const candleTime = new Date(history[i].timestamp).getTime();
+        if (Math.abs(candleTime - expiryTimestamp) < 70000) {
+          closestCandle = history[i];
+          break;
+        }
+      }
+
+      const expiryPrice = closestCandle.close;
+      let result = 'LOSS';
+      if (sig.direction === 'CALL') {
+        result = expiryPrice > Number(sig.entry_price) ? 'WIN' : 'LOSS';
+      } else {
+        result = expiryPrice < Number(sig.entry_price) ? 'WIN' : 'LOSS';
+      }
+
+      console.log(`[Worker Auto-Resolve] Signal ${sig.id} (${sig.pair}): ${result} (Entry: ${sig.entry_price}, Expiry Close: ${expiryPrice})`);
+
+      await supabase
+        .from('signals')
+        .update({
+          result:       result,
+          expiry_price: expiryPrice
+        })
+        .eq('id', sig.id);
+    }
+  } catch (err) {
+    console.error('[Worker Auto-Resolve Exception]:', err);
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. SIGNAL ENGINE PROCESSOR (RUNS EVALUATION RULES)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -533,6 +594,9 @@ function buildMinuteCandles() {
       console.error(`[Worker Signal Error] Failed to evaluate pair ${pair.symbol}:`, err.message);
     }
   });
+
+  // Automatically resolve any expired PENDING signals in the database
+  autoResolveExpiredSignals();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
