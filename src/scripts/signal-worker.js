@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
+const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -48,6 +49,16 @@ const MONITORED_PAIRS = [
   { binance: 'gbpaud',  symbol: 'GBP/AUD', basePrice: 1.90200, digits: 5 },
   { binance: 'eurchf',  symbol: 'EUR/CHF', basePrice: 0.97500, digits: 5 }
 ];
+
+const corePrices = {
+  eurusdt: 1.08550,
+  gbpusdt: 1.26500,
+  usdtjpy: 158.200,
+  audusdt: 0.66500,
+  usdcad: 1.35800,
+  chfusdt: 0.88000,
+  eurgbp: 0.85200
+};
 
 // In-memory historical cache (requires min 60 candles to compute 50 SMA reliably)
 const candleHistory = new Map();
@@ -447,40 +458,160 @@ function evaluateMarketSignals(pairConfig) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. REAL-TIME FOREX SIMULATED FEED
+// 6. REAL-TIME BINANCE CROSS-RATE WEBSTREAM
 // ─────────────────────────────────────────────────────────────────────────────
-function startSimulationTicks() {
-  console.log('[Worker] Starting real-time Forex tick simulator...');
-  setInterval(() => {
-    MONITORED_PAIRS.forEach(pair => {
-      const history = candleHistory.get(pair.binance);
-      if (!history || history.length === 0) return;
+let binanceWs = null;
 
-      const lastCandle = history[history.length - 1];
+function connectBinanceWebSocket() {
+  const streams = [
+    'eurusdt@trade',
+    'gbpusdt@trade',
+    'usdtjpy@trade',
+    'audusdt@trade',
+    'usdcad@trade',
+    'chfusdt@trade',
+    'eurgbp@trade'
+  ];
+  
+  const wsUrl = `wss://stream.binance.com:9443/ws/${streams.join('/')}`;
+  console.log(`[Binance WS] Connecting to live orderflow: ${wsUrl}`);
+  
+  binanceWs = new WebSocket(wsUrl);
+  
+  binanceWs.on('open', () => {
+    console.log('[Binance WS] Successfully connected to live trade feeds!');
+  });
+  
+  binanceWs.on('message', (rawData) => {
+    try {
+      const data = JSON.parse(rawData);
+      if (data.e !== 'trade') return;
+      
+      const symbol = data.s.toLowerCase();
+      const price = parseFloat(data.p);
+      const volume = parseFloat(data.q);
+      const isSellerMaker = data.m;
+      const delta = isSellerMaker ? -volume : volume;
+      
+      // Update core price cache
+      corePrices[symbol] = price;
+      
+      // Push tick to core pair buffer
+      const buffer = tickBuffer.get(symbol);
+      if (buffer) {
+        buffer.ticks.push({ price, delta, time: Date.now() });
+        buffer.cvdAccumulator += delta;
+        buffer.currentVolume += volume;
+        
+        if (buffer.open === null) buffer.open = price;
+        buffer.high = Math.max(buffer.high, price);
+        buffer.low = Math.min(buffer.low, price);
+        buffer.close = price;
+      }
+      
+      // Calculate and push ticks for cross-rates
+      updateCrossRates(symbol, volume, delta);
+      
+    } catch (err) {
+      console.error('[Binance WS Message Error]:', err.message);
+    }
+  });
+  
+  binanceWs.on('close', () => {
+    console.log('[Binance WS] Connection closed. Reconnecting in 5s...');
+    setTimeout(connectBinanceWebSocket, 5000);
+  });
+  
+  binanceWs.on('error', (err) => {
+    console.error('[Binance WS Error]:', err.message);
+  });
+}
+
+function updateCrossRates(changedSymbol, vol, del) {
+  MONITORED_PAIRS.forEach(pair => {
+    // Skip core pairs
+    if (['eurusdt', 'gbpusdt', 'usdtjpy', 'audusdt', 'usdcad', 'chfusdt', 'eurgbp'].includes(pair.binance)) {
+      return;
+    }
+    
+    let newPrice = 0;
+    let componentVolume = vol;
+    let componentDelta = del;
+    
+    const eurusdtBuf = tickBuffer.get('eurusdt');
+    const usdtjpyBuf = tickBuffer.get('usdtjpy');
+    const usdcadBuf = tickBuffer.get('usdcad');
+    const gbpusdtBuf = tickBuffer.get('gbpusdt');
+    const audusdtBuf = tickBuffer.get('audusdt');
+    const chfusdtBuf = tickBuffer.get('chfusdt');
+
+    if (pair.binance === 'eurjpy') {
+      newPrice = corePrices.eurusdt * corePrices.usdtjpy;
+      componentVolume = ((eurusdtBuf?.currentVolume || 0) + (usdtjpyBuf?.currentVolume || 0)) / 2;
+      componentDelta = ((eurusdtBuf?.cvdAccumulator || 0) + (usdtjpyBuf?.cvdAccumulator || 0)) / 2;
+    } else if (pair.binance === 'cadjpy') {
+      newPrice = (1 / corePrices.usdcad) * corePrices.usdtjpy;
+      componentVolume = ((usdcadBuf?.currentVolume || 0) + (usdtjpyBuf?.currentVolume || 0)) / 2;
+      componentDelta = (-(usdcadBuf?.cvdAccumulator || 0) + (usdtjpyBuf?.cvdAccumulator || 0)) / 2;
+    } else if (pair.binance === 'gbpjpy') {
+      newPrice = corePrices.gbpusdt * corePrices.usdtjpy;
+      componentVolume = ((gbpusdtBuf?.currentVolume || 0) + (usdtjpyBuf?.currentVolume || 0)) / 2;
+      componentDelta = ((gbpusdtBuf?.cvdAccumulator || 0) + (usdtjpyBuf?.cvdAccumulator || 0)) / 2;
+    } else if (pair.binance === 'audcad') {
+      newPrice = corePrices.audusdt * corePrices.usdcad;
+      componentVolume = ((audusdtBuf?.currentVolume || 0) + (usdcadBuf?.currentVolume || 0)) / 2;
+      componentDelta = ((audusdtBuf?.cvdAccumulator || 0) + (usdcadBuf?.cvdAccumulator || 0)) / 2;
+    } else if (pair.binance === 'audchf') {
+      newPrice = corePrices.audusdt / corePrices.chfusdt;
+      componentVolume = ((audusdtBuf?.currentVolume || 0) + (chfusdtBuf?.currentVolume || 0)) / 2;
+      componentDelta = ((audusdtBuf?.cvdAccumulator || 0) - (chfusdtBuf?.cvdAccumulator || 0)) / 2;
+    } else if (pair.binance === 'gbpaud') {
+      newPrice = corePrices.gbpusdt / corePrices.audusdt;
+      componentVolume = ((gbpusdtBuf?.currentVolume || 0) + (audusdtBuf?.currentVolume || 0)) / 2;
+      componentDelta = ((gbpusdtBuf?.cvdAccumulator || 0) - (audusdtBuf?.cvdAccumulator || 0)) / 2;
+    } else if (pair.binance === 'eurchf') {
+      newPrice = corePrices.eurusdt / corePrices.chfusdt;
+      componentVolume = ((eurusdtBuf?.currentVolume || 0) + (chfusdtBuf?.currentVolume || 0)) / 2;
+      componentDelta = ((eurusdtBuf?.cvdAccumulator || 0) - (chfusdtBuf?.cvdAccumulator || 0)) / 2;
+    }
+    
+    if (newPrice > 0) {
+      newPrice = Number(newPrice.toFixed(pair.digits));
       const buffer = tickBuffer.get(pair.binance);
-      if (!buffer) return;
+      if (buffer) {
+        buffer.ticks.push({ price: newPrice, delta: componentDelta, time: Date.now() });
+        buffer.cvdAccumulator = componentDelta;
+        buffer.currentVolume = componentVolume;
+        
+        if (buffer.open === null) buffer.open = newPrice;
+        buffer.high = Math.max(buffer.high, newPrice);
+        buffer.low = Math.min(buffer.low, newPrice);
+        buffer.close = newPrice;
+      }
+    }
+  });
+}
 
-      const currentPrice = buffer.close || lastCandle.close;
-
-      // Random walk tick generator
-      const rand = Math.random();
-      const change = (rand - 0.5) * (pair.basePrice * 0.00008);
-      const newPrice = Number((currentPrice + change).toFixed(pair.digits));
-
-      // Tick volume and orderflow delta
-      const tickVol = Math.random() * 5 + 1;
-      const tickDelta = (Math.random() - 0.5) * tickVol * 0.65;
-
-      buffer.ticks.push({ price: newPrice, delta: tickDelta, time: Date.now() });
-      buffer.cvdAccumulator += tickDelta;
-      buffer.currentVolume += tickVol;
-
-      if (buffer.open === null) buffer.open = newPrice;
-      buffer.high = Math.max(buffer.high, newPrice);
-      buffer.low = Math.min(buffer.low, newPrice);
-      buffer.close = newPrice;
-    });
-  }, 1000);
+function fetchBinancePrices() {
+  return new Promise((resolve, reject) => {
+    https.get('https://api.binance.com/api/v3/ticker/price', (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const list = JSON.parse(data);
+          const prices = {};
+          list.forEach(item => {
+            const sym = item.symbol.toLowerCase();
+            prices[sym] = parseFloat(item.price);
+          });
+          resolve(prices);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }).on('error', err => reject(err));
+  });
 }
 
 function generateHistoricalCandles(pair, count = 100) {
@@ -609,19 +740,51 @@ function buildMinuteCandles() {
   autoResolveExpiredSignals();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 8. BOOTSTRAP INITS
-// ─────────────────────────────────────────────────────────────────────────────
-console.log('===================================================');
-console.log('       ORDERFLOW LIVE MARKET SIGNAL WORKER         ');
-console.log('===================================================');
+async function bootstrap() {
+  console.log('[Worker] Bootstrapping real-time prices from Binance...');
+  try {
+    const prices = await fetchBinancePrices();
+    
+    // Set initial core prices
+    if (prices.eurusdt) corePrices.eurusdt = prices.eurusdt;
+    if (prices.gbpusdt) corePrices.gbpusdt = prices.gbpusdt;
+    if (prices.usdtjpy) corePrices.usdtjpy = prices.usdtjpy;
+    if (prices.audusdt) corePrices.audusdt = prices.audusdt;
+    if (prices.usdcad)   corePrices.usdcad   = prices.usdcad;
+    if (prices.chfusdt)  corePrices.chfusdt  = prices.chfusdt;
+    if (prices.eurgbp)   corePrices.eurgbp   = prices.eurgbp;
+    
+    console.log('[Worker] Seeded initial core prices:', corePrices);
+  } catch (err) {
+    console.warn('[Worker Warning] Failed to fetch Binance REST prices, falling back to config baseline:', err.message);
+  }
+  
+  // Calculate starting prices for all 12 pairs
+  MONITORED_PAIRS.forEach(pair => {
+    let startPrice = pair.basePrice;
+    
+    if (pair.binance === 'eurusdt') startPrice = corePrices.eurusdt;
+    else if (pair.binance === 'gbpusdt') startPrice = corePrices.gbpusdt;
+    else if (pair.binance === 'usdtjpy') startPrice = corePrices.usdtjpy;
+    else if (pair.binance === 'audusdt') startPrice = corePrices.audusdt;
+    else if (pair.binance === 'eurgbp') startPrice = corePrices.eurgbp;
+    else if (pair.binance === 'eurjpy') startPrice = corePrices.eurusdt * corePrices.usdtjpy;
+    else if (pair.binance === 'cadjpy') startPrice = (1 / corePrices.usdcad) * corePrices.usdtjpy;
+    else if (pair.binance === 'gbpjpy') startPrice = corePrices.gbpusdt * corePrices.usdtjpy;
+    else if (pair.binance === 'audcad') startPrice = corePrices.audusdt * corePrices.usdcad;
+    else if (pair.binance === 'audchf') startPrice = corePrices.audusdt / corePrices.chfusdt;
+    else if (pair.binance === 'gbpaud') startPrice = corePrices.gbpusdt / corePrices.audusdt;
+    else if (pair.binance === 'eurchf') startPrice = corePrices.eurusdt / corePrices.chfusdt;
+    
+    pair.basePrice = startPrice;
+    
+    const history = generateHistoricalCandles(pair, 100);
+    candleHistory.set(pair.binance, history);
+    console.log(`[Worker] Preloaded ${history.length} historical candles for ${pair.symbol} starting at ${startPrice}`);
+  });
+  
+  connectBinanceWebSocket();
+  startCandleAggregator();
+}
 
-// Seed historical candles instantly so indicators are fully populated on start
-MONITORED_PAIRS.forEach(pair => {
-  const history = generateHistoricalCandles(pair, 100);
-  candleHistory.set(pair.binance, history);
-  console.log(`[Worker] Preloaded ${history.length} historical simulated candles for ${pair.symbol}`);
-});
-
-startSimulationTicks();
-startCandleAggregator();
+bootstrap();
