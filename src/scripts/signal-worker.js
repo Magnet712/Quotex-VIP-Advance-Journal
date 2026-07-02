@@ -447,6 +447,7 @@ async function resolveSignal(signalId, pairName, entryPrice, direction) {
 
 let cachedSettings = {
   min_quality_score: 80,
+  min_quality_score_live: 80,
   allowed_signal_hours: '',
   premium_signal_status: 'ACTIVE'
 };
@@ -461,6 +462,8 @@ async function refreshSystemSettings() {
       data.forEach(item => {
         if (item.key === 'min_quality_score') {
           cachedSettings.min_quality_score = parseInt(item.value) || 80;
+        } else if (item.key === 'min_quality_score_live') {
+          cachedSettings.min_quality_score_live = parseInt(item.value) || 80;
         } else if (item.key === 'allowed_signal_hours') {
           cachedSettings.allowed_signal_hours = item.value || '';
         } else if (item.key === 'premium_signal_status') {
@@ -597,7 +600,7 @@ function evaluateMarketSignals(pairConfig) {
   if (isBullishTrend && lastCvd > maxCvdRange && isAggressiveBuy && supertrend.trend[idx] === 1) {
     if (rsi[idx] < 68 && cci[idx] > 50) {
       const qScore = calculateQualityScore(pairConfig, 'CALL', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
-      if (qScore >= cachedSettings.min_quality_score) {
+      if (qScore >= cachedSettings.min_quality_score_live) {
         const martingale = getMartingaleAdvice('CALL', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
         const strategy = `CVD Range Breakout + Buying Aggression ${martingale}`;
         triggerSignal(pairConfig.symbol, 'CALL', currentPrice, strategy, 92, qScore);
@@ -608,7 +611,7 @@ function evaluateMarketSignals(pairConfig) {
   if (isBearishTrend && lastCvd < minCvdRange && isAggressiveSell && supertrend.trend[idx] === -1) {
     if (rsi[idx] > 32 && cci[idx] < -50) {
       const qScore = calculateQualityScore(pairConfig, 'PUT', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
-      if (qScore >= cachedSettings.min_quality_score) {
+      if (qScore >= cachedSettings.min_quality_score_live) {
         const martingale = getMartingaleAdvice('PUT', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
         const strategy = `CVD Range Breakout + Selling Aggression ${martingale}`;
         triggerSignal(pairConfig.symbol, 'PUT', currentPrice, strategy, 91, qScore);
@@ -621,7 +624,7 @@ function evaluateMarketSignals(pairConfig) {
   if (rsi[idx] > 70 || cci[idx] > 150 || stoch.k[idx] > 80) {
     if (isAbsorptionSelling) {
       const qScore = calculateQualityScore(pairConfig, 'PUT', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
-      if (qScore >= cachedSettings.min_quality_score) {
+      if (qScore >= cachedSettings.min_quality_score_live) {
         const martingale = getMartingaleAdvice('PUT', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
         const strategy = `Delta Aggression Absorption (Reversal) ${martingale}`;
         triggerSignal(pairConfig.symbol, 'PUT', currentPrice, strategy, 88, qScore);
@@ -632,7 +635,7 @@ function evaluateMarketSignals(pairConfig) {
   if (rsi[idx] < 30 || cci[idx] < -150 || stoch.k[idx] < 20) {
     if (isAbsorptionBuying) {
       const qScore = calculateQualityScore(pairConfig, 'CALL', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
-      if (qScore >= cachedSettings.min_quality_score) {
+      if (qScore >= cachedSettings.min_quality_score_live) {
         const martingale = getMartingaleAdvice('CALL', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
         const strategy = `Delta Aggression Absorption (Reversal) ${martingale}`;
         triggerSignal(pairConfig.symbol, 'CALL', currentPrice, strategy, 89, qScore);
@@ -646,7 +649,7 @@ function evaluateMarketSignals(pairConfig) {
     const atrPct = (atr[idx] / currentPrice) * 100;
     if (atrPct > 0.005) {
       const qScore = calculateQualityScore(pairConfig, 'CALL', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
-      if (qScore >= cachedSettings.min_quality_score) {
+      if (qScore >= cachedSettings.min_quality_score_live) {
         const martingale = getMartingaleAdvice('CALL', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
         const strategy = `Trend Oscillator Followup ${martingale}`;
         triggerSignal(pairConfig.symbol, 'CALL', currentPrice, strategy, 86, qScore);
@@ -658,7 +661,7 @@ function evaluateMarketSignals(pairConfig) {
     const atrPct = (atr[idx] / currentPrice) * 100;
     if (atrPct > 0.005) {
       const qScore = calculateQualityScore(pairConfig, 'PUT', currentPrice, ema21, sma50, rsi, cci, stoch, atr, supertrend, isAggressiveBuy, isAggressiveSell, isAbsorptionBuying, isAbsorptionSelling, idx);
-      if (qScore >= cachedSettings.min_quality_score) {
+      if (qScore >= cachedSettings.min_quality_score_live) {
         const martingale = getMartingaleAdvice('PUT', isBullishTrend, isBearishTrend, supertrend.trend[idx], rsi[idx]);
         const strategy = `Trend Oscillator Followup ${martingale}`;
         triggerSignal(pairConfig.symbol, 'PUT', currentPrice, strategy, 85, qScore);

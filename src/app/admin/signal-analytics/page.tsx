@@ -62,6 +62,7 @@ export default function AdminSignalAnalyticsPage() {
     losing_streak_pause_minutes: '15',
     premium_filter_mode: 'PRODUCTION',
     min_quality_score: '80',
+    min_quality_score_live: '80',
     disabled_pairs: '',
     premium_signal_status: 'ACTIVE',
     paused_until: ''
@@ -578,8 +579,8 @@ export default function AdminSignalAnalyticsPage() {
                   </div>
                 </div>
 
-                {/* Min Confidence & Min Quality Score Sliders */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-glass-border/30">
+                {/* Min Confidence, OTC & Live Market Min Quality Score Sliders */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-glass-border/30">
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">MINIMUM CONFIDENCE FILTER</label>
@@ -602,12 +603,12 @@ export default function AdminSignalAnalyticsPage() {
 
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">MINIMUM QUALITY SCORE FILTER</label>
+                      <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">OTC MINIMUM QUALITY SCORE</label>
                       <span className="text-xs text-neon-green font-bold font-mono">{settings.min_quality_score}/100</span>
                     </div>
                     <input
                       type="range"
-                      min="70"
+                      min="50"
                       max="95"
                       value={settings.min_quality_score}
                       onChange={e => setSettings({ ...settings, min_quality_score: e.target.value })}
@@ -616,7 +617,27 @@ export default function AdminSignalAnalyticsPage() {
                       className="w-full h-1 bg-slate-900 rounded-lg appearance-none cursor-pointer border border-slate-800 accent-neon-green"
                     />
                     <span className="text-[8px] text-slate-500 block leading-relaxed">
-                      Quality Score = (Pair Performance + Overall Accuracy + Recent Performance + Confidence) / 4. Only signals with QS &ge; this value are released.
+                      Quality Score = (Pair Performance + Overall Accuracy + Recent Performance + Confidence) / 4. Enforced for OTC signals.
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">LIVE MARKET MINIMUM QUALITY SCORE</label>
+                      <span className="text-xs text-rose-400 font-bold font-mono">{settings.min_quality_score_live || '80'}/100</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="70"
+                      max="95"
+                      value={settings.min_quality_score_live || '80'}
+                      onChange={e => setSettings({ ...settings, min_quality_score_live: e.target.value })}
+                      onMouseUp={() => handleSaveSettings()}
+                      onTouchEnd={() => handleSaveSettings()}
+                      className="w-full h-1 bg-slate-900 rounded-lg appearance-none cursor-pointer border border-slate-800 accent-rose-400"
+                    />
+                    <span className="text-[8px] text-slate-500 block leading-relaxed">
+                      Filters live orderflow Forex signals. Higher values ensure top level win rate accuracy (Recommended: 80-85).
                     </span>
                   </div>
                 </div>

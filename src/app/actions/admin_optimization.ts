@@ -70,6 +70,7 @@ export async function getAdminOptimizationSettings() {
       losing_streak_pause_minutes: '15',
       premium_filter_mode: 'PRODUCTION',
       min_quality_score: '80',
+      min_quality_score_live: '80',
       disabled_pairs: '',
       premium_signal_status: 'ACTIVE',
       paused_until: ''
