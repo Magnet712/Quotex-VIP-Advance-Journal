@@ -215,77 +215,272 @@ export async function submitPaymentTxnHash(paymentRequestId: string, txnHash: st
       return { success: true, alreadyConfirmed: true, message: 'This invoice has already been verified and activated.' };
     }
 
-    // 2. Set to PROCESSING state
+    // Security check: check if the transaction hash is already used in a confirmed payment
+    const { data: duplicateTx } = await admin
+      .from('payment_requests')
+      .select('id')
+      .eq('txn_hash', hash)
+      .eq('status', 'CONFIRMED')
+      .maybeSingle();
+
+    if (duplicateTx) {
+      const currentLogs = request.transition_logs || [];
+      const updatedLogs = [...currentLogs, `${new Date().toISOString()} - status: DUPLICATE: Replay attack detected.`];
+      await admin
+        .from('payment_requests')
+        .update({ 
+          txn_hash: hash, 
+          status: 'DUPLICATE',
+          transition_logs: updatedLogs
+        })
+        .eq('id', paymentRequestId);
+      return { success: false, error: 'Replay checks failed: This transaction hash has already been claimed.' };
+    }
+
+    // 2. Set to DETECTED state & record initial scan logs
+    const currentLogs = request.transition_logs || [];
+    const detectedLogs = [...currentLogs, `${new Date().toISOString()} - status: DETECTED: Transaction detected, scanning confirmations...`];
     await admin
       .from('payment_requests')
-      .update({ txn_hash: hash, status: 'PROCESSING' })
+      .update({ txn_hash: hash, status: 'DETECTED', transition_logs: detectedLogs })
       .eq('id', paymentRequestId);
+
+    const useMock = hash.toLowerCase().startsWith('mock_');
 
     // 3. Verify via payment verification interface
     const verification = await PaymentVerificationService.verify(
       hash,
       request.network,
       request.amount,
-      request.wallet_address
+      request.wallet_address,
+      useMock ? 'MockProvider' : undefined
     );
 
-    if (!verification.success || !verification.confirmed) {
-      // Revert status to PENDING but store the hash attempt for logs review
+    // If verified successfully and fully confirmed on-chain:
+    if (verification.success && verification.confirmed) {
+      // Idempotent audit checks
+      const { data: auditTx } = await admin
+        .from('payment_audit_logs')
+        .select('id')
+        .eq('txn_hash', hash)
+        .maybeSingle();
+
+      if (auditTx) {
+        const updatedLogs = [...detectedLogs, `${new Date().toISOString()} - status: DUPLICATE: Hash found in immutable audits.`];
+        await admin
+          .from('payment_requests')
+          .update({ status: 'DUPLICATE', transition_logs: updatedLogs })
+          .eq('id', paymentRequestId);
+        return { success: false, error: 'Duplicate transaction hash detected in audit ledger.' };
+      }
+
+      // Record immutable audit log (replay-protection constraint on txn_hash)
+      await admin
+        .from('payment_audit_logs')
+        .insert({
+          payment_request_id: paymentRequestId,
+          user_id: user.id,
+          txn_hash: hash,
+          network: request.network,
+          amount: request.amount,
+          status: 'CONFIRMED',
+          verification_source: useMock ? 'MockProvider' : 'RPCScanner',
+          confirmed_at: new Date().toISOString(),
+        });
+
+      // Update invoice status
+      const updatedLogs = [
+        ...detectedLogs,
+        `${new Date().toISOString()} - status: CONFIRMING: Block validations completed.`,
+        `${new Date().toISOString()} - status: CONFIRMED: Payment verified, membership upgraded.`
+      ];
+
       await admin
         .from('payment_requests')
-        .update({ txn_hash: hash, status: 'PENDING' })
+        .update({ 
+          status: 'CONFIRMED', 
+          confirmation_count: verification.confirmations || 3,
+          confirmed_at: new Date().toISOString(), 
+          transition_logs: updatedLogs 
+        })
+        .eq('id', paymentRequestId);
+
+      // Activate Subscription
+      const actRes = await activateSubscription(user.id, request.plan_id);
+      if (!actRes.success) throw new Error(actRes.error || 'Failed to bind subscription plans');
+
+      // Add notification alert
+      await admin.from('notification_logs').insert({
+        user_id: user.id,
+        title: 'Payment Confirmed',
+        message: `Your payment was verified on-chain. ${request.plan_id.replace('_', ' ').toUpperCase()} has been activated!`,
+      });
+
+      revalidatePath('/dashboard/subscription');
+      revalidatePath('/dashboard/payments');
+      return { success: true };
+    }
+
+    // If still in transition (confirming blocks count progress)
+    if (verification.status === 'CONFIRMING' || verification.status === 'PENDING') {
+      const updatedLogs = [
+        ...detectedLogs,
+        `${new Date().toISOString()} - status: ${verification.status}: ${verification.error || 'Block validations pending...'}`
+      ];
+      await admin
+        .from('payment_requests')
+        .update({ 
+          status: verification.status, 
+          confirmation_count: verification.confirmations || 0,
+          transition_logs: updatedLogs 
+        })
         .eq('id', paymentRequestId);
 
       return {
-        success: false,
-        error: verification.error || 'Transaction verification failed. Ensure hash is correct.',
+        success: true,
+        confirming: true,
+        status: verification.status,
+        confirmations: verification.confirmations || 0,
+        message: verification.error || 'Awaiting block confirmation count validations.'
       };
     }
 
-    // 4. Save to IMMUTABLE audit log (unique constraint on txn_hash prevents double activations!)
-    const { error: auditError } = await admin
-      .from('payment_audit_logs')
-      .insert({
-        payment_request_id: paymentRequestId,
-        user_id: user.id,
-        txn_hash: hash,
-        network: request.network,
-        amount: request.amount,
-        status: 'CONFIRMED',
-        verification_source: 'MockProvider',
-        confirmed_at: new Date().toISOString(),
-      });
-
-    if (auditError) {
-      if (auditError.message.includes('unique') || auditError.code === '23505') {
-        throw new Error('This transaction hash has already been claimed and activated.');
-      }
-      throw auditError;
-    }
-
-    // 5. Update payment request status
+    // If rejected or failed on-chain
+    const failedLogs = [
+      ...detectedLogs,
+      `${new Date().toISOString()} - status: ${verification.status || 'FAILED'}: ${verification.error || 'Scan verification failed.'}`
+    ];
     await admin
       .from('payment_requests')
-      .update({ status: 'CONFIRMED', confirmed_at: new Date().toISOString() })
+      .update({ status: verification.status || 'FAILED', transition_logs: failedLogs })
       .eq('id', paymentRequestId);
 
-    // 6. Activate Subscription
-    const actRes = await activateSubscription(user.id, request.plan_id);
-    if (!actRes.success) throw new Error(actRes.error || 'Failed to activate plan subscription');
-
-    // 7. Add notification alert
-    await admin.from('notification_logs').insert({
-      user_id: user.id,
-      title: 'Payment Confirmed',
-      message: `Your payment for ${request.plan_id.replace('_', ' ').toUpperCase()} was verified automatically. Premium activated!`,
-    });
-
-    revalidatePath('/dashboard/subscription');
-    revalidatePath('/dashboard/payments');
-    return { success: true };
+    return {
+      success: false,
+      error: verification.error || 'Blockchain transaction verification checks failed.'
+    };
 
   } catch (err: any) {
     return { success: false, error: err.message || 'Verification pipeline error' };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Action: retryAdminPaymentVerification (Admin Manual Retry Trigger)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function retryAdminPaymentVerification(paymentRequestId: string) {
+  const isAdmin = await checkAdmin();
+  if (!isAdmin) return { success: false, error: 'Unauthorized admin access' };
+
+  try {
+    const supabase = await createClient();
+    const admin = await createAdminClient();
+
+    // 1. Get payment request
+    const { data: request, error: reqErr } = await supabase
+      .from('payment_requests')
+      .select('*')
+      .eq('id', paymentRequestId)
+      .single();
+
+    if (reqErr || !request) throw new Error('Payment request not found');
+    if (request.status === 'CONFIRMED') {
+      return { success: true, message: 'This transaction is already verified and confirmed.' };
+    }
+    if (!request.txn_hash) {
+      return { success: false, error: 'No transaction hash has been submitted for this invoice.' };
+    }
+
+    // 2. Perform verification scan
+    const useMock = request.txn_hash.toLowerCase().startsWith('mock_');
+    const verification = await PaymentVerificationService.verify(
+      request.txn_hash,
+      request.network,
+      request.amount,
+      request.wallet_address,
+      useMock ? 'MockProvider' : undefined
+    );
+
+    const currentLogs = request.transition_logs || [];
+    const updatedLogs = [...currentLogs, `${new Date().toISOString()} - status: ${verification.status} (Admin Retry): ${verification.error || 'No errors'}`];
+
+    // If confirmed:
+    if (verification.success && verification.confirmed) {
+      // Check duplicate
+      const { data: auditTx } = await admin
+        .from('payment_audit_logs')
+        .select('id')
+        .eq('txn_hash', request.txn_hash)
+        .maybeSingle();
+
+      if (auditTx) {
+        await admin
+          .from('payment_requests')
+          .update({ 
+            status: 'DUPLICATE',
+            transition_logs: [...updatedLogs, `${new Date().toISOString()} - status: DUPLICATE: Replay checks triggered.`]
+          })
+          .eq('id', paymentRequestId);
+        return { success: false, error: 'Duplicate transaction hash detected during retry.' };
+      }
+
+      // Record audit logs
+      await admin
+        .from('payment_audit_logs')
+        .insert({
+          payment_request_id: paymentRequestId,
+          user_id: request.user_id,
+          txn_hash: request.txn_hash,
+          network: request.network,
+          amount: request.amount,
+          status: 'CONFIRMED',
+          verification_source: useMock ? 'MockProvider' : 'RPCScanner',
+          confirmed_at: new Date().toISOString(),
+        });
+
+      // Update invoice
+      await admin
+        .from('payment_requests')
+        .update({
+          status: 'CONFIRMED',
+          confirmation_count: verification.confirmations || 3,
+          confirmed_at: new Date().toISOString(),
+          transition_logs: updatedLogs
+        })
+        .eq('id', paymentRequestId);
+
+      // Activate plan subscription
+      await activateSubscription(request.user_id, request.plan_id);
+
+      // Log notifications
+      await admin.from('notification_logs').insert({
+        user_id: request.user_id,
+        title: 'Payment Confirmed',
+        message: `Your payment was successfully confirmed on-chain via administrator retry.`,
+      });
+
+      return { success: true, confirmed: true, message: 'Transaction verified and account successfully activated!' };
+    }
+
+    // Still not confirmed, update confirmation count & status transitions
+    await admin
+      .from('payment_requests')
+      .update({
+        status: verification.status || 'PENDING',
+        confirmation_count: verification.confirmations || 0,
+        transition_logs: updatedLogs
+      })
+      .eq('id', paymentRequestId);
+
+    return { 
+      success: false, 
+      status: verification.status,
+      confirmations: verification.confirmations || 0,
+      error: verification.error || 'Transaction still not confirmed on-chain.' 
+    };
+
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Retry execution failed' };
   }
 }
 

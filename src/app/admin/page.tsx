@@ -17,7 +17,8 @@ import {
 } from '@/app/actions/feature_flags';
 import {
   getBillingPlans, getWalletSettings, updateBillingPlan,
-  updateWalletAddress, getSaaSStatistics, getAdminPaymentsLedger
+  updateWalletAddress, getSaaSStatistics, getAdminPaymentsLedger,
+  retryAdminPaymentVerification
 } from '@/app/actions/billing';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -25,7 +26,7 @@ import {
   ShieldAlert, Check, X, Award, Key, Trash, RefreshCw, 
   Users, UserCheck, UserPlus, Star, BarChart2, Loader,
   Radio, Database, Cpu, Zap, CreditCard, Wallet, FileText,
-  DollarSign, TrendingUp, HelpCircle, Clock
+  DollarSign, TrendingUp, HelpCircle, Clock, ChevronUp, ChevronDown, AlertCircle
 } from 'lucide-react';
 import { getSignalMode, setSignalMode } from '@/app/actions/signal_mode';
 
@@ -82,6 +83,11 @@ export default function AdminDashboardPage() {
   const [paymentsSearchQuery, setPaymentsSearchQuery] = useState('');
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [billingActionLoading, setBillingActionLoading] = useState<string | null>(null);
+
+  // Phase 5 Audit Retry states
+  const [expandedAdminInvoice, setExpandedAdminInvoice] = useState<string | null>(null);
+  const [retryLoadingId, setRetryLoadingId] = useState<string | null>(null);
+  const [retryStatusMessage, setRetryStatusMessage] = useState<string | null>(null);
 
   const supabase = createClient();
   const router = useRouter();
@@ -350,6 +356,24 @@ export default function AdminDashboardPage() {
       setMessage({ type: 'error', text: err.message });
     } finally {
       setBillingActionLoading(null);
+    }
+  };
+
+  const handleAdminRetry = async (invoiceId: string) => {
+    setRetryLoadingId(invoiceId);
+    setRetryStatusMessage(null);
+    try {
+      const res = await retryAdminPaymentVerification(invoiceId);
+      if (res.success) {
+        setRetryStatusMessage(res.message || 'Verification checks passed successfully!');
+        await loadData();
+      } else {
+        setRetryStatusMessage(`Verification failed: ${res.error || 'Awaiting block confirmations.'}`);
+      }
+    } catch (err: any) {
+      setRetryStatusMessage(`Error: ${err.message}`);
+    } finally {
+      setRetryLoadingId(null);
     }
   };
 
@@ -935,7 +959,7 @@ export default function AdminDashboardPage() {
 
               {/* Ledger list */}
               <div className="border border-glass-border/40 rounded-lg overflow-hidden">
-                <table className="w-full text-left text-[11px]">
+                <table className="w-full text-left text-[11px] border-collapse">
                   <thead className="bg-slate-950 border-b border-glass-border text-slate-500 uppercase tracking-wider text-[9px]">
                     <tr>
                       <th className="p-3">TRADER</th>
@@ -944,40 +968,116 @@ export default function AdminDashboardPage() {
                       <th className="p-3">DEPOSIT</th>
                       <th className="p-3">NETWORK</th>
                       <th className="p-3">TXN HASH</th>
+                      <th className="p-3 text-center">CONFS</th>
                       <th className="p-3 text-right">STATUS</th>
+                      <th className="p-3 text-right">ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-glass-border/30 text-slate-300">
-                    {paymentsList.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-900/10 transition-colors">
-                        <td className="p-3 font-mono text-xs">
-                          <div className="font-bold text-slate-200">{p.users?.username || 'Unknown'}</div>
-                          <div className="text-[8px] text-slate-500 mt-0.5">{p.users?.trader_id}</div>
-                        </td>
-                        <td className="p-3 text-slate-500">
-                          {new Date(p.created_at).toLocaleDateString()} {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="p-3 uppercase font-bold text-slate-300">{p.plan_id.replace('_', ' ')}</td>
-                        <td className="p-3 text-slate-200 font-bold">${p.amount}</td>
-                        <td className="p-3 text-slate-400">{p.network}</td>
-                        <td className="p-3 max-w-[120px] truncate select-all font-bold" title={p.txn_hash || ''}>
-                          {p.txn_hash || '—'}
-                        </td>
-                        <td className="p-3 text-right">
-                          <span className={`px-2 py-0.5 rounded border text-[9px] font-bold ${
-                            p.status === 'CONFIRMED' ? 'text-neon-green border-neon-green/30 bg-neon-green/5' :
-                            p.status === 'PENDING' || p.status === 'PROCESSING' ? 'text-amber-400 border-amber-500/30 bg-amber-500/5' :
-                            'text-rose-400 border-rose-500/30 bg-rose-500/5'
-                          }`}>
-                            {p.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {paymentsList.map((p) => {
+                      const isExpanded = expandedAdminInvoice === p.id;
+                      const canRetry = p.status !== 'CONFIRMED' && p.txn_hash;
+
+                      return (
+                        <React.Fragment key={p.id}>
+                          <tr 
+                            onClick={() => setExpandedAdminInvoice(isExpanded ? null : p.id)}
+                            className="hover:bg-slate-900/10 transition-colors cursor-pointer"
+                          >
+                            <td className="p-3 font-mono text-xs">
+                              <div className="font-bold text-slate-200 flex items-center gap-1">
+                                {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                {p.users?.username || 'Unknown'}
+                              </div>
+                              <div className="text-[8px] text-slate-500 mt-0.5">{p.users?.trader_id}</div>
+                            </td>
+                            <td className="p-3 text-slate-500">
+                              {new Date(p.created_at).toLocaleDateString()} {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td className="p-3 uppercase font-bold text-slate-300">{p.plan_id.replace('_', ' ')}</td>
+                            <td className="p-3 text-slate-200 font-bold">${p.amount}</td>
+                            <td className="p-3 text-slate-400">{p.network.replace('_', '-')}</td>
+                            <td className="p-3 max-w-[120px] truncate select-all font-bold" title={p.txn_hash || ''}>
+                              {p.txn_hash || '—'}
+                            </td>
+                            <td className="p-3 text-center font-bold text-slate-300">
+                              {p.confirmation_count || 0}
+                            </td>
+                            <td className="p-3 text-right">
+                              <span className={`px-2 py-0.5 rounded border text-[9px] font-bold uppercase ${
+                                p.status === 'CONFIRMED' ? 'text-neon-green border-neon-green/30 bg-neon-green/5' :
+                                p.status === 'PENDING' || p.status === 'PROCESSING' || p.status === 'DETECTED' || p.status === 'CONFIRMING' ? 'text-amber-400 border-amber-500/30 bg-amber-500/5' :
+                                'text-rose-400 border-rose-500/30 bg-rose-500/5'
+                              }`}>
+                                {p.status}
+                              </span>
+                            </td>
+                            <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                              {canRetry ? (
+                                <button
+                                  disabled={retryLoadingId === p.id}
+                                  onClick={() => handleAdminRetry(p.id)}
+                                  className="px-2 py-1 rounded bg-purple-950/40 border border-purple-500/30 text-purple-300 hover:bg-purple-950/80 transition-colors text-[9px] font-bold uppercase flex items-center gap-1 ml-auto"
+                                >
+                                  {retryLoadingId === p.id ? (
+                                    <Loader className="h-2.5 w-2.5 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="h-2.5 w-2.5" />
+                                  )}
+                                  <span>Retry</span>
+                                </button>
+                              ) : (
+                                <span className="text-slate-600 text-[9px] italic">—</span>
+                              )}
+                            </td>
+                          </tr>
+
+                          {/* Expanded accordion content */}
+                          {isExpanded && (
+                            <tr className="bg-slate-900/10 border-t border-glass-border/20">
+                              <td colSpan={9} className="p-4 space-y-3.5 text-left">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px] font-mono text-slate-400">
+                                  <div>
+                                    <span className="text-slate-600 text-[8px] uppercase block">Deposit Address</span>
+                                    <span className="text-slate-300 font-bold block select-all mt-0.5">{p.wallet_address}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-600 text-[8px] uppercase block">Invoice ID</span>
+                                    <span className="text-slate-300 font-bold block mt-0.5">{p.id}</span>
+                                  </div>
+                                </div>
+
+                                {retryStatusMessage && retryLoadingId !== p.id && expandedAdminInvoice === p.id && (
+                                  <div className="p-2.5 rounded border border-glass-border/30 bg-slate-950/80 text-[10px] font-mono text-slate-300 flex items-center gap-1.5">
+                                    <AlertCircle className="h-3.5 w-3.5 text-neon-green" />
+                                    <span>{retryStatusMessage}</span>
+                                  </div>
+                                )}
+
+                                <div className="border-t border-glass-border/20 pt-3">
+                                  <div className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-2">Audit Transition Logs</div>
+                                  <div className="space-y-1.5 pl-2 max-h-40 overflow-y-auto scrollbar-thin">
+                                    {p.transition_logs && p.transition_logs.map((log: string, idx: number) => (
+                                      <div key={idx} className="text-[10px] text-slate-400 font-mono flex items-start gap-1">
+                                        <span className="text-slate-600 shrink-0">&raquo;</span>
+                                        <span>{log}</span>
+                                      </div>
+                                    ))}
+                                    {(!p.transition_logs || p.transition_logs.length === 0) && (
+                                      <div className="text-[10px] text-slate-600 italic pl-1">No lifecycle state transition logs captured.</div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
 
                     {paymentsList.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="p-8 text-center text-slate-500 uppercase">
+                        <td colSpan={9} className="p-8 text-center text-slate-500 uppercase">
                           No audit transaction records found.
                         </td>
                       </tr>
