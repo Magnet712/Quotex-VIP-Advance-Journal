@@ -663,7 +663,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Part 6: Performance Preview Section */}
+      {/* Part 6: Performance Preview Section (Hidden as requested)
       <section className="py-24 border-b border-glass-border bg-slate-950/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
@@ -703,6 +703,7 @@ export default function Home() {
           )}
         </div>
       </section>
+      */}
 
       {/* Part 7: Community Section */}
       <section className="py-24 border-b border-glass-border bg-[#030611] relative">
