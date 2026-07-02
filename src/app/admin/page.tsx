@@ -1154,7 +1154,7 @@ function PricingEditCard({ plan, loading, onSave }: PricingEditProps) {
 
       <button
         onClick={() => onSave(plan.id, price, discount, enabled)}
-        disabled={loading || plan.id === 'free' || plan.id === 'vip'}
+        disabled={loading || plan.id === 'free'}
         className="w-full py-1.5 rounded bg-slate-900 border border-glass-border text-slate-300 font-bold uppercase text-[9px] hover:text-slate-200 transition-colors disabled:opacity-30 cursor-pointer"
       >
         {loading ? 'SAVING...' : 'SAVE CONFIGS'}
