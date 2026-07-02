@@ -27,6 +27,8 @@ import {
 } from '@/app/actions/signals';
 import { getSignalMode } from '@/app/actions/signal_mode';
 import { getUserAccessState } from '@/app/actions/admin_optimization';
+import { canAccess } from '@/lib/permissions';
+import LockedFeature from '@/components/LockedFeature';
 
 // ─── Strategy list (mirrors signals page — NOT modified) ──────────────────
 const STRATEGY_TAGS = [
@@ -219,30 +221,8 @@ export default function SignalHistoryPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {!userAccess.isAdmin && !userAccess.premiumAccess ? (
-          <div className="glass-panel rounded-xl border border-purple-500/35 bg-slate-900/40 p-12 text-center space-y-4 max-w-2xl mx-auto my-8 relative overflow-hidden shadow-[0_0_25px_rgba(139,92,246,0.1)]">
-            <div className="absolute -top-12 -left-12 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
-            <Lock className="h-12 w-12 text-purple-400 animate-bounce mx-auto" />
-            <h2 className="text-base font-bold font-mono text-purple-300 uppercase tracking-widest">PREMIUM HISTORY ACCESS REQUIRED</h2>
-            <p className="text-xs text-slate-400 leading-relaxed font-mono">
-              The verified historical signals ledger, win-rate metrics, strategy performance lists, and filter audits require an active Premium Signal Pro subscription.
-            </p>
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                href="/pricing"
-                className="inline-flex items-center gap-1.5 px-6 py-3 rounded bg-purple-500 hover:bg-purple-600 text-slate-950 font-bold text-xs font-mono uppercase tracking-wider transition-colors shadow-[0_0_10px_rgba(139,92,246,0.2)]"
-              >
-                <span>Upgrade to Premium</span>
-                <Zap className="h-3.5 w-3.5 fill-slate-950 text-slate-950" />
-              </Link>
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-1 px-6 py-3 rounded border border-glass-border hover:border-neon-green/30 text-slate-300 hover:text-neon-green text-xs font-mono uppercase tracking-wider transition-colors"
-              >
-                Go back to Journal
-              </Link>
-            </div>
-          </div>
+        {!userAccess.isAdmin && !canAccess('signal-history', { vip_access: userAccess.vipAccess, premium_access: userAccess.premiumAccess, status: userAccess.status }) ? (
+          <LockedFeature feature="signal-history" />
         ) : (
           <>
             {/* ── Performance Stats ────────────────────────────────────────── */}

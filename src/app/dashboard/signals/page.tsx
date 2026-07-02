@@ -33,6 +33,8 @@ import {
 } from '@/app/actions/signals';
 import { getSignalMode } from '@/app/actions/signal_mode';
 import { getPublicOptimizationSettings, getUserAccessState } from '@/app/actions/admin_optimization';
+import { canAccess } from '@/lib/permissions';
+import LockedFeature from '@/components/LockedFeature';
 
 // ─── Live Market (Webhook) Forex Pairs ─────────────────────────────────────────
 const LIVE_MARKET_PAIRS = [
@@ -857,8 +859,18 @@ export default function SignalsPage() {
     ? pairStates.filter(p => p.status === 'ACTIVE').length
     : filteredLiveMarket.length;
 
+  const profile = {
+    vip_access: userAccess.vipAccess,
+    premium_access: userAccess.premiumAccess,
+    status: userAccess.status
+  };
+
+  if (!userAccess.isAdmin && !canAccess('premium-signals', profile)) {
+    return <LockedFeature feature="premium-signals" />;
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-20">
+    <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 animate-fadeIn">
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-30 bg-[#030812]/95 border-b border-glass-border backdrop-blur-md px-4 sm:px-6 py-3">

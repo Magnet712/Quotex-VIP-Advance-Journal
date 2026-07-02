@@ -7,11 +7,19 @@ import {
   Plus, Edit2, Trash2, Image as ImageIcon, ExternalLink, 
   Search, Filter, X, Loader, Upload, AlertCircle, ArrowUpRight, ArrowDownRight, Trash, BrainCircuit, HeartHandshake, Eye
 } from 'lucide-react';
+import { getUserAccessState } from '@/app/actions/admin_optimization';
+import { canAccess } from '@/lib/permissions';
+import LockedFeature from '@/components/LockedFeature';
 
 export default function JournalPage() {
   const [loading, setLoading] = useState(true);
   const [trades, setTrades] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [userAccess, setUserAccess] = useState<any>({
+    vipAccess: false,
+    premiumAccess: false,
+    status: 'pending'
+  });
 
   // Search & Filter state
   const [search, setSearch] = useState('');
@@ -68,9 +76,23 @@ export default function JournalPage() {
 
   useEffect(() => {
     async function loadData() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
+      try {
+        const [sessionRes, accessRes] = await Promise.all([
+          supabase.auth.getSession(),
+          getUserAccessState()
+        ]);
+        if (sessionRes.data.session?.user) {
+          setUser(sessionRes.data.session.user);
+        }
+        if (accessRes.success) {
+          setUserAccess({
+            vipAccess: accessRes.vipAccess,
+            premiumAccess: accessRes.premiumAccess,
+            status: accessRes.status
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load journal page user state:', err);
       }
       await refreshTrades();
     }
@@ -400,8 +422,18 @@ export default function JournalPage() {
     return matchesSearch && matchesAsset && matchesStrategy && matchesOutcome;
   });
 
+  const profile = {
+    vip_access: userAccess.vipAccess,
+    premium_access: userAccess.premiumAccess,
+    status: userAccess.status
+  };
+
+  if (!loading && !canAccess('journal', profile)) {
+    return <LockedFeature feature="journal" />;
+  }
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-8 w-full max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-8 w-full max-w-7xl mx-auto animate-fadeIn">
       
       {/* Title / Action bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-glass-border pb-4 gap-4">

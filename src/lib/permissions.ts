@@ -1,0 +1,64 @@
+export type MembershipRole = 'free' | 'vip' | 'premium';
+
+export const ROLE_HIERARCHY: Record<MembershipRole, number> = {
+  free: 0,
+  vip: 1,
+  premium: 2,
+};
+
+export const FEATURE_MIN_ROLES: Record<string, MembershipRole> = {
+  'community': 'free',
+  'basic-resources': 'free',
+  'journal': 'vip',
+  'analytics': 'vip',
+  'checklist': 'vip',
+  'risk-calculator': 'vip',
+  'premium-signals': 'premium',
+  'signal-history': 'premium',
+  'performance-reports': 'premium',
+};
+
+/**
+ * Returns the SaaS role string based on the profile flag state.
+ */
+export function getMembershipRole(profile: { vip_access?: boolean; premium_access?: boolean; [key: string]: any } | null | undefined): MembershipRole {
+  if (!profile) return 'free';
+  if (profile.premium_access) return 'premium';
+  if (profile.vip_access) return 'vip';
+  return 'free';
+}
+
+/**
+ * Determines whether a user's role satisfies the required rank for a feature.
+ */
+export function canAccess(feature: string, profile: { vip_access?: boolean; premium_access?: boolean; [key: string]: any } | null | undefined): boolean {
+  const userRole = getMembershipRole(profile);
+  const requiredRole = FEATURE_MIN_ROLES[feature];
+  if (!requiredRole) return true; // Accessible by default if not listed
+
+  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
+}
+
+/**
+ * Returns a human readable label of the plan containing this feature.
+ */
+export function getFeatureRequiredRoleLabel(feature: string): string {
+  const role = FEATURE_MIN_ROLES[feature];
+  if (role === 'premium') return 'Premium Signal Pro';
+  if (role === 'vip') return 'VIP Journal';
+  return 'Free';
+}
+
+/**
+ * Returns a list of features with their metadata.
+ */
+export const FEATURES_LIST = [
+  { id: 'journal', name: 'Trading Journal', required: 'vip', desc: 'Advanced multi-asset trading log & ledger manager' },
+  { id: 'analytics', name: 'Analytics Dashboard', required: 'vip', desc: 'Trading statistics, charts, and metrics' },
+  { id: 'checklist', name: 'Trading Checklist', required: 'vip', desc: 'Enforce pre-trade strategies and guidelines' },
+  { id: 'risk-calculator', name: 'Risk Calculator', required: 'vip', desc: 'Position sizing & risk mitigation' },
+  { id: 'premium-signals', name: 'Signal Dashboard', required: 'premium', desc: 'Live automated signals feed' },
+  { id: 'signal-history', name: 'Signal History', required: 'premium', desc: 'Signal execution records auditing' },
+  { id: 'performance-reports', name: 'Performance Reports', required: 'premium', desc: 'Dynamic signal performance reporting' },
+  { id: 'community', name: 'Community Access', required: 'free', desc: 'Telegram and YouTube trade updates' }
+];

@@ -5,17 +5,22 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { logoutUser } from '@/app/actions/auth';
+import { getUserAccessState } from '@/app/actions/admin_optimization';
+import UpgradeModal from '@/components/UpgradeModal';
 import { 
   BarChart3, BookOpen, Award, Settings, LogOut, 
-  TrendingUp, Shield, Menu, X, Loader, User, Radio, History
+  TrendingUp, Shield, Menu, X, Loader, User, Radio, History,
+  Calculator, Send, CheckSquare, LineChart, Video, Zap
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -31,24 +36,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         setUser(session.user);
 
-        // Fetch user profile status
-        const { data: userProfile, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+        // Fetch user profile status & admin validation state concurrently
+        const [userProfile, accessRes] = await Promise.all([
+          supabase.from('users').select('*').eq('id', session.user.id).single(),
+          getUserAccessState()
+        ]);
 
-        if (error || !userProfile) {
-          console.error('Failed to fetch profile:', error);
-          // If profile does not exist, they need to register / await activation
+        if (userProfile.error || !userProfile.data) {
+          console.error('Failed to fetch profile:', userProfile.error);
           router.push('/register-info');
           return;
         }
 
-        setProfile(userProfile);
+        setProfile(userProfile.data);
+        
+        if (accessRes.success) {
+          setIsAdmin(accessRes.isAdmin);
+        }
 
         // Guard status: Only approved users can access
-        if (userProfile.status !== 'approved') {
+        if (userProfile.data.status !== 'approved') {
           router.push('/register-info?pending=true');
           return;
         }
@@ -74,11 +81,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.refresh();
   };
 
-  const navItems = [
-    { name: 'Analytics',       href: '/dashboard',               icon: BarChart3  },
-    { name: 'Journal',         href: '/dashboard/journal',        icon: BookOpen   },
-    { name: 'Signals',         href: '/dashboard/signals',        icon: Radio      },
-    { name: 'Signal History',  href: '/dashboard/signal-history', icon: History    },
+  // Grouped Navigation Items
+  const accountGroup = [
+    { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+    { name: 'Membership', href: '/dashboard/membership', icon: Award },
+    { name: 'Access Center', href: '/dashboard/access', icon: Shield },
+    { name: 'Profile', href: '/dashboard/profile', icon: User }
+  ];
+
+  const tradingGroup = [
+    { name: 'Journal', href: '/dashboard/journal', icon: BookOpen },
+    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+    { name: 'Checklist', href: '/dashboard/checklist', icon: CheckSquare },
+    { name: 'Risk Calculator', href: '/dashboard/risk-calculator', icon: Calculator }
+  ];
+
+  const signalsGroup = [
+    { name: 'Signal Dashboard', href: '/dashboard/signals', icon: Radio },
+    { name: 'Signal History', href: '/dashboard/signal-history', icon: History },
+    { name: 'Performance', href: '/dashboard/performance-reports', icon: LineChart }
+  ];
+
+  const communityGroup = [
+    { name: 'Telegram', href: 'https://t.me/Magnetoftrade', icon: Send, isExternal: true },
+    { name: 'YouTube', href: 'https://youtube.com/@magnetoftrade7751?si=Un1BlRIvS8z2Nd7W', icon: Video, isExternal: true },
+    { name: 'Referral Program', href: '/register-info', icon: Award }
   ];
 
   if (loading) {
@@ -92,53 +119,132 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
+  const renderNavGroupLinks = (items: typeof accountGroup, isMobile = false) => {
+    return items.map((item) => {
+      const isActive = pathname === item.href;
+      const key = `${isMobile ? 'm-' : 'd-'}${item.name}`;
+
+      // Check if external link
+      const isExt = 'isExternal' in item && (item as any).isExternal;
+
+      if (isExt) {
+        return (
+          <a
+            key={key}
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => isMobile && setMobileMenuOpen(false)}
+            className="group flex items-center px-4 py-2 text-[10px] font-mono font-bold tracking-wider rounded-md border bg-transparent border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 transition-all uppercase"
+          >
+            <item.icon className="mr-3 h-3.5 w-3.5 shrink-0" />
+            {item.name}
+          </a>
+        );
+      }
+
+      return (
+        <Link
+          key={key}
+          href={item.href}
+          onClick={() => isMobile && setMobileMenuOpen(false)}
+          className={`group flex items-center px-4 py-2 text-[10px] font-mono font-bold tracking-wider rounded-md border transition-all ${
+            isActive
+              ? 'bg-neon-green/15 border-neon-green/35 text-neon-green glow-text-green'
+              : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+          }`}
+        >
+          <item.icon className="mr-3 h-3.5 w-3.5 shrink-0" />
+          {item.name.toUpperCase()}
+        </Link>
+      );
+    });
+  };
+
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans grid-overlay">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans grid-overlay text-left">
+      
+      {/* Dynamic Upgrade Modal */}
+      <UpgradeModal />
+
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex md:w-64 md:flex-col fixed inset-y-0 bg-[#030812] border-r border-glass-border">
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
           {/* Logo */}
-          <div className="flex items-center px-6 pb-6 border-b border-glass-border/40">
+          <div className="flex items-center px-6 pb-5 border-b border-glass-border/40">
             <Link href="/" className="flex items-center space-x-2 text-neon-green glow-text-green font-mono font-bold tracking-wider text-sm">
               <TrendingUp className="h-5 w-5 text-neon-green" />
               <span>QUOTEX JOURNAL</span>
             </Link>
           </div>
 
-          {/* Navigation */}
-          <nav className="mt-6 flex-1 px-4 space-y-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
+          {/* Navigation groups */}
+          <nav className="mt-4 flex-grow px-4 space-y-5 overflow-y-auto max-h-[70vh] pb-4">
+            
+            {/* ACCOUNT */}
+            <div className="space-y-1">
+              <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Account</span>
+              {renderNavGroupLinks(accountGroup)}
+            </div>
+
+            {/* TRADING */}
+            <div className="space-y-1">
+              <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Trading</span>
+              {renderNavGroupLinks(tradingGroup)}
+            </div>
+
+            {/* SIGNALS */}
+            <div className="space-y-1">
+              <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Signals</span>
+              {renderNavGroupLinks(signalsGroup)}
+            </div>
+
+            {/* COMMUNITY */}
+            <div className="space-y-1">
+              <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Community</span>
+              {renderNavGroupLinks(communityGroup as any)}
+            </div>
+
+            {/* ADMIN ACCESS */}
+            {isAdmin && (
+              <div className="space-y-1">
+                <span className="text-[8px] font-mono text-rose-500/80 tracking-widest uppercase block pl-4">Admin</span>
                 <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-4 py-3 text-xs font-mono font-bold tracking-wider rounded-md border transition-all ${
-                    isActive
-                      ? 'bg-neon-green/10 border-neon-green/30 text-neon-green glow-text-green'
-                      : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
-                  }`}
+                  href="/admin"
+                  className="group flex items-center px-4 py-2 text-[10px] font-mono font-bold tracking-wider rounded-md border border-transparent text-rose-400 hover:text-rose-300 hover:bg-rose-950/10 transition-all"
                 >
-                  <item.icon className="mr-3 h-4 w-4 shrink-0" />
-                  {item.name.toUpperCase()}
+                  <Settings className="mr-3 h-3.5 w-3.5 shrink-0" />
+                  ADMIN PANEL
                 </Link>
-              );
-            })}
+              </div>
+            )}
+            
           </nav>
 
           {/* User profile / Logout */}
-          <div className="px-4 pt-4 border-t border-glass-border/40 space-y-3">
-            {/* VIP Status card */}
-            <div className={`p-3 rounded border text-left flex items-center justify-between ${
-              profile?.vip_access 
-                ? 'bg-gold-vip/10 border-gold-vip/35 text-gold-vip glow-text-gold' 
-                : 'bg-slate-900/40 border-glass-border text-slate-400'
+          <div className="px-4 pt-4 border-t border-glass-border/40 space-y-3 shrink-0">
+            
+            {/* Dynamic Membership Status Badge */}
+            <div className={`p-3 rounded-lg border text-left flex items-center justify-between ${
+              profile?.premium_access 
+                ? 'bg-purple-950/20 border-purple-500/35 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.1)]' 
+                : profile?.vip_access 
+                ? 'bg-blue-950/20 border-blue-500/35 text-blue-300' 
+                : 'bg-slate-900/30 border-glass-border text-slate-400'
             }`}>
               <div className="space-y-0.5">
                 <div className="text-[8px] font-mono tracking-wider uppercase text-slate-500">Access Tier</div>
-                <div className="text-[10px] font-mono font-bold">{profile?.vip_access ? 'PLATINUM VIP' : 'STANDARD'}</div>
+                <div className="text-[10px] font-mono font-bold">
+                  {profile?.premium_access ? 'Premium Pro' : profile?.vip_access ? 'VIP Journal' : 'Free Trader'}
+                </div>
               </div>
-              <Award className={`h-5 w-5 ${profile?.vip_access ? 'text-gold-vip' : 'text-slate-600'}`} />
+              {profile?.premium_access ? (
+                <Zap className="h-4.5 w-4.5 text-purple-400" />
+              ) : profile?.vip_access ? (
+                <Award className="h-4.5 w-4.5 text-blue-400" />
+              ) : (
+                <User className="h-4.5 w-4.5 text-slate-500" />
+              )}
             </div>
 
             <div className="flex items-center justify-between py-1">
@@ -182,27 +288,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden glass-panel border-b border-glass-border p-4 space-y-4">
-            <nav className="space-y-1">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center px-4 py-3 text-xs font-mono font-bold rounded-md border ${
-                      isActive
-                        ? 'bg-neon-green/10 border-neon-green/30 text-neon-green'
-                        : 'bg-transparent border-transparent text-slate-400'
-                    }`}
-                  >
-                    <item.icon className="mr-3 h-4 w-4" />
-                    {item.name.toUpperCase()}
-                  </Link>
-                );
-              })}
+          <div className="md:hidden glass-panel border-b border-glass-border p-4 space-y-4 max-h-[85vh] overflow-y-auto">
+            
+            {/* Navigation Groups */}
+            <nav className="space-y-4 text-left">
+              <div className="space-y-1">
+                <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Account</span>
+                {renderNavGroupLinks(accountGroup, true)}
+              </div>
+              <div className="space-y-1">
+                <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Trading</span>
+                {renderNavGroupLinks(tradingGroup, true)}
+              </div>
+              <div className="space-y-1">
+                <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Signals</span>
+                {renderNavGroupLinks(signalsGroup, true)}
+              </div>
+              <div className="space-y-1">
+                <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Community</span>
+                {renderNavGroupLinks(communityGroup as any, true)}
+              </div>
             </nav>
+
             <div className="border-t border-glass-border/40 pt-4 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <div className="p-1 rounded-full bg-slate-900">
