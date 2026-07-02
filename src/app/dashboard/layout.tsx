@@ -99,7 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const signalsGroup = [
     { name: 'Signal Dashboard', href: '/dashboard/signals', icon: Radio },
     { name: 'Signal History', href: '/dashboard/signal-history', icon: History },
-    { name: 'Performance', href: '/dashboard/performance-reports', icon: LineChart }
+    { name: 'Performance', href: '/dashboard/performance', icon: LineChart }
   ];
 
   const communityGroup = [
