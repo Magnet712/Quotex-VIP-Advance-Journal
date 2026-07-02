@@ -53,6 +53,7 @@ export default function AdminDashboardPage() {
     price_premium_6months: '',
     price_premium_lifetime: ''
   });
+  const [signalVisibility, setSignalVisibilityState] = useState<string>('premium');
   const [pricingLoading, setPricingLoading] = useState(false);
   const [pricingMessage, setPricingMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -106,6 +107,7 @@ export default function AdminDashboardPage() {
           price_premium_6months: settingsRes.settings.price_premium_6months || '$99',
           price_premium_lifetime: settingsRes.settings.price_premium_lifetime || '$199'
         });
+        setSignalVisibilityState(settingsRes.settings.signal_visibility || 'premium');
       }
 
       // Load feature flags
@@ -186,7 +188,8 @@ export default function AdminDashboardPage() {
       const res = await updateAdminOptimizationSettings({
         price_premium_monthly: prices.price_premium_monthly,
         price_premium_6months: prices.price_premium_6months,
-        price_premium_lifetime: prices.price_premium_lifetime
+        price_premium_lifetime: prices.price_premium_lifetime,
+        signal_visibility: signalVisibility
       });
       if (res.success) {
         setPricingMessage({ type: 'success', text: 'Pricing configurations updated successfully.' });
@@ -511,6 +514,49 @@ export default function AdminDashboardPage() {
                   className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 font-mono text-xs focus:outline-none focus:border-purple-500/50"
                 />
               </div>
+            </div>
+
+            {/* Signal Visibility Policy setting */}
+            <div className="space-y-1 border-t border-glass-border/40 pt-4 mt-2">
+              <label className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Signal Visibility Policy</label>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mt-2 font-mono text-xs">
+                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <input
+                    type="radio"
+                    name="signal_visibility"
+                    value="public"
+                    checked={signalVisibility === 'public'}
+                    onChange={() => setSignalVisibilityState('public')}
+                    className="bg-slate-950 border-glass-border text-purple-500 focus:ring-0 cursor-pointer"
+                  />
+                  <span>Public (All Registered)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <input
+                    type="radio"
+                    name="signal_visibility"
+                    value="vip"
+                    checked={signalVisibility === 'vip'}
+                    onChange={() => setSignalVisibilityState('vip')}
+                    className="bg-slate-950 border-glass-border text-purple-500 focus:ring-0 cursor-pointer"
+                  />
+                  <span>VIP Only</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <input
+                    type="radio"
+                    name="signal_visibility"
+                    value="premium"
+                    checked={signalVisibility === 'premium'}
+                    onChange={() => setSignalVisibilityState('premium')}
+                    className="bg-slate-950 border-glass-border text-purple-500 focus:ring-0 cursor-pointer"
+                  />
+                  <span>Premium Only</span>
+                </label>
+              </div>
+              <p className="text-[9px] text-slate-500 mt-1">
+                Dynamically adjust required permission tiers for real-time Signal Dashboards, histories, and accuracy reports.
+              </p>
             </div>
 
             {pricingMessage && (

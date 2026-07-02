@@ -31,9 +31,25 @@ export function getMembershipRole(profile: { vip_access?: boolean; premium_acces
 /**
  * Determines whether a user's role satisfies the required rank for a feature.
  */
-export function canAccess(feature: string, profile: { vip_access?: boolean; premium_access?: boolean; [key: string]: any } | null | undefined): boolean {
+export function canAccess(
+  feature: string, 
+  profile: { vip_access?: boolean; premium_access?: boolean; [key: string]: any } | null | undefined,
+  signalVisibilitySetting?: string
+): boolean {
   const userRole = getMembershipRole(profile);
-  const requiredRole = FEATURE_MIN_ROLES[feature];
+  let requiredRole = FEATURE_MIN_ROLES[feature];
+
+  // Dynamic visibility overrides for signals modules
+  if (['premium-signals', 'signal-history', 'performance-reports'].includes(feature)) {
+    if (signalVisibilitySetting === 'public') {
+      requiredRole = 'free';
+    } else if (signalVisibilitySetting === 'vip') {
+      requiredRole = 'vip';
+    } else if (signalVisibilitySetting === 'premium') {
+      requiredRole = 'premium';
+    }
+  }
+
   if (!requiredRole) return true; // Accessible by default if not listed
 
   return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];

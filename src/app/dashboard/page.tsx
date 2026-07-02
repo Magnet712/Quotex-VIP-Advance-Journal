@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { getTrades } from '@/app/actions/trades';
-import { getUserAccessState } from '@/app/actions/admin_optimization';
+import { getUserAccessState, getPublicOptimizationSettings } from '@/app/actions/admin_optimization';
 import { canAccess, getMembershipRole, FEATURES_LIST } from '@/lib/permissions';
 import { 
   User, Award, Zap, Calendar, Activity, CheckSquare, 
@@ -17,6 +17,7 @@ export default function DashboardHome() {
   const [profile, setProfile] = useState<any>(null);
   const [tradesCount, setTradesCount] = useState(0);
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
+  const [signalVisibility, setSignalVisibility] = useState('premium');
 
   const supabase = createClient();
 
@@ -28,21 +29,23 @@ export default function DashboardHome() {
         
         setUser(session.user);
 
-        // Fetch profile
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+        // Fetch profile, trades, and system settings concurrently
+        const [profileRes, tradesRes, settingsRes] = await Promise.all([
+          supabase.from('users').select('*').eq('id', session.user.id).single(),
+          getTrades(),
+          getPublicOptimizationSettings()
+        ]);
 
-        if (userProfile) {
-          setProfile(userProfile);
+        if (profileRes.data) {
+          setProfile(profileRes.data);
         }
 
-        // Fetch trades count
-        const tradesRes = await getTrades();
         if (tradesRes.success && tradesRes.trades) {
           setTradesCount(tradesRes.trades.length);
+        }
+
+        if (settingsRes.success && settingsRes.settings) {
+          setSignalVisibility(settingsRes.settings.signal_visibility || 'premium');
         }
 
         // Load dismissed notifications from localStorage
@@ -243,16 +246,21 @@ export default function DashboardHome() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {FEATURES_LIST.map((feature) => {
-            const hasAccess = canAccess(feature.id, profile);
+            const hasAccess = canAccess(feature.id, profile, signalVisibility);
             const path = featurePaths[feature.id];
             
-            // Set plan details
+            // Set plan details dynamically based on visibility overrides
             let reqLabel = 'Free';
             let tierColor = 'text-slate-500 bg-slate-900 border-slate-800';
-            if (feature.required === 'premium') {
+            let requiredPlan = feature.required;
+            if (['premium-signals', 'signal-history', 'performance-reports'].includes(feature.id)) {
+              requiredPlan = signalVisibility === 'public' ? 'free' : signalVisibility === 'vip' ? 'vip' : 'premium';
+            }
+
+            if (requiredPlan === 'premium') {
               reqLabel = 'Premium';
               tierColor = 'text-purple-400 bg-purple-950/20 border-purple-500/30';
-            } else if (feature.required === 'vip') {
+            } else if (requiredPlan === 'vip') {
               reqLabel = 'VIP';
               tierColor = 'text-blue-400 bg-blue-950/20 border-blue-500/30';
             }

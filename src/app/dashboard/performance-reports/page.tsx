@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getSignalPerformance } from '@/app/actions/signals';
-import { getUserAccessState } from '@/app/actions/admin_optimization';
+import { getUserAccessState, getPublicOptimizationSettings } from '@/app/actions/admin_optimization';
 import { canAccess } from '@/lib/permissions';
 import LockedFeature from '@/components/LockedFeature';
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -15,6 +15,7 @@ export default function PerformanceReportsPage() {
     premiumAccess: false,
     status: 'pending'
   });
+  const [optSettings, setOptSettings] = useState<Record<string, string>>({});
 
   const [otcStats, setOtcStats] = useState<any>(null);
   const [liveStats, setLiveStats] = useState<any>(null);
@@ -22,10 +23,11 @@ export default function PerformanceReportsPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [accessRes, otcRes, liveRes] = await Promise.all([
+        const [accessRes, otcRes, liveRes, settingsRes] = await Promise.all([
           getUserAccessState(),
           getSignalPerformance('live_otc'),
-          getSignalPerformance('live_market')
+          getSignalPerformance('live_market'),
+          getPublicOptimizationSettings()
         ]);
 
         if (accessRes.success) {
@@ -34,6 +36,10 @@ export default function PerformanceReportsPage() {
             premiumAccess: accessRes.premiumAccess,
             status: accessRes.status
           });
+        }
+
+        if (settingsRes.success && settingsRes.settings) {
+          setOptSettings(settingsRes.settings);
         }
 
         if (otcRes.success && otcRes.stats) {
@@ -68,7 +74,7 @@ export default function PerformanceReportsPage() {
     status: userAccess.status
   };
 
-  if (!canAccess('performance-reports', profile)) {
+  if (!canAccess('performance-reports', profile, optSettings.signal_visibility)) {
     return <LockedFeature feature="performance-reports" />;
   }
 

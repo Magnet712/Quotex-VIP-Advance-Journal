@@ -26,7 +26,7 @@ import {
   type SignalHistoryFilters,
 } from '@/app/actions/signals';
 import { getSignalMode } from '@/app/actions/signal_mode';
-import { getUserAccessState } from '@/app/actions/admin_optimization';
+import { getUserAccessState, getPublicOptimizationSettings } from '@/app/actions/admin_optimization';
 import { canAccess } from '@/lib/permissions';
 import LockedFeature from '@/components/LockedFeature';
 
@@ -106,12 +106,19 @@ export default function SignalHistoryPage() {
     premiumAccess: false,
     status: 'pending'
   });
+  const [optSettings, setOptSettings] = useState<Record<string, string>>({});
 
-  // Load user access state on mount
+  // Load user access and settings on mount
   useEffect(() => {
-    getUserAccessState().then(res => {
-      if (res.success) {
-        setUserAccess(res);
+    Promise.all([
+      getUserAccessState(),
+      getPublicOptimizationSettings()
+    ]).then(([accessRes, settingsRes]) => {
+      if (accessRes.success) {
+        setUserAccess(accessRes);
+      }
+      if (settingsRes.success && settingsRes.settings) {
+        setOptSettings(settingsRes.settings);
       }
     });
   }, []);
@@ -221,7 +228,7 @@ export default function SignalHistoryPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
-        {!userAccess.isAdmin && !canAccess('signal-history', { vip_access: userAccess.vipAccess, premium_access: userAccess.premiumAccess, status: userAccess.status }) ? (
+        {!userAccess.isAdmin && !canAccess('signal-history', { vip_access: userAccess.vipAccess, premium_access: userAccess.premiumAccess, status: userAccess.status }, optSettings.signal_visibility) ? (
           <LockedFeature feature="signal-history" />
         ) : (
           <>

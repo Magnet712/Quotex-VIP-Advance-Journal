@@ -74,7 +74,8 @@ export async function getAdminOptimizationSettings() {
       min_quality_score_live: '80',
       disabled_pairs: '',
       premium_signal_status: 'ACTIVE',
-      paused_until: ''
+      paused_until: '',
+      signal_visibility: 'premium'
     };
 
     // Populate from database
@@ -425,7 +426,8 @@ export async function getPublicOptimizationSettings() {
       min_quality_score: '80',
       disabled_pairs: '',
       premium_signal_status: 'ACTIVE',
-      paused_until: ''
+      paused_until: '',
+      signal_visibility: 'premium'
     };
 
     (data ?? []).forEach(row => {

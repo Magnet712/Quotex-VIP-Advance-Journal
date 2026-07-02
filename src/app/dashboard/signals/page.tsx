@@ -865,7 +865,7 @@ export default function SignalsPage() {
     status: userAccess.status
   };
 
-  if (!userAccess.isAdmin && !canAccess('premium-signals', profile)) {
+  if (!userAccess.isAdmin && !canAccess('premium-signals', profile, optSettings.signal_visibility)) {
     return <LockedFeature feature="premium-signals" />;
   }
 
