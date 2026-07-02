@@ -133,7 +133,11 @@ export async function loginTrader(traderId: string, password: string) {
       .single();
 
     if (profileError || !profile) {
-      return { success: false, error: 'User profile not found.' };
+      console.error('Profile fetch error for user ID:', data.user.id, profileError);
+      return { 
+        success: false, 
+        error: `User profile not found. (Debug: ${profileError?.message || 'No profile record matches auth ID'})` 
+      };
     }
 
     return {
