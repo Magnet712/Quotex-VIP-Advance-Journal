@@ -124,8 +124,9 @@ export async function loginTrader(traderId: string, password: string) {
       return { success: false, error: 'Login failed.' };
     }
 
-    // Fetch user profile status
-    const { data: profile, error: profileError } = await supabase
+    // Fetch user profile status using the admin client to bypass cookie propagation delay
+    const adminClient = createAdminClient();
+    const { data: profile, error: profileError } = await adminClient
       .from('users')
       .select('status, vip_access, premium_access')
       .eq('id', data.user.id)
