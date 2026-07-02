@@ -371,6 +371,17 @@ export default function SignalsPage() {
 
   // sound chime notifier
   const triggerNewSignalChime = useCallback((symbol: string, direction: string) => {
+    // If not premium (and not admin), turn notifications OFF
+    const hasAccessVal = userAccess.isAdmin || canAccess('premium-signals', {
+      vip_access: userAccess.vipAccess,
+      premium_access: userAccess.premiumAccess,
+      status: userAccess.status
+    }, optSettings.signal_visibility);
+
+    if (!hasAccessVal) {
+      return;
+    }
+
     if (typeof window !== 'undefined') {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav');
       audio.volume = 0.3;
@@ -384,7 +395,7 @@ export default function SignalsPage() {
     setTimeout(() => {
       setActiveToasts(prev => prev.filter(t => t.id !== toastId));
     }, 4000);
-  }, []);
+  }, [userAccess, optSettings]);
 
   const selectAll = () => {
     const list = subTab !== 'live_market' ? OTC_PAIRS : LIVE_MARKET_PAIRS;
@@ -896,43 +907,61 @@ export default function SignalsPage() {
               </div>
 
               {/* Timeline feed wrapper */}
-              <div className="space-y-3.5 max-h-[600px] overflow-y-auto pr-1">
-                {timelineSignals.map((sig) => {
-                  const isCall = sig.direction === 'CALL';
-                  const timestampStr = new Date(sig.entry_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                  
-                  return (
-                    <div key={sig.id} className="p-3 rounded-lg bg-[#02050b]/80 border border-glass-border/40 flex items-center justify-between gap-3 text-left">
-                      <div className="flex items-center gap-2">
-                        <div className={`p-1.5 rounded-full ${isCall ? 'bg-neon-green/10 text-neon-green' : 'bg-rose-500/10 text-rose-400'}`}>
-                          {isCall ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </div>
-                        <div className="font-mono text-xs">
-                          <div className="font-bold text-slate-200">{sig.pair}</div>
-                          <div className="text-[9px] text-slate-500 mt-0.5">{timestampStr} · {sig.source.toUpperCase()}</div>
-                        </div>
-                      </div>
-
-                      <div className="text-right font-mono text-[10px]">
-                        <span className={`px-2 py-0.5 rounded border font-bold uppercase ${
-                          sig.result === 'WIN' 
-                            ? 'text-neon-green border-neon-green/30 bg-neon-green/5' 
-                            : sig.result === 'LOSS'
-                            ? 'text-rose-400 border-rose-500/30 bg-rose-500/5'
-                            : 'text-slate-500 border-slate-700 bg-slate-900/30'
-                        }`}>
-                          {sig.result}
-                        </span>
-                      </div>
+              <div className="space-y-3.5 max-h-[600px] overflow-y-auto pr-1 relative">
+                {/* Lock overlay for non-premium members */}
+                {!hasAccess && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-slate-950/40 z-20 text-center space-y-2.5 font-mono">
+                    <div className="p-2.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400">
+                      <Lock className="h-4.5 w-4.5" />
                     </div>
-                  );
-                })}
-
-                {timelineSignals.length === 0 && (
-                  <div className="p-8 text-center text-slate-600 font-mono text-[10px] uppercase">
-                    No timeline logs populated.
+                    <div className="text-[10px] font-bold text-slate-200 uppercase tracking-wider">Timeline Feed Locked</div>
+                    <button
+                      onClick={() => window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: { requestedPlan: 'premium' } }))}
+                      className="px-4 py-1.5 rounded bg-purple-600 hover:bg-purple-500 text-white font-bold text-[9px] uppercase tracking-wider transition-colors shadow-md"
+                    >
+                      Unlock Feed
+                    </button>
                   </div>
                 )}
+
+                <div className={!hasAccess ? 'blur-[4.5px] select-none pointer-events-none space-y-3.5' : 'space-y-3.5'}>
+                  {timelineSignals.map((sig) => {
+                    const isCall = sig.direction === 'CALL';
+                    const timestampStr = new Date(sig.entry_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    
+                    return (
+                      <div key={sig.id} className="p-3 rounded-lg bg-[#02050b]/80 border border-glass-border/40 flex items-center justify-between gap-3 text-left">
+                        <div className="flex items-center gap-2">
+                          <div className={`p-1.5 rounded-full ${isCall ? 'bg-neon-green/10 text-neon-green' : 'bg-rose-500/10 text-rose-400'}`}>
+                            {isCall ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </div>
+                          <div className="font-mono text-xs">
+                            <div className="font-bold text-slate-200">{sig.pair}</div>
+                            <div className="text-[9px] text-slate-500 mt-0.5">{timestampStr} · {sig.source.toUpperCase()}</div>
+                          </div>
+                        </div>
+
+                        <div className="text-right font-mono text-[10px]">
+                          <span className={`px-2 py-0.5 rounded border font-bold uppercase ${
+                            sig.result === 'WIN' 
+                              ? 'text-neon-green border-neon-green/30 bg-neon-green/5' 
+                              : sig.result === 'LOSS'
+                              ? 'text-rose-400 border-rose-500/30 bg-rose-500/5'
+                              : 'text-slate-500 border-slate-700 bg-slate-900/30'
+                          }`}>
+                            {sig.result}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {timelineSignals.length === 0 && (
+                    <div className="p-8 text-center text-slate-600 font-mono text-[10px] uppercase">
+                      No timeline logs populated.
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
