@@ -172,14 +172,24 @@ export default function SignalHistoryPage() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            {/* Signal Mode Badge */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded border text-[10px] font-mono font-bold tracking-wider ${
-              signalMode === 'LIVE_OTC'
-                ? 'border-neon-green/40 bg-neon-green/10 text-neon-green'
-                : 'border-slate-700 bg-slate-900/40 text-slate-500'
-            }`}>
-              <div className={`h-1.5 w-1.5 rounded-full ${signalMode === 'LIVE_OTC' ? 'bg-neon-green animate-pulse' : 'bg-slate-600'}`} />
-              {signalMode === 'LIVE_OTC' ? 'LIVE OTC' : 'SIMULATION'}
+            {/* Signal Mode Badges */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {signalMode.split(',').map(m => m.trim()).map(mode => {
+                let colorClass = 'border-slate-700 bg-slate-900/40 text-slate-500';
+                if (mode === 'LIVE_OTC') colorClass = 'border-neon-green/40 bg-neon-green/10 text-neon-green';
+                if (mode === 'LIVE_MARKET') colorClass = 'border-sky-500/40 bg-sky-500/10 text-sky-400';
+                if (mode === 'SIMULATION') colorClass = 'border-amber-500/40 bg-amber-500/10 text-amber-400';
+                return (
+                  <div key={mode} className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[9px] font-mono font-bold tracking-wider ${colorClass}`}>
+                    <div className={`h-1.5 w-1.5 rounded-full ${
+                      mode === 'LIVE_OTC' ? 'bg-neon-green animate-pulse'
+                      : mode === 'LIVE_MARKET' ? 'bg-sky-400 animate-pulse'
+                      : 'bg-amber-400'
+                    }`} />
+                    {mode.replace('_', ' ')}
+                  </div>
+                );
+              })}
             </div>
             <button
               onClick={load}
