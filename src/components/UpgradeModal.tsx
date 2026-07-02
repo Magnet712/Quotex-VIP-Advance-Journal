@@ -188,13 +188,11 @@ export default function UpgradeModal() {
 
             <div className="pt-4">
               <Link
-                href="https://t.me/Magnetoftrade"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/dashboard/subscription"
                 onClick={() => setIsOpen(false)}
                 className="w-full inline-flex items-center justify-center gap-2 py-3 rounded border border-purple-500/35 hover:border-purple-400 bg-purple-600 hover:bg-purple-500 text-xs font-mono font-bold text-white uppercase tracking-wider transition-all shadow-md shadow-purple-900/20"
               >
-                <Send className="h-3.5 w-3.5" /> Upgrade via Telegram
+                <Zap className="h-3.5 w-3.5" /> Subscription
               </Link>
             </div>
           </div>
