@@ -439,37 +439,7 @@ async function resolveSignal(signalId, pairName, entryPrice, direction) {
   }
 }
 
-      // Find closest candle within 70 seconds matching the expiry timestamp
-      for (let i = history.length - 1; i >= 0; i--) {
-        const candleTime = new Date(history[i].timestamp).getTime();
-        if (Math.abs(candleTime - expiryTimestamp) < 70000) {
-          closestCandle = history[i];
-          break;
-        }
-      }
 
-      const expiryPrice = closestCandle.close;
-      let result = 'LOSS';
-      if (sig.direction === 'CALL') {
-        result = expiryPrice > Number(sig.entry_price) ? 'WIN' : 'LOSS';
-      } else {
-        result = expiryPrice < Number(sig.entry_price) ? 'WIN' : 'LOSS';
-      }
-
-      console.log(`[Worker Auto-Resolve] Signal ${sig.id} (${sig.pair}): ${result} (Entry: ${sig.entry_price}, Expiry Close: ${expiryPrice})`);
-
-      await supabase
-        .from('signals')
-        .update({
-          result:       result,
-          expiry_price: expiryPrice
-        })
-        .eq('id', sig.id);
-    }
-  } catch (err) {
-    console.error('[Worker Auto-Resolve Exception]:', err);
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. SIGNAL ENGINE PROCESSOR (RUNS EVALUATION RULES)
