@@ -27,11 +27,11 @@ export async function getUserAccessState() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: true, isLoggedIn: false, isAdmin: false, vipAccess: false };
+    if (!user) return { success: true, isLoggedIn: false, isAdmin: false, vipAccess: false, premiumAccess: false };
 
     const [adminCheck, userProfile] = await Promise.all([
       supabase.from('admins').select('id').eq('id', user.id).maybeSingle(),
-      supabase.from('users').select('vip_access, status').eq('id', user.id).maybeSingle()
+      supabase.from('users').select('vip_access, premium_access, status').eq('id', user.id).maybeSingle()
     ]);
 
     return {
@@ -39,6 +39,7 @@ export async function getUserAccessState() {
       isLoggedIn: true,
       isAdmin: !!adminCheck.data,
       vipAccess: userProfile.data?.vip_access ?? false,
+      premiumAccess: userProfile.data?.premium_access ?? false,
       status: userProfile.data?.status ?? 'pending'
     };
   } catch (err: any) {

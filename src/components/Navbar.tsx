@@ -90,6 +90,9 @@ export default function Navbar({ isAdminPage = false }: NavbarProps) {
               <BarChart3 className="h-4 w-4" />
               Charts
             </Link>
+            <Link href="/pricing" className="text-slate-300 hover:text-neon-green transition-colors text-sm font-medium">
+              Pricing
+            </Link>
             
             {/* Auth Buttons */}
             {loading ? (
@@ -186,6 +189,13 @@ export default function Navbar({ isAdminPage = false }: NavbarProps) {
             >
               <BarChart3 className="h-5 w-5" />
               Charts
+            </Link>
+            <Link
+              href="/pricing"
+              onClick={() => setIsOpen(false)}
+              className="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-neon-green transition-colors"
+            >
+              Pricing
             </Link>
             <hr className="border-slate-800 my-2" />
             

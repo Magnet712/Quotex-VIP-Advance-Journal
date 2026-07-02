@@ -5,14 +5,22 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { 
   getAllUsers, updateUserStatus, toggleVipAccess, 
-  resetUserPassword, getAdminStats 
+  resetUserPassword, getAdminStats, togglePremiumAccess 
 } from '@/app/actions/admin';
+import { 
+  getAdminOptimizationSettings, 
+  updateAdminOptimizationSettings 
+} from '@/app/actions/admin_optimization';
+import {
+  getAllFeatureFlags,
+  setFeatureFlag
+} from '@/app/actions/feature_flags';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { 
   ShieldAlert, Check, X, Award, Key, Trash, RefreshCw, 
   Users, UserCheck, UserPlus, Star, BarChart2, Loader,
-  Radio, Database, Cpu
+  Radio, Database, Cpu, Zap
 } from 'lucide-react';
 import { getSignalMode, setSignalMode } from '@/app/actions/signal_mode';
 
@@ -38,6 +46,19 @@ export default function AdminDashboardPage() {
   const [signalMode, setSignalModeState] = useState<string>('SIMULATION');
   const [modeLoading, setModeLoading] = useState(false);
   const [modeMessage, setModeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // ── Pricing SaaS Config state ──────────────────────────────────────────
+  const [prices, setPrices] = useState<any>({
+    price_premium_monthly: '',
+    price_premium_6months: '',
+    price_premium_lifetime: ''
+  });
+  const [pricingLoading, setPricingLoading] = useState(false);
+  const [pricingMessage, setPricingMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // ── Feature Flags state ────────────────────────────────────────────────
+  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
+  const [flagsLoading, setFlagsLoading] = useState(false);
 
   const supabase = createClient();
   const router = useRouter();
@@ -76,6 +97,22 @@ export default function AdminDashboardPage() {
       // Load current signal mode
       const modeRes = await getSignalMode();
       if (modeRes.success) setSignalModeState(modeRes.mode);
+
+      // Load optimization/pricing settings
+      const settingsRes = await getAdminOptimizationSettings();
+      if (settingsRes.success && settingsRes.settings) {
+        setPrices({
+          price_premium_monthly: settingsRes.settings.price_premium_monthly || '$19',
+          price_premium_6months: settingsRes.settings.price_premium_6months || '$99',
+          price_premium_lifetime: settingsRes.settings.price_premium_lifetime || '$199'
+        });
+      }
+
+      // Load feature flags
+      const flagsRes = await getAllFeatureFlags();
+      if (flagsRes.success) {
+        setFeatureFlags(flagsRes.flags);
+      }
     } catch (err) {
       setAuthError(true);
     } finally {
@@ -120,6 +157,64 @@ export default function AdminDashboardPage() {
       setMessage({ type: 'error', text: err.message || 'Error occurred.' });
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handlePremiumToggle = async (userId: string, currentPremium: boolean) => {
+    setActionLoading(userId);
+    setMessage(null);
+    try {
+      const res = await togglePremiumAccess(userId, !currentPremium);
+      if (res.success) {
+        setMessage({ type: 'success', text: `Premium Access successfully ${!currentPremium ? 'granted' : 'revoked'}.` });
+        await loadData();
+      } else {
+        setMessage({ type: 'error', text: res.error || 'Failed to toggle Premium status.' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Error occurred.' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleSavePrices = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPricingLoading(true);
+    setPricingMessage(null);
+    try {
+      const res = await updateAdminOptimizationSettings({
+        price_premium_monthly: prices.price_premium_monthly,
+        price_premium_6months: prices.price_premium_6months,
+        price_premium_lifetime: prices.price_premium_lifetime
+      });
+      if (res.success) {
+        setPricingMessage({ type: 'success', text: 'Pricing configurations updated successfully.' });
+      } else {
+        setPricingMessage({ type: 'error', text: res.error || 'Failed to update prices.' });
+      }
+    } catch (err: any) {
+      setPricingMessage({ type: 'error', text: err.message || 'Error occurred.' });
+    } finally {
+      setPricingLoading(false);
+    }
+  };
+
+  const handleFeatureFlagToggle = async (key: string, currentValue: boolean) => {
+    setFlagsLoading(true);
+    setMessage(null);
+    try {
+      const res = await setFeatureFlag(key, !currentValue);
+      if (res.success) {
+        setMessage({ type: 'success', text: `Feature flag "${key}" successfully toggled.` });
+        await loadData();
+      } else {
+        setMessage({ type: 'error', text: res.error || 'Failed to toggle feature flag.' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Error occurred.' });
+    } finally {
+      setFlagsLoading(false);
     }
   };
 
@@ -374,6 +469,118 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
+        {/* Pricing & SaaS Configuration Card */}
+        <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-6">
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono text-purple-400 font-bold uppercase tracking-wider block">SaaS Pricing Configuration</span>
+            <h2 className="text-base font-bold font-mono text-slate-200">Premium Subscription Pricing</h2>
+          </div>
+
+          <form onSubmit={handleSavePrices} className="space-y-4 max-w-xl">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">Monthly Price</label>
+                <input
+                  type="text"
+                  required
+                  value={prices.price_premium_monthly}
+                  onChange={(e) => setPrices({ ...prices, price_premium_monthly: e.target.value })}
+                  placeholder="$19"
+                  className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 font-mono text-xs focus:outline-none focus:border-purple-500/50"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">6 Months Price</label>
+                <input
+                  type="text"
+                  required
+                  value={prices.price_premium_6months}
+                  onChange={(e) => setPrices({ ...prices, price_premium_6months: e.target.value })}
+                  placeholder="$99"
+                  className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 font-mono text-xs focus:outline-none focus:border-purple-500/50"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono text-slate-500 uppercase tracking-wider block">Lifetime Price</label>
+                <input
+                  type="text"
+                  required
+                  value={prices.price_premium_lifetime}
+                  onChange={(e) => setPrices({ ...prices, price_premium_lifetime: e.target.value })}
+                  placeholder="$199"
+                  className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-slate-200 font-mono text-xs focus:outline-none focus:border-purple-500/50"
+                />
+              </div>
+            </div>
+
+            {pricingMessage && (
+              <div className={`p-3 rounded border text-[11px] font-mono ${
+                pricingMessage.type === 'success' ? 'border-emerald-500/30 bg-emerald-950/20 text-emerald-400' : 'border-rose-500/30 bg-rose-950/20 text-rose-400'
+              }`}>
+                {pricingMessage.text}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={pricingLoading}
+              className="flex items-center gap-1.5 px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded text-[10px] font-mono font-bold uppercase text-slate-950 transition-colors cursor-pointer"
+            >
+              {pricingLoading ? 'SAVING CONFIGS...' : 'SAVE PRICING CONFIGURATIONS'}
+            </button>
+          </form>
+        </div>
+
+        {/* Feature Flag Management Card */}
+        <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-6">
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">Feature flags</span>
+            <h2 className="text-base font-bold font-mono text-slate-200">System Modules Feature Flags</h2>
+            <p className="text-[10px] font-mono text-slate-500">Enable or disable front-end modules and services globally for all users.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Object.keys(featureFlags).map(flagKey => {
+              const isEnabled = featureFlags[flagKey];
+              return (
+                <div key={flagKey} className="glass-panel rounded-xl border border-glass-border p-4 flex flex-col justify-between space-y-4">
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-mono font-bold text-slate-300 uppercase tracking-widest">{flagKey.replace('_', ' ')}</div>
+                    <div className="text-[8px] font-mono text-slate-500">
+                      {flagKey === 'premium_signals' && 'Controls signal generation and signal tabs visibility.'}
+                      {flagKey === 'ai_review' && 'Controls AI analytics summaries and review triggers.'}
+                      {flagKey === 'checklists' && 'Controls trading checklists module access.'}
+                      {flagKey === 'pricing_page' && 'Controls visibility of SaaS pricing layouts.'}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${
+                      isEnabled 
+                        ? 'bg-neon-green/10 border-neon-green/30 text-neon-green' 
+                        : 'bg-slate-900 border-glass-border text-slate-500'
+                    }`}>
+                      {isEnabled ? 'ENABLED' : 'DISABLED'}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={flagsLoading}
+                      onClick={() => handleFeatureFlagToggle(flagKey, isEnabled)}
+                      className={`px-3 py-1 rounded text-[9px] font-mono font-bold uppercase transition-all ${
+                        isEnabled
+                          ? 'bg-rose-950/40 border border-rose-500/20 text-rose-400 hover:bg-rose-950/80'
+                          : 'bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-950/80'
+                      }`}
+                    >
+                      {isEnabled ? 'Disable' : 'Enable'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Reset Password Modal */}
         {resettingUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
@@ -445,13 +652,14 @@ export default function AdminDashboardPage() {
                   <th className="p-4">Username</th>
                   <th className="p-4">Created Date</th>
                   <th className="p-4 text-center">VIP Badge</th>
+                  <th className="p-4 text-center">Premium Badge</th>
                   <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-glass-border/40">
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-8 text-center text-slate-600">
+                    <td colSpan={6} className="p-8 text-center text-slate-600">
                       NO REGISTRATIONS FOUND IN THIS SUB-TAB.
                     </td>
                   </tr>
@@ -475,6 +683,20 @@ export default function AdminDashboardPage() {
                         >
                           <Award className="h-3.5 w-3.5" />
                           <span>{user.vip_access ? 'VIP' : 'GRANT'}</span>
+                        </button>
+                      </td>
+                      <td className="p-4 text-center">
+                        <button
+                          disabled={actionLoading === user.id}
+                          onClick={() => handlePremiumToggle(user.id, user.premium_access)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border ${
+                            user.premium_access
+                              ? 'bg-purple-950/30 border border-purple-500/50 text-purple-300 shadow-[0_0_10px_rgba(139,92,246,0.1)]'
+                              : 'bg-slate-900 border-glass-border text-slate-500 hover:text-purple-400 hover:border-purple-500/30'
+                          }`}
+                        >
+                          <Zap className="h-3.5 w-3.5 text-purple-400" />
+                          <span>{user.premium_access ? 'PREMIUM' : 'GRANT'}</span>
                         </button>
                       </td>
                       <td className="p-4 text-right space-x-2">

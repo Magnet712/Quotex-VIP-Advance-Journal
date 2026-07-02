@@ -16,6 +16,7 @@
  */
 
 import { createClient }    from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath }  from 'next/cache';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -459,3 +460,119 @@ export async function getActiveLiveMarketSignals() {
 export async function getServerTime() {
   return { success: true, timestamp: Date.now() };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTION: getPublicSignalPerformance
+// Public stats aggregator for homepage. Bypasses auth/RLS using admin client.
+// Returns aggregate statistics for the last 30 days.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getPublicSignalPerformance() {
+  try {
+    const supabase = createAdminClient();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data: signals, error } = await supabase
+      .from('signals')
+      .select('result, source, entry_time')
+      .eq('source', 'live_market')
+      .gte('entry_time', thirtyDaysAgo.toISOString());
+
+    if (error) {
+      console.error('[getPublicSignalPerformance] Database error:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    const list = signals ?? [];
+    const total = list.length;
+    const wins = list.filter(s => s.result === 'WIN').length;
+    const losses = list.filter(s => s.result === 'LOSS').length;
+    const pending = list.filter(s => s.result === 'PENDING').length;
+    const resolved = wins + losses;
+    const accuracy = resolved > 0 ? Math.round((wins / resolved) * 100 * 100) / 100 : 0;
+
+    // Calculate unique trading days
+    const uniqueDays = new Set(list.map(s => s.entry_time ? s.entry_time.split('T')[0] : '')).size;
+    const dailyAverage = uniqueDays > 0 ? Math.round((total / uniqueDays) * 10) / 10 : 0;
+
+    return {
+      success: true,
+      stats: { total, wins, losses, pending, accuracy, dailyAverage }
+    };
+  } catch (err: any) {
+    console.error('[getPublicSignalPerformance] Unexpected error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTION: getPublicRecentSignals
+// Fetch recent signals to display in homepage preview. Bypasses RLS.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getPublicRecentSignals(limit = 6) {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from('signals')
+      .select('id, pair, direction, entry_time, expiry_time, confidence, result, source, timeframe, strategy_name')
+      .order('entry_time', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('[getPublicRecentSignals] Database error:', error.message);
+      return { success: false, error: error.message, signals: [] };
+    }
+
+    return { success: true, signals: data ?? [] };
+  } catch (err: any) {
+    console.error('[getPublicRecentSignals] Unexpected error:', err);
+    return { success: false, error: err.message, signals: [] };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTION: getPublicCommunityStats
+// Fetch real member, journal user, and premium member counts for homepage.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getPublicCommunityStats() {
+  try {
+    const supabase = createAdminClient();
+    
+    // Trading Members: count of approved users
+    const { count: tradingMembers, error: err1 } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'approved');
+
+    if (err1) console.error('[getPublicCommunityStats] Error approved users:', err1.message);
+
+    // Journal Users: count of unique user_ids with trades logged
+    const { data: uniqueTraders, error: err2 } = await supabase
+      .from('trades')
+      .select('user_id');
+
+    if (err2) console.error('[getPublicCommunityStats] Error trades count:', err2.message);
+    const journalUsers = uniqueTraders ? new Set(uniqueTraders.map(t => t.user_id)).size : 0;
+
+    // Premium Members: count of users with premium_access = true
+    const { count: premiumMembers, error: err3 } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('premium_access', true);
+
+    if (err3) console.error('[getPublicCommunityStats] Error premium count:', err3.message);
+
+    return {
+      success: true,
+      stats: {
+        tradingMembers: tradingMembers ?? 0,
+        journalUsers: journalUsers ?? 0,
+        premiumMembers: premiumMembers ?? 0
+      }
+    };
+  } catch (err: any) {
+    console.error('[getPublicCommunityStats] Unexpected error:', err);
+    return { success: false, error: err.message };
+  }
+}
+

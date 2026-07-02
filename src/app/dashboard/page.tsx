@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getTrades, eraseTrades } from '@/app/actions/trades';
+import { getUserAccessState } from '@/app/actions/admin_optimization';
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -10,7 +11,7 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, Award, DollarSign, Target, Activity, 
-  Flame, ShieldAlert, BarChart3, Plus, ArrowRight, Loader, Trash2, Calendar
+  Flame, ShieldAlert, BarChart3, Plus, ArrowRight, Loader, Trash2, Calendar, Zap
 } from 'lucide-react';
 
 export default function AnalyticsPage() {
@@ -18,6 +19,11 @@ export default function AnalyticsPage() {
   const [isErasing, setIsErasing] = useState(false);
   const [trades, setTrades] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [userAccess, setUserAccess] = useState<any>({
+    vipAccess: false,
+    premiumAccess: false,
+    status: 'pending'
+  });
 
   // Daily Inspector State
   const [inspectorDate, setInspectorDate] = useState(() => {
@@ -29,19 +35,29 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     setMounted(true);
-    async function loadTrades() {
+    async function loadDashboardData() {
       try {
-        const res = await getTrades();
-        if (res.success && res.trades) {
-          setTrades(res.trades);
+        const [tradesRes, accessRes] = await Promise.all([
+          getTrades(),
+          getUserAccessState()
+        ]);
+        if (tradesRes.success && tradesRes.trades) {
+          setTrades(tradesRes.trades);
+        }
+        if (accessRes.success) {
+          setUserAccess({
+            vipAccess: accessRes.vipAccess,
+            premiumAccess: accessRes.premiumAccess,
+            status: accessRes.status
+          });
         }
       } catch (err) {
-        console.error('Failed to load trades:', err);
+        console.error('Failed to load dashboard data:', err);
       } finally {
         setLoading(false);
       }
     }
-    loadTrades();
+    loadDashboardData();
   }, []);
 
   const handleEraseData = async () => {
@@ -254,6 +270,74 @@ export default function AnalyticsPage() {
         >
           <Trash2 className="h-4 w-4" /> ERASE ALL DATA
         </button>
+      </div>
+
+      {/* Current Membership Status Card */}
+      <div className="glass-panel p-6 rounded-xl border border-glass-border/60 bg-[#060b17]/50 flex flex-col md:flex-row md:items-center justify-between gap-6 text-left relative overflow-hidden">
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono text-slate-500 tracking-wider uppercase block">Subscription Details</span>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold font-mono text-slate-200">Current Plan:</h2>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-mono font-bold uppercase ${
+                userAccess.premiumAccess
+                  ? 'bg-purple-950/30 border border-purple-500/50 text-purple-300 shadow-[0_0_10px_rgba(139,92,246,0.1)]'
+                  : userAccess.vipAccess
+                    ? 'bg-gold-vip/10 border border-gold-vip/30 text-gold-vip'
+                    : 'bg-slate-900 border border-slate-700 text-slate-400'
+              }`}>
+                {userAccess.premiumAccess ? 'Premium Signal Pro' : userAccess.vipAccess ? 'VIP Journal' : 'Free Member'}
+              </span>
+            </div>
+          </div>
+
+          {/* Access Feature List */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs font-mono">
+            <div className="flex items-center gap-1.5 text-emerald-400">
+              <span>✓</span> <span className="text-slate-300">Trading Journal</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-emerald-400">
+              <span>✓</span> <span className="text-slate-300">Analytics Dashboard</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-emerald-400">
+              <span>✓</span> <span className="text-slate-300">Trading Checklist</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className={userAccess.premiumAccess ? 'text-emerald-400' : 'text-purple-400'}>
+                {userAccess.premiumAccess ? '✓' : '🔒'}
+              </span> 
+              <span className={userAccess.premiumAccess ? 'text-slate-300 font-semibold' : 'text-slate-500'}>Premium Signals</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className={userAccess.premiumAccess ? 'text-emerald-400' : 'text-purple-400'}>
+                {userAccess.premiumAccess ? '✓' : '🔒'}
+              </span> 
+              <span className={userAccess.premiumAccess ? 'text-slate-300 font-semibold' : 'text-slate-500'}>Signal History</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className={userAccess.premiumAccess ? 'text-emerald-400' : 'text-purple-400'}>
+                {userAccess.premiumAccess ? '✓' : '🔒'}
+              </span> 
+              <span className={userAccess.premiumAccess ? 'text-slate-300 font-semibold' : 'text-slate-500'}>Live Alerts</span>
+            </div>
+          </div>
+        </div>
+
+        {!userAccess.premiumAccess && (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 relative z-10">
+            <div className="text-right hidden lg:block space-y-0.5">
+              <div className="text-[9px] font-mono text-purple-400 font-bold uppercase tracking-wider">Upgrade Offer</div>
+              <div className="text-[11px] text-slate-400 max-w-[200px] leading-snug">Unlock live AI signals and entry targets.</div>
+            </div>
+            <Link
+              href="/pricing"
+              className="px-5 py-3 rounded bg-purple-500 hover:bg-purple-600 text-slate-950 font-extrabold text-xs font-mono tracking-widest text-center uppercase transition-all shadow-[0_0_12px_rgba(139,92,246,0.25)] flex items-center justify-center gap-1.5"
+            >
+              <span>Upgrade to Unlock</span>
+              <Zap className="h-4.5 w-4.5 text-slate-950 fill-slate-950" />
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* KPI Row */}

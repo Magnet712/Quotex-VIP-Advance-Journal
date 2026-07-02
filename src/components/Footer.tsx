@@ -36,6 +36,9 @@ export default function Footer() {
               <Link href="/#charts" className="hover:text-neon-green transition-colors">Analytical Charts</Link>
             </li>
             <li>
+              <Link href="/pricing" className="hover:text-neon-green transition-colors">Pricing & Membership</Link>
+            </li>
+            <li>
               <Link href="/register-info" className="hover:text-neon-green transition-colors">How it Works</Link>
             </li>
           </ul>

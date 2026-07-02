@@ -22,7 +22,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   TrendingUp, TrendingDown, Clock, AlertTriangle, Zap,
   Target, Activity, RefreshCw, Shield, Radio, BarChart2,
-  ChevronUp, ChevronDown, Eye, Filter, Signal, Database, Award
+  ChevronUp, ChevronDown, Eye, Filter, Signal, Database, Award, Lock
 } from 'lucide-react';
 
 // ─── Signal persistence actions (data layer — strategy unchanged) ─────────
@@ -371,7 +371,7 @@ export default function SignalsPage() {
   const [dataSourceOnline, setDataSourceOnline] = useState(true);
 
   // ── Admin optimization settings & User roles ─────────────────────────────
-  const [userAccess, setUserAccess] = useState<any>({ isLoggedIn: false, isAdmin: false, vipAccess: false, status: 'pending' });
+  const [userAccess, setUserAccess] = useState<any>({ isLoggedIn: false, isAdmin: false, vipAccess: false, premiumAccess: false, status: 'pending' });
   const [optSettings, setOptSettings] = useState<Record<string, string>>({
     min_confidence: '80',
     allowed_signal_hours: '08:00-12:00,18:00-22:00',
@@ -1174,19 +1174,27 @@ export default function SignalsPage() {
               Premium signals are currently undergoing validation. Live access is restricted to system administrators. Regular premium service will launch shortly.
             </p>
           </div>
-        ) : !userAccess.isAdmin && !userAccess.vipAccess ? (
-          <div className="glass-panel rounded-xl border border-gold-vip/35 bg-slate-900/40 p-12 text-center space-y-4 max-w-2xl mx-auto my-8">
-            <Award className="h-12 w-12 text-gold-vip animate-bounce mx-auto" />
-            <h2 className="text-base font-bold font-mono text-gold-vip uppercase tracking-widest">PLATINUM VIP ACCESS REQUIRED</h2>
+        ) : !userAccess.isAdmin && !userAccess.premiumAccess ? (
+          <div className="glass-panel rounded-xl border border-purple-500/35 bg-slate-900/40 p-12 text-center space-y-4 max-w-2xl mx-auto my-8 relative overflow-hidden shadow-[0_0_25px_rgba(139,92,246,0.1)]">
+            <div className="absolute -top-12 -left-12 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
+            <Lock className="h-12 w-12 text-purple-400 animate-bounce mx-auto" />
+            <h2 className="text-base font-bold font-mono text-purple-300 uppercase tracking-widest">PREMIUM SIGNAL ACCESS REQUIRED</h2>
             <p className="text-xs text-slate-400 leading-relaxed font-mono">
-              Live signal generation, orderflow indicators, and real-time execution parameters require an active VIP subscription.
+              Live automated signal engines, entry thresholds, confluence triggers, and high-priority browser alerts require an active Premium Signal Pro subscription.
             </p>
-            <div className="pt-4">
+            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
-                href="/#vip"
-                className="inline-flex items-center gap-1.5 px-6 py-3 rounded bg-gold-vip text-slate-950 font-bold hover:bg-yellow-500 text-xs font-mono uppercase tracking-wider transition-colors glow-button"
+                href="/pricing"
+                className="inline-flex items-center gap-1.5 px-6 py-3 rounded bg-purple-500 hover:bg-purple-600 text-slate-950 font-bold text-xs font-mono uppercase tracking-wider transition-colors shadow-[0_0_10px_rgba(139,92,246,0.2)]"
               >
-                Upgrade to Platinum VIP
+                <span>Upgrade to Premium</span>
+                <Zap className="h-3.5 w-3.5 fill-slate-950 text-slate-950" />
+              </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1 px-6 py-3 rounded border border-glass-border hover:border-neon-green/30 text-slate-300 hover:text-neon-green text-xs font-mono uppercase tracking-wider transition-colors"
+              >
+                Go back to Journal
               </Link>
             </div>
           </div>

@@ -97,6 +97,29 @@ export async function toggleVipAccess(userId: string, vipAccess: boolean) {
 }
 
 /**
+ * Toggles a user's Premium access flag.
+ */
+export async function togglePremiumAccess(userId: string, premiumAccess: boolean) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) {
+    return { success: false, error: 'Unauthorized. Admin access required.' };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('users')
+    .update({ premium_access: premiumAccess })
+    .eq('id', userId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath('/admin');
+  return { success: true };
+}
+
+/**
  * Resets a user's password directly using the Supabase Admin client.
  */
 export async function resetUserPassword(userId: string, newPassword: string) {

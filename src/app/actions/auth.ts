@@ -127,7 +127,7 @@ export async function loginTrader(traderId: string, password: string) {
     // Fetch user profile status
     const { data: profile, error: profileError } = await supabase
       .from('users')
-      .select('status, vip_access')
+      .select('status, vip_access, premium_access')
       .eq('id', data.user.id)
       .single();
 
@@ -139,6 +139,7 @@ export async function loginTrader(traderId: string, password: string) {
       success: true,
       status: profile.status,
       vipAccess: profile.vip_access,
+      premiumAccess: profile.premium_access,
     };
   } catch (err: any) {
     console.error('Login error:', err);
