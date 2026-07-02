@@ -748,7 +748,7 @@ export default function SignalsPage() {
             { label: 'WIN RATE (ALL)', value: subTab !== 'live_market' ? (otcStats.winRate !== null ? `${otcStats.winRate}%` : '84.5%') : (liveMarketStats.winRate !== null ? `${liveMarketStats.winRate}%` : '82.3%'), icon: Target, color: 'text-gold-vip', glow: 'shadow-[0_0_10px_rgba(255,215,0,0.1)]' },
             { label: 'ASSETS LOADED', value: subTab !== 'live_market' ? `${selectedPairs.size}/${OTC_PAIRS.length}` : `${Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length}/${LIVE_MARKET_PAIRS.length}`, icon: BarChart2, color: 'text-slate-300' },
           ].map((stat, i) => (
-            <div key={i} className={`glass-panel rounded-xl p-4 flex items-center justify-between ${stat.glow}`}>
+            <div key={i} className={`glass-panel rounded-xl p-4 flex items-center justify-between transition-all duration-300 ${stat.glow} ${!hasAccess ? 'blur-[4.5px] select-none pointer-events-none' : ''}`}>
               <div>
                 <div className="text-[9px] font-mono text-slate-500 tracking-widest uppercase">{stat.label}</div>
                 <div className={`text-xl font-extrabold font-mono mt-1.5 ${stat.color}`}>{stat.value}</div>
