@@ -10,8 +10,9 @@ import UpgradeModal from '@/components/UpgradeModal';
 import { 
   BarChart3, BookOpen, Award, Settings, LogOut, 
   TrendingUp, Shield, Menu, X, Loader, User, Radio, History,
-  Calculator, Send, CheckSquare, LineChart, Video, Zap
+  Calculator, Send, CheckSquare, LineChart, Video, Zap, CreditCard, Bell
 } from 'lucide-react';
+import { getUserNotifications, markNotificationsRead } from '@/app/actions/billing';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -20,6 +21,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  
+  // Notifications states
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   
   const router = useRouter();
   const pathname = usePathname();
@@ -81,10 +87,80 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.refresh();
   };
 
+  useEffect(() => {
+    if (loading || !user) return;
+    async function loadNotifications() {
+      try {
+        const res = await getUserNotifications();
+        if (res.success && res.notifications) {
+          setNotifications(res.notifications);
+          setUnreadNotifications(res.notifications.filter((n: any) => !n.is_read).length);
+        }
+      } catch (err) {
+        console.error('Failed to load notifications:', err);
+      }
+    }
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [loading, user]);
+
+  const handleToggleNotifications = async () => {
+    setShowNotificationsDropdown(!showNotificationsDropdown);
+    if (!showNotificationsDropdown && unreadNotifications > 0) {
+      await markNotificationsRead();
+      setUnreadNotifications(0);
+    }
+  };
+
+  const renderNotificationsBell = (align: 'up' | 'down' = 'down') => {
+    return (
+      <div className="relative font-mono">
+        <button
+          onClick={handleToggleNotifications}
+          className="p-1.5 rounded bg-slate-900/50 hover:bg-slate-800 text-slate-500 hover:text-slate-300 border border-glass-border transition-colors relative"
+          title="Notifications"
+        >
+          <Bell className="h-3.5 w-3.5" />
+          {unreadNotifications > 0 && (
+            <span className="absolute -top-1 -right-1 h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+          )}
+        </button>
+
+        {showNotificationsDropdown && (
+          <div className={`absolute right-0 ${
+            align === 'up' ? 'bottom-10' : 'top-10'
+          } z-50 w-64 glass-panel border border-glass-border rounded-xl p-3 space-y-2 text-left shadow-xl bg-[#030812]`}>
+            <div className="text-[8px] text-slate-550 uppercase tracking-wider border-b border-glass-border/40 pb-1.5 flex justify-between items-center">
+              <span>Alert Notifications</span>
+              {unreadNotifications > 0 && <span className="text-rose-450 font-bold">{unreadNotifications} Unread</span>}
+            </div>
+            <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+              {notifications.map((n: any) => (
+                <div key={n.id} className="text-[10px] space-y-0.5 border-b border-glass-border/10 pb-1.5 last:border-0 last:pb-0">
+                  <div className="font-bold text-slate-200">{n.title}</div>
+                  <p className="text-slate-400 text-[9px] leading-normal">{n.message}</p>
+                  <span className="text-[7px] text-slate-655 block">{new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+              ))}
+              {notifications.length === 0 && (
+                <div className="text-center py-4 text-[9px] text-slate-650 uppercase">
+                  No notifications
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Grouped Navigation Items
   const accountGroup = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
     { name: 'Membership', href: '/dashboard/membership', icon: Award },
+    { name: 'Subscription', href: '/dashboard/subscription', icon: CreditCard },
+    { name: 'Payments', href: '/dashboard/payments', icon: History },
     { name: 'Access Center', href: '/dashboard/access', icon: Shield },
     { name: 'Profile', href: '/dashboard/profile', icon: User }
   ];
@@ -257,13 +333,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="text-[8px] font-mono text-slate-500 truncate">ID: {profile?.trader_id}</div>
                 </div>
               </div>
-              <button
-                onClick={handleLogout}
-                className="p-1.5 rounded bg-slate-900/50 hover:bg-rose-950/20 text-slate-500 hover:text-rose-500 border border-glass-border transition-colors"
-                title="Log Out"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-              </button>
+              <div className="flex items-center space-x-1.5 relative">
+                {renderNotificationsBell('up')}
+                <button
+                  onClick={handleLogout}
+                  className="p-1.5 rounded bg-slate-900/50 hover:bg-rose-950/20 text-slate-500 hover:text-rose-500 border border-glass-border transition-colors"
+                  title="Log Out"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -278,12 +357,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span>QUOTEX JOURNAL</span>
           </Link>
 
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded text-slate-400 hover:text-slate-200"
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          <div className="flex items-center gap-2">
+            {renderNotificationsBell('down')}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded text-slate-400 hover:text-slate-200"
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </header>
 
         {/* Mobile Dropdown Menu */}
