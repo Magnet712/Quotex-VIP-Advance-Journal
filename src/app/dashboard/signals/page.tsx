@@ -345,7 +345,7 @@ export default function SignalsPage() {
   const timeOffsetRef = useRef(0);
   const istTime = useISTClock(timeOffset);
   const supabase = createClient();
-  const [subTab, setSubTab] = useState<'otc_sim' | 'live_market'>('otc_sim');
+  const [subTab, setSubTab] = useState<'live_otc' | 'simulation' | 'live_market'>('live_otc');
   const [liveMarketSignals, setLiveMarketSignals] = useState<any[]>([]);
   const [windowSeed, setWindowSeed] = useState(0);
   const windowSeedRef = useRef(0);
@@ -406,7 +406,7 @@ export default function SignalsPage() {
   };
 
   const selectAll = () => {
-    const list = subTab === 'otc_sim' ? OTC_PAIRS : LIVE_MARKET_PAIRS;
+    const list = subTab !== 'live_market' ? OTC_PAIRS : LIVE_MARKET_PAIRS;
     setSelectedPairs(new Set(list.map(p => p.short)));
   };
   const clearAll   = () => setSelectedPairs(new Set());
@@ -588,12 +588,13 @@ export default function SignalsPage() {
   // Auto-set the active sub-tab based on allowed admin modes
   useEffect(() => {
     if (signalMode) {
-      const activeOtc = signalMode.includes('LIVE_OTC') || signalMode.includes('SIMULATION');
-      const activeLive = signalMode.includes('LIVE_MARKET');
-      if (activeLive && !activeOtc) {
+      const modes = signalMode.split(',').map(m => m.trim());
+      if (modes.includes('LIVE_OTC')) {
+        setSubTab('live_otc');
+      } else if (modes.includes('SIMULATION')) {
+        setSubTab('simulation');
+      } else if (modes.includes('LIVE_MARKET')) {
         setSubTab('live_market');
-      } else if (!activeLive && activeOtc) {
-        setSubTab('otc_sim');
       }
     }
   }, [signalMode]);
@@ -682,7 +683,7 @@ export default function SignalsPage() {
               strategy_name:    sig.strategy,
               confidence:       sig.confidence,
               risk_level:       sig.risk,
-              source:           signalMode === 'LIVE_OTC' ? 'live_otc' : 'simulation',
+              source:           subTab === 'live_otc' ? 'live_otc' : 'simulation',
               strategy_version: sig.strategy_version,
               quality_score:    sig.quality_score,
               is_premium:       sig.is_premium,
@@ -770,7 +771,7 @@ export default function SignalsPage() {
                   strategy_name:    sig.strategy,
                   confidence:       sig.confidence,
                   risk_level:       sig.risk,
-                  source:           signalMode === 'LIVE_OTC' ? 'live_otc' : 'simulation',
+                  source:           subTab === 'live_otc' ? 'live_otc' : 'simulation',
                   strategy_version: sig.strategy_version,
                   quality_score:    sig.quality_score,
                   is_premium:       sig.is_premium,
@@ -851,7 +852,7 @@ export default function SignalsPage() {
     return true;
   });
 
-  const activeCount = subTab === 'otc_sim'
+  const activeCount = subTab !== 'live_market'
     ? pairStates.filter(p => p.status === 'ACTIVE').length
     : filteredLiveMarket.length;
 
@@ -882,18 +883,22 @@ export default function SignalsPage() {
               <RefreshCw className={`h-3.5 w-3.5 ${refreshIn <= 5 ? 'text-gold-vip animate-spin' : 'text-slate-500'}`} />
               <span>REFRESH IN <span className="text-gold-vip font-bold">{refreshIn}s</span></span>
             </div>
-            {/* ── Data Source Status Badge (admin-controlled signal mode) ── */}
+            {/* ── Data Source Status Badge (current selected mode) ── */}
             <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[9px] font-mono font-bold ${
-              signalMode === 'LIVE_OTC' && dataSourceOnline
+              subTab === 'live_market'
+                ? 'border-rose-500/30 bg-rose-500/10 text-rose-400'
+                : subTab === 'live_otc' && dataSourceOnline
                 ? 'border-neon-green/40 bg-neon-green/10 text-neon-green'
-                : signalMode === 'LIVE_OTC' && !dataSourceOnline
+                : subTab === 'live_otc' && !dataSourceOnline
                 ? 'border-rose-500/30 bg-rose-500/10 text-rose-400'
                 : 'border-slate-800 bg-slate-900/30 text-slate-600'
             }`}>
               <Database className="h-3 w-3" />
-              {signalMode === 'LIVE_OTC' && dataSourceOnline
+              {subTab === 'live_market'
+                ? 'LIVE MARKET'
+                : subTab === 'live_otc' && dataSourceOnline
                 ? 'LIVE OTC'
-                : signalMode === 'LIVE_OTC' && !dataSourceOnline
+                : subTab === 'live_otc' && !dataSourceOnline
                 ? 'DATA SOURCE OFFLINE'
                 : 'SIMULATION'}
             </div>
@@ -907,9 +912,9 @@ export default function SignalsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'ACTIVE SIGNALS', value: activeCount.toString(), icon: Radio, color: 'text-neon-green', glow: 'shadow-[0_0_10px_rgba(0,230,118,0.15)]' },
-            { label: 'TODAY\'S SIGNALS', value: subTab === 'otc_sim' ? Math.max(otcStats.totalToday, totalToday).toString() : liveMarketStats.totalToday.toString(), icon: Signal, color: 'text-slate-200', glow: '' },
-            { label: 'WIN RATE (ALL)', value: subTab === 'otc_sim' ? (otcStats.winRate !== null ? `${otcStats.winRate}%` : '—') : (liveMarketStats.winRate !== null ? `${liveMarketStats.winRate}%` : '—'), icon: Target, color: 'text-gold-vip', glow: 'shadow-[0_0_10px_rgba(255,215,0,0.1)]' },
-            { label: 'ASSETS SELECTED', value: subTab === 'otc_sim' ? `${selectedPairs.size}/${OTC_PAIRS.length}` : `${Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length}/${LIVE_MARKET_PAIRS.length}`, icon: BarChart2, color: (subTab === 'otc_sim' ? selectedPairs.size === OTC_PAIRS.length : Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length === LIVE_MARKET_PAIRS.length) ? 'text-slate-200' : 'text-gold-vip', glow: '' },
+            { label: 'TODAY\'S SIGNALS', value: subTab !== 'live_market' ? Math.max(otcStats.totalToday, totalToday).toString() : liveMarketStats.totalToday.toString(), icon: Signal, color: 'text-slate-200', glow: '' },
+            { label: 'WIN RATE (ALL)', value: subTab !== 'live_market' ? (otcStats.winRate !== null ? `${otcStats.winRate}%` : '—') : (liveMarketStats.winRate !== null ? `${liveMarketStats.winRate}%` : '—'), icon: Target, color: 'text-gold-vip', glow: 'shadow-[0_0_10px_rgba(255,215,0,0.1)]' },
+            { label: 'ASSETS SELECTED', value: subTab !== 'live_market' ? `${selectedPairs.size}/${OTC_PAIRS.length}` : `${Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length}/${LIVE_MARKET_PAIRS.length}`, icon: BarChart2, color: (subTab !== 'live_market' ? selectedPairs.size === OTC_PAIRS.length : Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length === LIVE_MARKET_PAIRS.length) ? 'text-slate-200' : 'text-gold-vip', glow: '' },
           ].map((stat, i) => (
             <div key={i} className={`glass-panel rounded-lg p-4 flex items-center justify-between ${stat.glow}`}>
               <div>
@@ -936,21 +941,36 @@ export default function SignalsPage() {
           </div>
         </div>
 
-        {/* ── Sub-Tab Selector (Live OTC vs Live Market) ───────────────────── */}
+        {/* ── Sub-Tab Selector ───────────────────────────────────────────── */}
         <div className="flex flex-wrap gap-2 border-b border-slate-900 pb-3">
-          {(signalMode.includes('LIVE_OTC') || signalMode.includes('SIMULATION')) && (
+          {signalMode.includes('LIVE_OTC') && (
             <button
-              onClick={() => setSubTab('otc_sim')}
+              onClick={() => setSubTab('live_otc')}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${
-                subTab === 'otc_sim'
+                subTab === 'live_otc'
                   ? 'bg-neon-green/10 border-neon-green/30 text-neon-green shadow-[0_0_15px_rgba(0,230,118,0.05)]'
                   : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
               }`}
             >
               <Radio className="h-3.5 w-3.5 animate-pulse text-neon-green" />
-              LIVE OTC & SIMULATION
+              LIVE OTC
             </button>
           )}
+
+          {signalMode.includes('SIMULATION') && (
+            <button
+              onClick={() => setSubTab('simulation')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${
+                subTab === 'simulation'
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.05)]'
+                  : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
+              }`}
+            >
+              <Database className="h-3.5 w-3.5 text-amber-400" />
+              SIMULATION
+            </button>
+          )}
+
           {signalMode.includes('LIVE_MARKET') && (
             <button
               onClick={() => setSubTab('live_market')}
@@ -976,10 +996,10 @@ export default function SignalsPage() {
             <div className="flex items-center gap-2">
               <BarChart2 className="h-4 w-4 text-gold-vip" />
               <span className="text-xs font-mono font-bold text-gold-vip tracking-widest">
-                {subTab === 'otc_sim' ? 'ASSET (OTC) SELECTOR' : 'LIVE MARKET ASSETS'}
+                {subTab !== 'live_market' ? 'ASSET (OTC) SELECTOR' : 'LIVE MARKET ASSETS'}
               </span>
               <span className="text-[9px] font-mono text-slate-600 border border-slate-800 px-1.5 py-0.5 rounded">
-                {subTab === 'otc_sim' 
+                {subTab !== 'live_market' 
                   ? `${selectedPairs.size}/${OTC_PAIRS.length}` 
                   : `${Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length}/${LIVE_MARKET_PAIRS.length}`
                 } SELECTED
@@ -1016,7 +1036,7 @@ export default function SignalsPage() {
                     <button
                       key={v}
                       onClick={() => {
-                        const list = subTab === 'otc_sim' ? OTC_PAIRS : LIVE_MARKET_PAIRS;
+                        const list = subTab !== 'live_market' ? OTC_PAIRS : LIVE_MARKET_PAIRS;
                         setSelectedPairs(new Set(list.filter(p => p.vol === v).map(p => p.short)));
                       }}
                       className={`px-2.5 py-1 rounded text-[9px] font-mono font-bold border transition-colors ${
@@ -1032,7 +1052,7 @@ export default function SignalsPage() {
 
                 {/* Pair toggle chips */}
                 <div className="flex flex-wrap gap-2">
-                  {(subTab === 'otc_sim' ? OTC_PAIRS : LIVE_MARKET_PAIRS).map(pair => {
+                  {(subTab !== 'live_market' ? OTC_PAIRS : LIVE_MARKET_PAIRS).map(pair => {
                     const isSelected = selectedPairs.has(pair.short);
                     const volColor = pair.vol === 'HIGH' ? 'text-rose-400' : pair.vol === 'LOW' ? 'text-slate-500' : 'text-amber-400';
                     return (
@@ -1050,7 +1070,7 @@ export default function SignalsPage() {
                           <span>{pair.symbol}</span>
                         </div>
                         <div className={`text-[7px] font-normal mt-0.5 ${isSelected ? volColor : 'text-slate-700'}`}>
-                          {subTab === 'otc_sim' ? 'OTC' : 'LIVE'} · {pair.vol}
+                          {subTab !== 'live_market' ? 'OTC' : 'LIVE'} · {pair.vol}
                         </div>
                       </button>
                     );
@@ -1172,7 +1192,7 @@ export default function SignalsPage() {
         ) : (
           <>
             {/* ── Signal Cards Grid ──────────────────────────────────────────── */}
-            {subTab === 'otc_sim' ? (
+            {subTab !== 'live_market' ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {filtered.map(({ ps, pair, idx }) => (

@@ -274,6 +274,139 @@ async function triggerSignal(pairName, direction, entryPrice, strategy, confiden
   setTimeout(() => resolveSignal(signalId, pairName, entryPrice, direction), 61 * 1000);
 }
 
+const OTC_PAIRS = [
+  { symbol: 'EUR/USD', short: 'EURUSD', base: 1.08450,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'GBP/USD', short: 'GBPUSD', base: 1.26500,   pip: 5, vol: 'HIGH'   },
+  { symbol: 'USD/JPY', short: 'USDJPY', base: 149.500,   pip: 2, vol: 'MEDIUM' },
+  { symbol: 'AUD/USD', short: 'AUDUSD', base: 0.65200,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'USD/CAD', short: 'USDCAD', base: 1.35800,   pip: 5, vol: 'LOW'    },
+  { symbol: 'EUR/JPY', short: 'EURJPY', base: 162.100,   pip: 2, vol: 'HIGH'   },
+  { symbol: 'GBP/JPY', short: 'GBPJPY', base: 189.200,  pip: 2, vol: 'HIGH'   },
+  { symbol: 'EUR/GBP', short: 'EURGBP', base: 0.85700,   pip: 5, vol: 'LOW'    },
+  { symbol: 'NZD/USD', short: 'NZDUSD', base: 0.59800,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'USD/CHF', short: 'USDCHF', base: 0.90400,   pip: 5, vol: 'LOW'    },
+  { symbol: 'EUR/AUD', short: 'EURAUD', base: 1.66200,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'GBP/AUD', short: 'GBPAUD', base: 1.93600,  pip: 5, vol: 'HIGH'   },
+  { symbol: 'AUD/JPY', short: 'AUDJPY', base: 97.500,    pip: 2, vol: 'HIGH'   },
+  { symbol: 'CAD/JPY', short: 'CADJPY', base: 110.200,   pip: 2, vol: 'MEDIUM' },
+  { symbol: 'CHF/JPY', short: 'CHFJPY', base: 165.400,   pip: 2, vol: 'MEDIUM' },
+  { symbol: 'EUR/CAD', short: 'EURCAD', base: 1.47300,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'GBP/CAD', short: 'GBPCAD', base: 1.71500,  pip: 5, vol: 'HIGH'   },
+  { symbol: 'USD/SGD', short: 'USDSGD', base: 1.34200,   pip: 5, vol: 'LOW'    },
+  { symbol: 'USD/INR', short: 'USDINR', base: 83.650,    pip: 2, vol: 'LOW'    },
+  { symbol: 'USD/BRL', short: 'USDBRL', base: 4.98500,   pip: 3, vol: 'HIGH'   },
+  { symbol: 'USD/MXN', short: 'USDMXN', base: 17.1500,  pip: 3, vol: 'HIGH'   },
+  { symbol: 'EUR/CHF', short: 'EURCHF', base: 0.97800,   pip: 5, vol: 'LOW'    },
+  { symbol: 'GBP/CHF', short: 'GBPCHF', base: 1.13200,  pip: 5, vol: 'MEDIUM' },
+  { symbol: 'AUD/CAD', short: 'AUDCAD', base: 0.89600,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'AUD/NZD', short: 'AUDNZD', base: 1.09100,   pip: 5, vol: 'MEDIUM' },
+  { symbol: 'NZD/JPY', short: 'NZDJPY', base: 89.700,    pip: 2, vol: 'HIGH'   },
+  { symbol: 'GBP/NZD', short: 'GBPNZD', base: 2.11500,  pip: 5, vol: 'HIGH'   },
+  { symbol: 'EUR/NZD', short: 'EURNZD', base: 1.81200,  pip: 5, vol: 'MEDIUM' },
+  { symbol: 'CAD/CHF', short: 'CADCHF', base: 0.66600,   pip: 5, vol: 'LOW'    },
+  { symbol: 'USD/ZAR', short: 'USDZAR', base: 18.6500,   pip: 3, vol: 'HIGH'   },
+  { symbol: 'USD/TRY', short: 'USDTRY', base: 32.4500,   pip: 3, vol: 'HIGH'   },
+  { symbol: 'USD/ARS', short: 'USDARS', base: 920.00,    pip: 1, vol: 'HIGH'   },
+  { symbol: 'USD/PKR', short: 'USDPKR', base: 278.50,    pip: 1, vol: 'HIGH'   },
+  { symbol: 'USD/BDT', short: 'USDBDT', base: 109.80,    pip: 1, vol: 'MEDIUM' }
+];
+
+// Self-healing database auto-resolver for expired pending signals
+async function autoResolveExpiredSignals() {
+  try {
+    const now = new Date().toISOString();
+    const { data: expiredSignals, error } = await supabase
+      .from('signals')
+      .select('*')
+      .eq('result', 'PENDING')
+      .lte('expiry_time', now);
+
+    if (error) {
+      console.error('[Worker Auto-Resolve Error]:', error.message);
+      return;
+    }
+
+    if (!expiredSignals || expiredSignals.length === 0) return;
+
+    console.log(`[Worker Auto-Resolve] Found ${expiredSignals.length} expired pending signals. Resolving...`);
+
+    for (const sig of expiredSignals) {
+      if (sig.source === 'live_otc' || sig.source === 'simulation') {
+        const pairName = sig.pair.replace(' OTC', '');
+        const pairConfig = OTC_PAIRS.find(p => p.symbol === pairName);
+        if (!pairConfig) continue;
+
+        const expirySeed = Math.floor(new Date(sig.expiry_time).getTime() / 60000);
+        const pairHash = pairConfig.symbol.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+        const s = pairHash * 7919 + expirySeed;
+        
+        const sr = (seed) => {
+          const x = Math.sin(seed * 9301 + 49297) * 233280;
+          return x - Math.floor(x);
+        };
+        
+        const priceJitter = (sr(s + 0.9) - 0.5) * pairConfig.base * 0.003;
+        const expiryPrice = parseFloat((pairConfig.base + priceJitter).toFixed(pairConfig.pip));
+
+        let result = 'LOSS';
+        if (sig.direction === 'CALL') {
+          result = expiryPrice > Number(sig.entry_price) ? 'WIN' : 'LOSS';
+        } else {
+          result = expiryPrice < Number(sig.entry_price) ? 'WIN' : 'LOSS';
+        }
+
+        console.log(`[Worker Auto-Resolve OTC] Signal ${sig.id} (${sig.pair}): ${result} (Entry: ${sig.entry_price}, Expiry Close: ${expiryPrice})`);
+
+        await supabase
+          .from('signals')
+          .update({
+            result:       result,
+            expiry_price: expiryPrice
+          })
+          .eq('id', sig.id);
+      } else {
+        const pairConfig = MONITORED_PAIRS.find(p => p.symbol === sig.pair);
+        if (!pairConfig) continue;
+
+        const history = candleHistory.get(pairConfig.binance);
+        if (!history || history.length === 0) continue;
+
+        const expiryTimestamp = new Date(sig.expiry_time).getTime();
+        let closestCandle = history[history.length - 1]; // fallback
+        
+        // Find closest candle within 70 seconds matching the expiry timestamp
+        for (let i = history.length - 1; i >= 0; i--) {
+          const candleTime = new Date(history[i].timestamp).getTime();
+          if (Math.abs(candleTime - expiryTimestamp) < 70000) {
+            closestCandle = history[i];
+            break;
+          }
+        }
+
+        const expiryPrice = closestCandle.close;
+        let result = 'LOSS';
+        if (sig.direction === 'CALL') {
+          result = expiryPrice > Number(sig.entry_price) ? 'WIN' : 'LOSS';
+        } else {
+          result = expiryPrice < Number(sig.entry_price) ? 'WIN' : 'LOSS';
+        }
+
+        console.log(`[Worker Auto-Resolve Live] Signal ${sig.id} (${sig.pair}): ${result} (Entry: ${sig.entry_price}, Expiry Close: ${expiryPrice})`);
+
+        await supabase
+          .from('signals')
+          .update({
+            result:       result,
+            expiry_price: expiryPrice
+          })
+          .eq('id', sig.id);
+      }
+    }
+  } catch (err) {
+    console.error('[Worker Auto-Resolve Exception]:', err);
+  }
+}
+
 async function resolveSignal(signalId, pairName, entryPrice, direction) {
   try {
     const pairConfig = MONITORED_PAIRS.find(p => p.symbol === pairName);
@@ -306,35 +439,6 @@ async function resolveSignal(signalId, pairName, entryPrice, direction) {
   }
 }
 
-// Self-healing database auto-resolver for expired pending webhook signals
-async function autoResolveExpiredSignals() {
-  try {
-    const now = new Date().toISOString();
-    const { data: expiredSignals, error } = await supabase
-      .from('signals')
-      .select('*')
-      .eq('result', 'PENDING')
-      .lte('expiry_time', now);
-
-    if (error) {
-      console.error('[Worker Auto-Resolve Error]:', error.message);
-      return;
-    }
-
-    if (!expiredSignals || expiredSignals.length === 0) return;
-
-    console.log(`[Worker Auto-Resolve] Found ${expiredSignals.length} expired pending signals. Resolving...`);
-
-    for (const sig of expiredSignals) {
-      const pairConfig = MONITORED_PAIRS.find(p => p.symbol === sig.pair);
-      if (!pairConfig) continue;
-
-      const history = candleHistory.get(pairConfig.binance);
-      if (!history || history.length === 0) continue;
-
-      const expiryTimestamp = new Date(sig.expiry_time).getTime();
-      let closestCandle = history[history.length - 1]; // fallback
-      
       // Find closest candle within 70 seconds matching the expiry timestamp
       for (let i = history.length - 1; i >= 0; i--) {
         const candleTime = new Date(history[i].timestamp).getTime();
