@@ -659,7 +659,17 @@ export default function SignalsPage() {
       return true;
     });
 
-  const filteredLiveMarket = liveMarketSignals.filter(sig => {
+  // Group active live market signals by pair and keep the strongest one (highest confidence) to avoid conflicting directions
+  const strongestLiveSignalsMap = new Map<string, any>();
+  liveMarketSignals.forEach(sig => {
+    const existing = strongestLiveSignalsMap.get(sig.pair);
+    if (!existing || Number(sig.confidence) > Number(existing.confidence)) {
+      strongestLiveSignalsMap.set(sig.pair, sig);
+    }
+  });
+  const strongestLiveSignals = Array.from(strongestLiveSignalsMap.values());
+
+  const filteredLiveMarket = strongestLiveSignals.filter(sig => {
     const shortCode = sig.pair.replace('/', '');
     if (!selectedPairs.has(shortCode)) return false;
     if (filterDir !== 'ALL' && sig.direction !== filterDir) return false;
