@@ -5,6 +5,7 @@ import WebSocket from "ws";
 
 export class TwelveDataProvider extends BaseProvider {
   public id = "twelvedata";
+  public type: "REST" | "WebSocket" = "WebSocket";
   public supportedPairs = [
     "EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD",
     "EUR/JPY", "GBP/JPY", "AUD/JPY", "USD/CHF", "EUR/GBP"
@@ -12,13 +13,19 @@ export class TwelveDataProvider extends BaseProvider {
 
   private apiKey: string | null = null;
   private ws: WebSocket | null = null;
-  private restInterval: NodeJS.Timeout | null = null;
+  private restTimeout: NodeJS.Timeout | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
   public rateLimitRemaining: number = 800;
+  private activePairs: Set<string> = new Set(["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD"]);
 
   constructor() {
     super();
     this.apiKey = process.env.TWELVEDATA_API_KEY || null;
+  }
+
+  public setActivePairs(pairs: string[]): void {
+    this.activePairs = new Set(pairs);
+    console.log(`[TwelveData] Active pairs updated:`, Array.from(this.activePairs));
   }
 
   public async connect(): Promise<void> {
@@ -43,9 +50,9 @@ export class TwelveDataProvider extends BaseProvider {
       this.ws = null;
     }
 
-    if (this.restInterval) {
-      clearInterval(this.restInterval);
-      this.restInterval = null;
+    if (this.restTimeout) {
+      clearTimeout(this.restTimeout);
+      this.restTimeout = null;
     }
 
     if (this.reconnectTimer) {
@@ -170,7 +177,7 @@ export class TwelveDataProvider extends BaseProvider {
     });
 
     this.ws.on("close", () => {
-      console.warn("[TwelveData] WebSocket closed. Running REST polling fallback...");
+      console.warn("[TwelveData] WebSocket closed. Running REST fallback poller...");
       this.emitStatusChange("disconnected");
       this.startRESTFallback();
       this.scheduleReconnect();
@@ -183,43 +190,74 @@ export class TwelveDataProvider extends BaseProvider {
     });
   }
 
+  private getPollInterval(): number {
+    if (this.rateLimitRemaining > 500) return 60000;      // 60 sec
+    if (this.rateLimitRemaining >= 200) return 90000;     // 90 sec
+    if (this.rateLimitRemaining >= 100) return 120000;    // 120 sec
+    if (this.rateLimitRemaining > 0) return 300000;       // 300 sec
+    return 0; // Trigger failover
+  }
+
   private startRESTFallback() {
-    if (this.restInterval) return;
+    if (this.restTimeout) return;
+    console.log("[TwelveData] Starting REST fallback loop...");
+    this.pollREST();
+  }
 
-    console.log("[TwelveData] Starting REST fallback poller...");
-    this.restInterval = setInterval(async () => {
-      if (!this.active || !this.apiKey) return;
+  private async pollREST() {
+    if (!this.active || !this.apiKey) return;
 
-      const symbols = this.supportedPairs.join(",");
-      const options = {
-        hostname: "api.twelvedata.com",
-        path: `/price?symbol=${symbols}&apikey=${this.apiKey}`,
-        method: "GET"
-      };
+    const interval = this.getPollInterval();
+    if (interval === 0) {
+      console.error("[TwelveData] Quota completely exhausted. Triggering automatic failover swap.");
+      this.emitStatusChange("error");
+      return;
+    }
 
-      https.get(options, (res) => {
-        let data = "";
-        res.on("data", chunk => data += chunk);
-        res.on("end", () => {
-          try {
-            const json = JSON.parse(data);
-            this.supportedPairs.forEach(pair => {
-              const item = json[pair];
-              if (item && item.price) {
-                const tick: NormalizedTick = {
-                  pair,
-                  price: parseFloat(item.price),
-                  volume: 1,
-                  timestamp: Date.now(),
-                  source: this.id
-                };
-                this.emitTick(tick);
-              }
-            });
-          } catch {}
-        });
-      }).on("error", () => {});
-    }, 10000);
+    const pairsToPoll = Array.from(this.activePairs);
+    if (pairsToPoll.length === 0) {
+      this.restTimeout = setTimeout(() => this.pollREST(), interval);
+      return;
+    }
+
+    const symbols = pairsToPoll.join(",");
+    const options = {
+      hostname: "api.twelvedata.com",
+      path: `/price?symbol=${symbols}&apikey=${this.apiKey}`,
+      method: "GET"
+    };
+
+    https.get(options, (res) => {
+      const remainingHeader = res.headers["x-ratelimit-remaining"];
+      if (remainingHeader) {
+        this.rateLimitRemaining = parseInt(remainingHeader as string) || this.rateLimitRemaining;
+      }
+
+      let data = "";
+      res.on("data", chunk => data += chunk);
+      res.on("end", () => {
+        try {
+          const json = JSON.parse(data);
+          pairsToPoll.forEach(pair => {
+            const item = pairsToPoll.length === 1 ? json : json[pair];
+            const priceStr = item?.price || (pairsToPoll.length === 1 ? json.price : null);
+            if (priceStr) {
+              const tick: NormalizedTick = {
+                pair,
+                price: parseFloat(priceStr),
+                volume: 1,
+                timestamp: Date.now(),
+                source: this.id
+              };
+              this.emitTick(tick);
+            }
+          });
+        } catch {}
+        this.restTimeout = setTimeout(() => this.pollREST(), this.getPollInterval());
+      });
+    }).on("error", () => {
+      this.restTimeout = setTimeout(() => this.pollREST(), this.getPollInterval());
+    });
   }
 
   private scheduleReconnect() {
@@ -227,9 +265,9 @@ export class TwelveDataProvider extends BaseProvider {
     this.reconnectTimer = setTimeout(() => {
       if (this.active) {
         console.log("[TwelveData] Reconnecting WebSocket...");
-        if (this.restInterval) {
-          clearInterval(this.restInterval);
-          this.restInterval = null;
+        if (this.restTimeout) {
+          clearTimeout(this.restTimeout);
+          this.restTimeout = null;
         }
         this.connectWebSocket();
       }
