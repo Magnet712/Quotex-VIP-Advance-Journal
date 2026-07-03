@@ -28,6 +28,9 @@ export class TwelveDataProvider extends BaseProvider {
   // Flag to permanently disable WebSockets on plan/auth failures
   private wsDisabled: boolean = false;
 
+  // Singleton Poller Protection State Guard
+  private isPolling: boolean = false;
+
   constructor() {
     super();
     this.apiKey = process.env.TWELVEDATA_API_KEY || null;
@@ -56,7 +59,7 @@ export class TwelveDataProvider extends BaseProvider {
     console.log(`[TwelveData] Active pairs updated:`, Array.from(this.activePairs.keys()));
 
     // Event-driven startup: start poller loop if it is not already running
-    if (this.active && this.activePairs.size > 0 && !this.restTimeout) {
+    if (this.active && this.activePairs.size > 0 && !this.isPolling) {
       console.log("[TwelveData] Active dashboard viewer detected. Initializing poller dynamically.");
       this.startRESTFallback();
     }
@@ -114,6 +117,7 @@ export class TwelveDataProvider extends BaseProvider {
       this.reconnectTimer = null;
     }
 
+    this.isPolling = false;
     this.emitStatusChange("disconnected");
   }
 
@@ -309,18 +313,20 @@ export class TwelveDataProvider extends BaseProvider {
   }
 
   private startRESTFallback() {
-    if (this.restTimeout) return;
+    if (this.isPolling) return;
     if (this.activePairs.size === 0) {
       console.log("[TwelveData] Zero active viewers on start fallback. Poller remains dormant.");
       return;
     }
     console.log("[TwelveData] Starting REST fallback loop...");
+    this.isPolling = true;
     this.pollREST();
   }
 
   private async pollREST() {
     if (!this.active || !this.apiKey) {
       this.restTimeout = null;
+      this.isPolling = false;
       return;
     }
 
@@ -330,6 +336,7 @@ export class TwelveDataProvider extends BaseProvider {
     if (interval === 0) {
       console.error("[TwelveData] Quota completely exhausted. Triggering automatic failover swap.");
       this.restTimeout = null;
+      this.isPolling = false;
       this.emitStatusChange("error");
       return;
     }
@@ -351,6 +358,7 @@ export class TwelveDataProvider extends BaseProvider {
     if (pairsToPoll.length === 0) {
       console.log("[TwelveData] Zero active viewers. Stopping polling loop completely (dormant mode).");
       this.restTimeout = null;
+      this.isPolling = false;
       return;
     }
 
@@ -405,6 +413,7 @@ export class TwelveDataProvider extends BaseProvider {
         } else {
           console.log("[TwelveData] Zero active viewers. Stopping polling loop completely (dormant mode).");
           this.restTimeout = null;
+          this.isPolling = false;
         }
       });
     }).on("error", () => {
@@ -412,6 +421,7 @@ export class TwelveDataProvider extends BaseProvider {
         this.restTimeout = setTimeout(() => this.pollREST(), this.getDelayUntilNextPoll(this.getAdaptivePollInterval()));
       } else {
         this.restTimeout = null;
+        this.isPolling = false;
       }
     });
   }
