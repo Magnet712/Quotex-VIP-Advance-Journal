@@ -24,4 +24,10 @@ export interface ProviderMetrics {
   lastUpdate: number;        // UTC epoch of last valid tick
   activeFlag: boolean;       // Is this provider currently feeding the cache?
   state: string;             // "INITIALIZING" | "CONNECTING" | "CONNECTED" | "DEGRADED" | "FAILOVER" | "DISCONNECTED" | "STOPPED"
+  providerName?: string;
+  providerVersion?: string;
+  providerType?: "REST" | "WebSocket";
+  requestCount?: number;
+  failureCount?: number;
+  lastSuccess?: string;
 }

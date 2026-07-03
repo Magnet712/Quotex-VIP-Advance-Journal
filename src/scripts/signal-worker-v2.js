@@ -36,6 +36,7 @@ const { QualityValidator } = require('../lib/market-data/core/QualityValidator')
 const { Normalizer } = require('../lib/market-data/core/Normalizer');
 const { CandleCache } = require('../lib/market-data/core/CandleCache');
 
+const { TwelveDataProvider } = require('../lib/market-data/forex/adapters/TwelveDataProvider');
 const { OandaProvider } = require('../lib/market-data/forex/adapters/OandaProvider');
 const { YahooProvider } = require('../lib/market-data/forex/adapters/YahooProvider');
 const { SimulatorProvider } = require('../lib/market-data/forex/adapters/SimulatorProvider');
@@ -365,22 +366,35 @@ function buildMinuteCandles() {
 
 // 9. Bootstrap Sequence
 async function bootstrap() {
+  console.log('==========================================');
+  console.log('       MARKET DATA LAYER STARTUP           ');
+  console.log('Version:      1.2.0');
+  console.log('Worker:       2.0');
+  console.log('Strategy:     3.4');
+  console.log('Git Commit:   cced4cb');
+  console.log(`Build Time:   ${new Date().toISOString()}`);
+  console.log(`Worker PID:   ${process.pid}`);
+  console.log('==========================================');
+
   console.log('[Worker v2] Initializing Market Data Layer...');
   await refreshFeatureFlags();
 
   // Create adapters
+  const twelvedata = new TwelveDataProvider();
   const oanda = new OandaProvider();
   const yahoo = new YahooProvider();
   const simulator = new SimulatorProvider();
 
+  manager.registerProvider(twelvedata);
   manager.registerProvider(oanda);
   manager.registerProvider(yahoo);
   manager.registerProvider(simulator);
 
-  // Set Oanda as primary, fallbacks will manage drops automatically via CircuitBreakers
-  manager.setActiveProvider(oanda.id);
+  // Set Twelve Data as primary, fallbacks will manage drops automatically via CircuitBreakers
+  manager.setActiveProvider(twelvedata.id);
 
   // Connect manager and adapters
+  await twelvedata.connect().catch(e => console.warn('TwelveData Standby connect:', e.message));
   await oanda.connect().catch(e => console.warn('OANDA Standby connect:', e.message));
   await yahoo.connect();
   await simulator.connect();
@@ -413,6 +427,21 @@ async function bootstrap() {
 
   console.log('[Worker v2] Startup completed. Running in shadow testing modes...');
 }
+
+// Graceful Shutdown Signal Registration
+async function handleGracefulShutdown(signal) {
+  console.log(`\n[Worker v2] Received ${signal}. Initiating graceful shutdown...`);
+  try {
+    await manager.shutdown();
+    console.log('[Worker v2] Provider connections terminated cleanly and telemetry flushed.');
+    process.exit(0);
+  } catch (e) {
+    console.error('[Worker v2] Exception during graceful shutdown:', e.message);
+    process.exit(1);
+  }
+}
+process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
 
 bootstrap().catch(err => {
   console.error('[Worker v2 Bootstrap Exception]:', err.message);

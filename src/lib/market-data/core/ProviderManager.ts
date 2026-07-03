@@ -37,7 +37,13 @@ export class ProviderManager extends EventEmitter {
       healthScore: 100,
       lastUpdate: Date.now(),
       activeFlag: false,
-      state: "INITIALIZING"
+      state: "INITIALIZING",
+      providerName: provider.id,
+      providerVersion: "1.2.0",
+      providerType: (provider as any).type || "WebSocket",
+      requestCount: 0,
+      failureCount: 0,
+      lastSuccess: new Date().toISOString()
     });
 
     // Initialize Circuit Breaker
@@ -49,6 +55,8 @@ export class ProviderManager extends EventEmitter {
       if (m) {
         m.lastUpdate = Date.now();
         m.latencyMs = Math.max(0, Date.now() - tick.timestamp);
+        if (m.requestCount !== undefined) m.requestCount++;
+        m.lastSuccess = new Date().toISOString();
         
         // If ticks are streaming, ensure state is CONNECTED
         if (m.state !== "CONNECTED") {
@@ -76,6 +84,7 @@ export class ProviderManager extends EventEmitter {
       if (m) {
         if (status === "disconnected" || status === "error") {
           m.disconnectCount++;
+          if (m.failureCount !== undefined) m.failureCount++;
           m.healthScore = Math.max(0, m.healthScore - 15);
           
           if (breaker) {
@@ -99,6 +108,7 @@ export class ProviderManager extends EventEmitter {
           }
         } else if (status === "connected") {
           m.reconnectCount++;
+          m.lastSuccess = new Date().toISOString();
           m.healthScore = Math.min(100, m.healthScore + 10);
           this.setProviderState(id, "CONNECTED");
           if (breaker) {
@@ -126,7 +136,7 @@ export class ProviderManager extends EventEmitter {
    * Automatic failover switch routing logic
    */
   private handleFailover() {
-    const order = ["oanda", "yahoo", "simulator"];
+    const order = ["twelvedata", "yahoo", "simulator", "oanda"];
     for (const id of order) {
       const provider = this.providers.get(id);
       const breaker = this.breakers.get(id);
@@ -192,7 +202,15 @@ export class ProviderManager extends EventEmitter {
             last_update: new Date(m.lastUpdate).toISOString(),
             active_flag: m.activeFlag,
             status: m.state, // Map explicit state word to the status db field
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            provider_name: m.providerName,
+            provider_version: m.providerVersion,
+            provider_latency: m.latencyMs,
+            provider_health: m.healthScore,
+            provider_type: m.providerType,
+            request_count: m.requestCount,
+            failure_count: m.failureCount,
+            last_success: m.lastSuccess
           });
 
         if (error) {

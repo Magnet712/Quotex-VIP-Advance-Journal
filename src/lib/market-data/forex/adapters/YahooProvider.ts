@@ -4,6 +4,7 @@ import https from "https";
 
 export class YahooProvider extends BaseProvider {
   public id = "yahoo";
+  public type: "REST" | "WebSocket" = "REST";
   public supportedPairs = [
     "EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD",
     "EUR/JPY", "GBP/JPY", "AUD/JPY", "USD/CHF", "EUR/GBP"
