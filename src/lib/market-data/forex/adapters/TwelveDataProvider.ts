@@ -241,19 +241,31 @@ export class TwelveDataProvider extends BaseProvider {
   }
 
   /**
-   * Adaptive Polling Interval calculation based on active viewers and remaining API credits.
+   * Adaptive Polling Interval based on remaining API credits.
    */
   private getAdaptivePollInterval(): number {
-    const numPairs = this.activePairs.size;
     if (this.rateLimitRemaining <= 0) return 0;          // Trigger failover
     if (this.rateLimitRemaining < 100) return 300000;    // 5 minutes
     if (this.rateLimitRemaining < 200) return 180000;    // 3 minutes
+    return 60000;                                        // Standard 1-minute closed candle interval
+  }
 
-    // Scale interval dynamically based on active viewers count
-    if (numPairs <= 1) return 30000;                     // 30 seconds
-    if (numPairs <= 3) return 45000;                     // 45 seconds
-    if (numPairs <= 5) return 60000;                     // 60 seconds (1 minute)
-    return 90000;                                        // 90 seconds
+  /**
+   * Calculates the exact delay in milliseconds until the next target poll window.
+   * Aligns standard 60s polls to trigger exactly 5 seconds past the start of the next minute (HH:MM:05).
+   */
+  private getDelayUntilNextPoll(intervalMs: number): number {
+    if (intervalMs === 0) return 0;
+    if (intervalMs >= 180000) {
+      // Low credit intervals (3m, 5m): use simple delay
+      return intervalMs;
+    }
+    
+    // Standard 60s interval: align to 5 seconds past the next minute boundary (avoiding duplicate checks)
+    const now = Date.now();
+    const nextMinute = Math.ceil(now / 60000) * 60000;
+    const targetTime = nextMinute + 5000; // HH:MM:05 UTC
+    return Math.max(1000, targetTime - now);
   }
 
   /**
@@ -337,10 +349,10 @@ export class TwelveDataProvider extends BaseProvider {
         } catch (err: any) {
           console.error("[TwelveData Poll Parse Exception]:", err.message);
         }
-        this.restTimeout = setTimeout(() => this.pollREST(), this.getAdaptivePollInterval());
+        this.restTimeout = setTimeout(() => this.pollREST(), this.getDelayUntilNextPoll(this.getAdaptivePollInterval()));
       });
     }).on("error", () => {
-      this.restTimeout = setTimeout(() => this.pollREST(), this.getAdaptivePollInterval());
+      this.restTimeout = setTimeout(() => this.pollREST(), this.getDelayUntilNextPoll(this.getAdaptivePollInterval()));
     });
   }
 
