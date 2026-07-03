@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node src/scripts/signal-worker.js & next dev",
+    "dev": "npx ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" src/scripts/signal-worker-v2.js & next dev",
     "build": "next build",
-    "start": "node src/scripts/signal-worker.js & next start",
+    "start": "npx ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" src/scripts/signal-worker-v2.js & next start",
     "lint": "eslint"
   },
   "dependencies": {
@@ -30,6 +30,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
