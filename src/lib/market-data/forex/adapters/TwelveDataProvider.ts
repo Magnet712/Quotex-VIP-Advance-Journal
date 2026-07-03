@@ -34,7 +34,8 @@ export class TwelveDataProvider extends BaseProvider {
   }
 
   /**
-   * Refreshes the active viewers list, keeping max 5 unique symbols
+   * Refreshes the active viewers list, keeping max 5 unique symbols.
+   * Bootstraps the polling scheduler dynamically if viewers appear.
    */
   public setActivePairs(pairs: string[]): void {
     const uniquePairs = Array.from(new Set(pairs)).slice(0, 5);
@@ -53,6 +54,12 @@ export class TwelveDataProvider extends BaseProvider {
     }
 
     console.log(`[TwelveData] Active pairs updated:`, Array.from(this.activePairs.keys()));
+
+    // Event-driven startup: start poller loop if it is not already running
+    if (this.active && this.activePairs.size > 0 && !this.restTimeout) {
+      console.log("[TwelveData] Active dashboard viewer detected. Initializing poller dynamically.");
+      this.startRESTFallback();
+    }
   }
 
   /**
@@ -303,18 +310,26 @@ export class TwelveDataProvider extends BaseProvider {
 
   private startRESTFallback() {
     if (this.restTimeout) return;
+    if (this.activePairs.size === 0) {
+      console.log("[TwelveData] Zero active viewers on start fallback. Poller remains dormant.");
+      return;
+    }
     console.log("[TwelveData] Starting REST fallback loop...");
     this.pollREST();
   }
 
   private async pollREST() {
-    if (!this.active || !this.apiKey) return;
+    if (!this.active || !this.apiKey) {
+      this.restTimeout = null;
+      return;
+    }
 
     this.sweepInactivePairs();
 
     const interval = this.getAdaptivePollInterval();
     if (interval === 0) {
       console.error("[TwelveData] Quota completely exhausted. Triggering automatic failover swap.");
+      this.restTimeout = null;
       this.emitStatusChange("error");
       return;
     }
@@ -334,8 +349,8 @@ export class TwelveDataProvider extends BaseProvider {
 
     const pairsToPoll = Array.from(this.activePairs.keys());
     if (pairsToPoll.length === 0) {
-      console.log("[TwelveData] Zero active viewers. Pausing polling loop.");
-      this.restTimeout = setTimeout(() => this.pollREST(), 30000); // check again in 30s
+      console.log("[TwelveData] Zero active viewers. Stopping polling loop completely (dormant mode).");
+      this.restTimeout = null;
       return;
     }
 
@@ -383,10 +398,21 @@ export class TwelveDataProvider extends BaseProvider {
         } catch (err: any) {
           console.error("[TwelveData Poll Parse Exception]:", err.message);
         }
-        this.restTimeout = setTimeout(() => this.pollREST(), this.getDelayUntilNextPoll(this.getAdaptivePollInterval()));
+        
+        // Dynamically reschedule only if there are still active viewers online
+        if (this.active && this.activePairs.size > 0) {
+          this.restTimeout = setTimeout(() => this.pollREST(), this.getDelayUntilNextPoll(this.getAdaptivePollInterval()));
+        } else {
+          console.log("[TwelveData] Zero active viewers. Stopping polling loop completely (dormant mode).");
+          this.restTimeout = null;
+        }
       });
     }).on("error", () => {
-      this.restTimeout = setTimeout(() => this.pollREST(), this.getDelayUntilNextPoll(this.getAdaptivePollInterval()));
+      if (this.active && this.activePairs.size > 0) {
+        this.restTimeout = setTimeout(() => this.pollREST(), this.getDelayUntilNextPoll(this.getAdaptivePollInterval()));
+      } else {
+        this.restTimeout = null;
+      }
     });
   }
 
