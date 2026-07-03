@@ -23,11 +23,7 @@ export class TwelveDataProvider extends BaseProvider {
   private lastLoggedInterval: number = 60000; // Initialize to standard interval
   
   // Track active pairs with last-seen timestamps to implement 5m expiration
-  private activePairs: Map<string, number> = new Map([
-    ["EUR/USD", Date.now()],
-    ["GBP/USD", Date.now()],
-    ["USD/JPY", Date.now()]
-  ]);
+  private activePairs: Map<string, number> = new Map();
   
   // Flag to permanently disable WebSockets on plan/auth failures
   private wsDisabled: boolean = false;
