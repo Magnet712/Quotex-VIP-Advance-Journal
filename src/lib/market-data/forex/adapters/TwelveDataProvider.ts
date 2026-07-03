@@ -16,16 +16,42 @@ export class TwelveDataProvider extends BaseProvider {
   private restTimeout: NodeJS.Timeout | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
   public rateLimitRemaining: number = 800;
-  private activePairs: Set<string> = new Set(["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD"]);
+  
+  // Track active pairs with last-seen timestamps to implement 5m expiration
+  private activePairs: Map<string, number> = new Map([
+    ["EUR/USD", Date.now()],
+    ["GBP/USD", Date.now()],
+    ["USD/JPY", Date.now()]
+  ]);
+  
+  // Flag to permanently disable WebSockets on plan/auth failures
+  private wsDisabled: boolean = false;
 
   constructor() {
     super();
     this.apiKey = process.env.TWELVEDATA_API_KEY || null;
   }
 
+  /**
+   * Refreshes the active viewers list, keeping max 5 unique symbols
+   */
   public setActivePairs(pairs: string[]): void {
-    this.activePairs = new Set(pairs);
-    console.log(`[TwelveData] Active pairs updated:`, Array.from(this.activePairs));
+    const uniquePairs = Array.from(new Set(pairs)).slice(0, 5);
+    const now = Date.now();
+    
+    // Add or update active timestamp
+    uniquePairs.forEach(p => {
+      this.activePairs.set(p, now);
+    });
+
+    // Remove any pair that is not present in the new filter list
+    for (const key of this.activePairs.keys()) {
+      if (!uniquePairs.includes(key)) {
+        this.activePairs.delete(key);
+      }
+    }
+
+    console.log(`[TwelveData] Active pairs updated:`, Array.from(this.activePairs.keys()));
   }
 
   public async connect(): Promise<void> {
@@ -38,7 +64,12 @@ export class TwelveDataProvider extends BaseProvider {
       return;
     }
 
-    this.connectWebSocket();
+    if (this.wsDisabled) {
+      console.log("[TwelveData] WS permanently disabled. Starting REST loop directly.");
+      this.startRESTFallback();
+    } else {
+      this.connectWebSocket();
+    }
   }
 
   public async disconnect(): Promise<void> {
@@ -140,10 +171,11 @@ export class TwelveDataProvider extends BaseProvider {
   }
 
   private connectWebSocket() {
-    if (!this.active || !this.apiKey) return;
+    if (!this.active || !this.apiKey || this.wsDisabled) return;
 
     const url = `wss://ws.twelvedata.com/v1/quotes/price?apikey=${this.apiKey}`;
     this.ws = new WebSocket(url);
+    const wsStartTime = Date.now();
 
     this.ws.on("open", () => {
       console.log("[TwelveData] WebSocket opened. Sending subscriptions...");
@@ -180,12 +212,30 @@ export class TwelveDataProvider extends BaseProvider {
       console.warn("[TwelveData] WebSocket closed. Running REST fallback poller...");
       this.emitStatusChange("disconnected");
       this.startRESTFallback();
-      this.scheduleReconnect();
+      
+      // If closed in under 4 seconds, assume WebSocket is unsupported on this plan/key
+      if (Date.now() - wsStartTime < 4000) {
+        console.warn("[TwelveData] WebSocket closed immediately. Disabling WS permanently (REST mode active).");
+        this.wsDisabled = true;
+      }
+
+      if (!this.wsDisabled) {
+        this.scheduleReconnect();
+      } else {
+        console.log("[TwelveData] WebSocket disabled. Staying in REST fallback loop.");
+      }
     });
 
     this.ws.on("error", (err: any) => {
       console.error("[TwelveData WebSocket Error]:", err.message);
       this.emitStatusChange("error");
+      
+      const errMsg = err.message || "";
+      if (errMsg.includes("401") || errMsg.includes("403") || errMsg.includes("1006") || errMsg.includes("PlanNotAllowed")) {
+        console.warn("[TwelveData] WebSocket permission denied. Disabling WS permanently.");
+        this.wsDisabled = true;
+      }
+
       this.startRESTFallback();
     });
   }
@@ -198,6 +248,20 @@ export class TwelveDataProvider extends BaseProvider {
     return 0; // Trigger failover
   }
 
+  /**
+   * Clears out any active pair that hasn't had updates in 5 minutes
+   */
+  private sweepInactivePairs() {
+    const now = Date.now();
+    const expiryWindowMs = 5 * 60 * 1000; // 5 minutes
+    for (const [pair, lastSeen] of this.activePairs.entries()) {
+      if (now - lastSeen > expiryWindowMs) {
+        console.log(`[TwelveData] Active pair ${pair} expired (no viewers for 5m). Removing.`);
+        this.activePairs.delete(pair);
+      }
+    }
+  }
+
   private startRESTFallback() {
     if (this.restTimeout) return;
     console.log("[TwelveData] Starting REST fallback loop...");
@@ -207,6 +271,9 @@ export class TwelveDataProvider extends BaseProvider {
   private async pollREST() {
     if (!this.active || !this.apiKey) return;
 
+    // Remove expired pairs prior to checking limits
+    this.sweepInactivePairs();
+
     const interval = this.getPollInterval();
     if (interval === 0) {
       console.error("[TwelveData] Quota completely exhausted. Triggering automatic failover swap.");
@@ -214,9 +281,10 @@ export class TwelveDataProvider extends BaseProvider {
       return;
     }
 
-    const pairsToPoll = Array.from(this.activePairs);
+    const pairsToPoll = Array.from(this.activePairs.keys());
     if (pairsToPoll.length === 0) {
-      this.restTimeout = setTimeout(() => this.pollREST(), interval);
+      console.log("[TwelveData] Zero active viewers. Pausing polling loop.");
+      this.restTimeout = setTimeout(() => this.pollREST(), 30000); // check again in 30s
       return;
     }
 
@@ -262,8 +330,10 @@ export class TwelveDataProvider extends BaseProvider {
 
   private scheduleReconnect() {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    if (this.wsDisabled) return;
+
     this.reconnectTimer = setTimeout(() => {
-      if (this.active) {
+      if (this.active && !this.wsDisabled) {
         console.log("[TwelveData] Reconnecting WebSocket...");
         if (this.restTimeout) {
           clearTimeout(this.restTimeout);
