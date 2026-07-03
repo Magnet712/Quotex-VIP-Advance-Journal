@@ -241,13 +241,16 @@ export class TwelveDataProvider extends BaseProvider {
   }
 
   /**
-   * Adaptive Polling Interval based on remaining API credits.
+   * Adaptive Polling Interval based on granular remaining API credit thresholds.
+   * Promotes graceful, progressive degradation to protect remaining credits.
    */
   private getAdaptivePollInterval(): number {
-    if (this.rateLimitRemaining <= 0) return 0;          // Trigger failover
-    if (this.rateLimitRemaining < 100) return 300000;    // 5 minutes
-    if (this.rateLimitRemaining < 200) return 180000;    // 3 minutes
-    return 60000;                                        // Standard 1-minute closed candle interval
+    if (this.rateLimitRemaining <= 0) return 0;          // Trigger failover to Yahoo
+    if (this.rateLimitRemaining < 10) return 900000;     // 15 minutes (Preservation Mode)
+    if (this.rateLimitRemaining < 20) return 600000;     // 10 minutes
+    if (this.rateLimitRemaining < 50) return 300000;     // 5 minutes
+    if (this.rateLimitRemaining < 100) return 180000;    // 3 minutes
+    return 60000;                                        // Standard 1-minute interval
   }
 
   /**
@@ -257,11 +260,11 @@ export class TwelveDataProvider extends BaseProvider {
   private getDelayUntilNextPoll(intervalMs: number): number {
     if (intervalMs === 0) return 0;
     if (intervalMs >= 180000) {
-      // Low credit intervals (3m, 5m): use simple delay
+      // Low credit intervals (3m, 5m, 10m, 15m): use simple delay
       return intervalMs;
     }
     
-    // Standard 60s interval: align to 5 seconds past the next minute boundary (avoiding duplicate checks)
+    // Standard 60s interval: align to 5 seconds past the next minute boundary
     const now = Date.now();
     const nextMinute = Math.ceil(now / 60000) * 60000;
     const targetTime = nextMinute + 5000; // HH:MM:05 UTC
