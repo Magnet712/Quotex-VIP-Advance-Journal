@@ -240,12 +240,20 @@ export class TwelveDataProvider extends BaseProvider {
     });
   }
 
-  private getPollInterval(): number {
-    if (this.rateLimitRemaining > 500) return 60000;      // 60 sec
-    if (this.rateLimitRemaining >= 200) return 90000;     // 90 sec
-    if (this.rateLimitRemaining >= 100) return 120000;    // 120 sec
-    if (this.rateLimitRemaining > 0) return 300000;       // 300 sec
-    return 0; // Trigger failover
+  /**
+   * Adaptive Polling Interval calculation based on active viewers and remaining API credits.
+   */
+  private getAdaptivePollInterval(): number {
+    const numPairs = this.activePairs.size;
+    if (this.rateLimitRemaining <= 0) return 0;          // Trigger failover
+    if (this.rateLimitRemaining < 100) return 300000;    // 5 minutes
+    if (this.rateLimitRemaining < 200) return 180000;    // 3 minutes
+
+    // Scale interval dynamically based on active viewers count
+    if (numPairs <= 1) return 30000;                     // 30 seconds
+    if (numPairs <= 3) return 45000;                     // 45 seconds
+    if (numPairs <= 5) return 60000;                     // 60 seconds (1 minute)
+    return 90000;                                        // 90 seconds
   }
 
   /**
@@ -271,10 +279,9 @@ export class TwelveDataProvider extends BaseProvider {
   private async pollREST() {
     if (!this.active || !this.apiKey) return;
 
-    // Remove expired pairs prior to checking limits
     this.sweepInactivePairs();
 
-    const interval = this.getPollInterval();
+    const interval = this.getAdaptivePollInterval();
     if (interval === 0) {
       console.error("[TwelveData] Quota completely exhausted. Triggering automatic failover swap.");
       this.emitStatusChange("error");
@@ -289,9 +296,11 @@ export class TwelveDataProvider extends BaseProvider {
     }
 
     const symbols = pairsToPoll.join(",");
+    
+    // Optimization: query time_series for the single latest completed 1-minute closed candle
     const options = {
       hostname: "api.twelvedata.com",
-      path: `/price?symbol=${symbols}&apikey=${this.apiKey}`,
+      path: `/time_series?symbol=${symbols}&interval=1min&outputsize=1&apikey=${this.apiKey}`,
       method: "GET"
     };
 
@@ -308,23 +317,30 @@ export class TwelveDataProvider extends BaseProvider {
           const json = JSON.parse(data);
           pairsToPoll.forEach(pair => {
             const item = pairsToPoll.length === 1 ? json : json[pair];
-            const priceStr = item?.price || (pairsToPoll.length === 1 ? json.price : null);
-            if (priceStr) {
-              const tick: NormalizedTick = {
-                pair,
-                price: parseFloat(priceStr),
-                volume: 1,
-                timestamp: Date.now(),
-                source: this.id
-              };
-              this.emitTick(tick);
+            if (item && item.values && item.values.length > 0) {
+              const latest = item.values[0];
+              const closePrice = parseFloat(latest.close);
+              const timeMs = new Date(latest.datetime + " UTC").getTime();
+              
+              if (!isNaN(closePrice)) {
+                const tick: NormalizedTick = {
+                  pair,
+                  price: closePrice,
+                  volume: parseInt(latest.volume || "0") || 1,
+                  timestamp: timeMs,
+                  source: this.id
+                };
+                this.emitTick(tick);
+              }
             }
           });
-        } catch {}
-        this.restTimeout = setTimeout(() => this.pollREST(), this.getPollInterval());
+        } catch (err: any) {
+          console.error("[TwelveData Poll Parse Exception]:", err.message);
+        }
+        this.restTimeout = setTimeout(() => this.pollREST(), this.getAdaptivePollInterval());
       });
     }).on("error", () => {
-      this.restTimeout = setTimeout(() => this.pollREST(), this.getPollInterval());
+      this.restTimeout = setTimeout(() => this.pollREST(), this.getAdaptivePollInterval());
     });
   }
 
