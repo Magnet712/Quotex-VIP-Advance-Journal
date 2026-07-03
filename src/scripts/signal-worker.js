@@ -311,6 +311,48 @@ const OTC_PAIRS = [
   { symbol: 'USD/BDT', short: 'USDBDT', base: 109.80,    pip: 1, vol: 'MEDIUM' }
 ];
 
+// Fetch 1-minute close price from Yahoo Finance for free live market outcome resolution
+function fetchYahooChartPrice(yahooTicker) {
+  return new Promise((resolve) => {
+    const options = {
+      hostname: 'query1.finance.yahoo.com',
+      path: `/v8/finance/chart/${yahooTicker}?interval=1m&range=2m`,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+      }
+    };
+    https.get(options, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.chart && json.chart.result && json.chart.result[0]) {
+            const result = json.chart.result[0];
+            const indicators = result.indicators.quote[0];
+            const closeArray = indicators.close;
+            if (closeArray && closeArray.length > 0) {
+              const validPrices = closeArray.filter(p => p !== null);
+              if (validPrices.length > 0) {
+                resolve(validPrices[validPrices.length - 1]);
+                return;
+              }
+            }
+            if (result.meta && result.meta.regularMarketPrice) {
+              resolve(result.meta.regularMarketPrice);
+              return;
+            }
+          }
+          resolve(null);
+        } catch {
+          resolve(null);
+        }
+      });
+    }).on('error', () => resolve(null));
+  });
+}
+
 // Self-healing database auto-resolver for expired pending signals
 async function autoResolveExpiredSignals() {
   try {
@@ -383,7 +425,19 @@ async function autoResolveExpiredSignals() {
           }
         }
 
-        const expiryPrice = closestCandle.close;
+        // Fetch exact real-market close price from Yahoo Finance chart
+        let expiryPrice = closestCandle.close;
+        try {
+          const yahooTicker = sig.pair.replace('/', '').replace(' ', '') + '=X';
+          const yahooRes = await fetchYahooChartPrice(yahooTicker);
+          if (yahooRes) {
+            expiryPrice = yahooRes;
+            console.log(`[Worker Yahoo-Resolve] Fetched real market close price for ${sig.pair}: ${expiryPrice}`);
+          }
+        } catch (yahooErr) {
+          console.warn(`[Worker Yahoo-Resolve Warning] Fallback to simulated price for ${sig.pair}:`, yahooErr.message);
+        }
+
         let result = 'LOSS';
         if (sig.direction === 'CALL') {
           result = expiryPrice > Number(sig.entry_price) ? 'WIN' : 'LOSS';
