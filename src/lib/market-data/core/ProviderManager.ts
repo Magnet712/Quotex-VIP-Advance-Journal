@@ -1,11 +1,25 @@
 import { EventEmitter } from "events";
 import { BaseProvider } from "../forex/adapters/BaseProvider";
 import { NormalizedTick, ProviderMetrics } from "../types";
+import { CircuitBreaker } from "./CircuitBreaker";
 
 export class ProviderManager extends EventEmitter {
   private providers = new Map<string, BaseProvider>();
   private metrics = new Map<string, ProviderMetrics>();
+  private breakers = new Map<string, CircuitBreaker>();
   private activeProviderId: string | null = null;
+  private supabaseClient: any = null;
+  private syncTimer: NodeJS.Timeout | null = null;
+
+  constructor(supabaseClient?: any) {
+    super();
+    this.supabaseClient = supabaseClient || null;
+
+    // Start background metrics synchronizer if client is supplied
+    if (this.supabaseClient) {
+      this.syncTimer = setInterval(() => this.syncTelemetryToDatabase(), 15000); // every 15s
+    }
+  }
 
   /**
    * Registers a provider adapter with the manager
@@ -23,13 +37,21 @@ export class ProviderManager extends EventEmitter {
       activeFlag: false
     });
 
+    // Initialize Circuit Breaker
+    this.breakers.set(provider.id, new CircuitBreaker(5, 10, 5));
+
     // Listen to tick events from this provider
     provider.on("tick", (tick: NormalizedTick) => {
-      // Update telemetry updates count & timestamp
       const m = this.metrics.get(provider.id);
       if (m) {
         m.lastUpdate = Date.now();
         m.latencyMs = Math.max(0, Date.now() - tick.timestamp);
+      }
+
+      // Record successful tick in the breaker
+      const breaker = this.breakers.get(provider.id);
+      if (breaker && breaker.getState() === "OPEN") {
+        breaker.recordSuccess();
       }
 
       // Route tick ONLY if this provider is currently active
@@ -41,17 +63,52 @@ export class ProviderManager extends EventEmitter {
     // Listen to connection state updates
     provider.on("status", ({ id, status }) => {
       const m = this.metrics.get(id);
+      const breaker = this.breakers.get(id);
+
       if (m) {
-        if (status === "disconnected") {
+        if (status === "disconnected" || status === "error") {
           m.disconnectCount++;
-          m.healthScore = Math.max(0, m.healthScore - 10);
+          m.healthScore = Math.max(0, m.healthScore - 15);
+          
+          if (breaker) {
+            breaker.recordFailure();
+            // Trigger failover if active provider is tripped
+            if (!breaker.isAvailable() && id === this.activeProviderId) {
+              console.error(`[ProviderManager] Active provider ${id} failed health checks. Running failover swap.`);
+              this.handleFailover();
+            }
+          }
         } else if (status === "connected") {
           m.reconnectCount++;
-          m.healthScore = Math.min(100, m.healthScore + 5);
+          m.healthScore = Math.min(100, m.healthScore + 10);
+          if (breaker) {
+            breaker.recordSuccess();
+          }
         }
       }
       this.emit("status", { id, status });
     });
+  }
+
+  /**
+   * Automatic failover switch routing logic
+   */
+  private handleFailover() {
+    // Priority order: oanda -> yahoo -> simulator
+    const order = ["oanda", "yahoo", "simulator"];
+    for (const id of order) {
+      const provider = this.providers.get(id);
+      const breaker = this.breakers.get(id);
+      if (provider && (!breaker || breaker.isAvailable())) {
+        console.warn(`[ProviderManager] Initiating automatic failover swap to: ${id}`);
+        this.setActiveProvider(id);
+        return;
+      }
+    }
+    
+    // Total Outage
+    console.error("[ProviderManager] CRITICAL: All data providers are unavailable!");
+    this.emit("total_outage");
   }
 
   /**
@@ -82,6 +139,36 @@ export class ProviderManager extends EventEmitter {
   }
 
   /**
+   * Syncs metrics to the Supabase provider_telemetry table
+   */
+  private async syncTelemetryToDatabase() {
+    if (!this.supabaseClient) return;
+
+    for (const [id, m] of this.metrics.entries()) {
+      try {
+        const { error } = await this.supabaseClient
+          .from("provider_telemetry")
+          .upsert({
+            provider_id: id,
+            latency_ms: m.latencyMs,
+            reconnect_count: m.reconnectCount,
+            disconnect_count: m.disconnectCount,
+            health_score: m.healthScore,
+            last_update: new Date(m.lastUpdate).toISOString(),
+            active_flag: m.activeFlag,
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) {
+          console.error(`[ProviderManager] Failed syncing database metrics for ${id}:`, error.message);
+        }
+      } catch (err: any) {
+        console.error(`[ProviderManager] Exception syncing metrics for ${id}:`, err.message);
+      }
+    }
+  }
+
+  /**
    * Retrieves the current active provider instance
    */
   public getActiveProvider(): BaseProvider | null {
@@ -93,6 +180,10 @@ export class ProviderManager extends EventEmitter {
    * Shuts down all registered provider connections
    */
   public async shutdown(): Promise<void> {
+    if (this.syncTimer) {
+      clearInterval(this.syncTimer);
+      this.syncTimer = null;
+    }
     for (const [id, provider] of this.providers.entries()) {
       try {
         await provider.disconnect();
@@ -102,6 +193,7 @@ export class ProviderManager extends EventEmitter {
     }
     this.providers.clear();
     this.metrics.clear();
+    this.breakers.clear();
     this.activeProviderId = null;
   }
 }
