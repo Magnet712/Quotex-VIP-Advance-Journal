@@ -544,6 +544,12 @@ export default function SignalsPage() {
     loadMeta();
   }, [refreshStats, buildStates]);
 
+  // Reset selected pairs when subTab changes to match current active assets
+  useEffect(() => {
+    const list = subTab !== 'live_market' ? OTC_PAIRS : LIVE_MARKET_PAIRS;
+    setSelectedPairs(new Set(list.map(p => p.short)));
+  }, [subTab]);
+
   // Alert on new window seed (OTC)
   useEffect(() => {
     if (windowSeed === 0 || loading || subTab === 'live_market') return;
@@ -854,6 +860,69 @@ export default function SignalsPage() {
                     <option value="HIGH">HIGH</option>
                   </select>
                 </div>
+              </div>
+            </div>
+
+            {/* Asset Selector Section */}
+            <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-3 relative overflow-hidden text-left">
+              <div className="flex items-center justify-between border-b border-glass-border/30 pb-2">
+                <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                  <Filter className="h-3.5 w-3.5 text-purple-400" />
+                  <span className="font-bold text-slate-300 uppercase tracking-wider">Asset Filter Selector</span>
+                </div>
+                {hasAccess && (
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={selectAll} 
+                      className="px-2 py-0.5 rounded border border-glass-border bg-slate-950 text-slate-400 hover:text-slate-200 text-[8px] font-mono uppercase font-bold"
+                    >
+                      Select All
+                    </button>
+                    <button 
+                      onClick={clearAll} 
+                      className="px-2 py-0.5 rounded border border-glass-border bg-slate-950 text-slate-400 hover:text-slate-200 text-[8px] font-mono uppercase font-bold"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Padlock indicator for non-premium members */}
+              {!hasAccess && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-3 bg-slate-950/65 z-10 font-mono">
+                  <div className="flex items-center gap-1 text-[9px] font-bold text-purple-300 uppercase tracking-widest bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full">
+                    <Lock className="h-2.5 w-2.5 text-purple-400" /> Premium Asset Filter
+                  </div>
+                </div>
+              )}
+
+              <div className={`flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1 scrollbar-thin ${!hasAccess ? 'blur-[4.5px] select-none pointer-events-none' : ''}`}>
+                {(subTab !== 'live_market' ? OTC_PAIRS : LIVE_MARKET_PAIRS).map((p) => {
+                  const shortCode = p.short;
+                  const isSelected = selectedPairs.has(shortCode);
+                  return (
+                    <button
+                      key={p.short}
+                      onClick={() => {
+                        const next = new Set(selectedPairs);
+                        if (isSelected) {
+                          next.delete(shortCode);
+                        } else {
+                          next.add(shortCode);
+                        }
+                        setSelectedPairs(next);
+                      }}
+                      className={`px-2 py-1 rounded text-[9px] font-mono font-bold uppercase transition-all border ${
+                        isSelected
+                          ? 'bg-purple-950/40 border-purple-500/50 text-purple-300 shadow-[0_0_8px_rgba(168,85,247,0.05)]'
+                          : 'bg-transparent border-glass-border/40 text-slate-500 hover:border-slate-800'
+                      }`}
+                    >
+                      {p.symbol}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
