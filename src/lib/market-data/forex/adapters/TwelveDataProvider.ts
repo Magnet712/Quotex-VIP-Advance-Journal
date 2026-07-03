@@ -15,7 +15,12 @@ export class TwelveDataProvider extends BaseProvider {
   private ws: WebSocket | null = null;
   private restTimeout: NodeJS.Timeout | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
+  
   public rateLimitRemaining: number = 800;
+  public requestCount: number = 0;
+  
+  private startTime: number = Date.now();
+  private lastLoggedInterval: number = 60000; // Initialize to standard interval
   
   // Track active pairs with last-seen timestamps to implement 5m expiration
   private activePairs: Map<string, number> = new Map([
@@ -52,6 +57,21 @@ export class TwelveDataProvider extends BaseProvider {
     }
 
     console.log(`[TwelveData] Active pairs updated:`, Array.from(this.activePairs.keys()));
+  }
+
+  /**
+   * Estimated remaining time until quota exhaustion based on request frequency.
+   */
+  public getEstimatedRemainingHours(): string {
+    if (this.rateLimitRemaining <= 0) return "0.0 hours";
+    
+    const hoursSinceStart = (Date.now() - this.startTime) / 3600000;
+    const avgRequestsPerHour = this.requestCount / Math.max(0.001, hoursSinceStart);
+    
+    if (avgRequestsPerHour === 0) return "Infinite (Idle)";
+    
+    const remainingHours = this.rateLimitRemaining / avgRequestsPerHour;
+    return `${remainingHours.toFixed(1)} hours`;
   }
 
   public async connect(): Promise<void> {
@@ -178,7 +198,7 @@ export class TwelveDataProvider extends BaseProvider {
     const wsStartTime = Date.now();
 
     this.ws.on("open", () => {
-      console.log("[TwelveData] WebSocket opened. Sending subscriptions...");
+      console.log("[TwelveData] WebSocket opened. Sending subscriptions... (Rate estimation started)");
       this.emitStatusChange("connected");
 
       const subscribeMsg = {
@@ -303,6 +323,19 @@ export class TwelveDataProvider extends BaseProvider {
       return;
     }
 
+    // Log interval transition if changed
+    if (interval !== this.lastLoggedInterval) {
+      let mode = "Normal Mode";
+      if (interval === 180000) mode = "Pre-Conservation Mode";
+      if (interval === 300000) mode = "Conservation Mode";
+      if (interval === 600000) mode = "Strict Conservation Mode";
+      if (interval === 900000) mode = "Preservation Mode (Extreme)";
+      
+      const runtimeEst = this.getEstimatedRemainingHours();
+      console.warn(`[TwelveData] Credits Remaining: ${this.rateLimitRemaining} (${runtimeEst} runtime left). Entering ${mode}. Polling Interval: ${(this.lastLoggedInterval / 1000).toFixed(0)}s → ${(interval / 1000).toFixed(0)}s`);
+      this.lastLoggedInterval = interval;
+    }
+
     const pairsToPoll = Array.from(this.activePairs.keys());
     if (pairsToPoll.length === 0) {
       console.log("[TwelveData] Zero active viewers. Pausing polling loop.");
@@ -318,6 +351,8 @@ export class TwelveDataProvider extends BaseProvider {
       path: `/time_series?symbol=${symbols}&interval=1min&outputsize=1&apikey=${this.apiKey}`,
       method: "GET"
     };
+
+    this.requestCount++; // Increment request metrics tracker
 
     https.get(options, (res) => {
       const remainingHeader = res.headers["x-ratelimit-remaining"];
