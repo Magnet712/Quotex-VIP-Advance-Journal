@@ -23,4 +23,5 @@ export interface ProviderMetrics {
   healthScore: number;       // Range 0 - 100 based on uptime ratios
   lastUpdate: number;        // UTC epoch of last valid tick
   activeFlag: boolean;       // Is this provider currently feeding the cache?
+  state: string;             // "INITIALIZING" | "CONNECTING" | "CONNECTED" | "DEGRADED" | "FAILOVER" | "DISCONNECTED" | "STOPPED"
 }

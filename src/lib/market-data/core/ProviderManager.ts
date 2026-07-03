@@ -3,6 +3,8 @@ import { BaseProvider } from "../forex/adapters/BaseProvider";
 import { NormalizedTick, ProviderMetrics } from "../types";
 import { CircuitBreaker } from "./CircuitBreaker";
 
+export type ProviderState = "INITIALIZING" | "CONNECTING" | "CONNECTED" | "DEGRADED" | "FAILOVER" | "DISCONNECTED" | "STOPPED";
+
 export class ProviderManager extends EventEmitter {
   private providers = new Map<string, BaseProvider>();
   private metrics = new Map<string, ProviderMetrics>();
@@ -27,14 +29,15 @@ export class ProviderManager extends EventEmitter {
   public registerProvider(provider: BaseProvider): void {
     this.providers.set(provider.id, provider);
     
-    // Initialize default metrics
+    // Initialize default metrics with INITIALIZING state
     this.metrics.set(provider.id, {
       latencyMs: 0,
       reconnectCount: 0,
       disconnectCount: 0,
       healthScore: 100,
       lastUpdate: Date.now(),
-      activeFlag: false
+      activeFlag: false,
+      state: "INITIALIZING"
     });
 
     // Initialize Circuit Breaker
@@ -46,6 +49,11 @@ export class ProviderManager extends EventEmitter {
       if (m) {
         m.lastUpdate = Date.now();
         m.latencyMs = Math.max(0, Date.now() - tick.timestamp);
+        
+        // If ticks are streaming, ensure state is CONNECTED
+        if (m.state !== "CONNECTED") {
+          this.setProviderState(provider.id, "CONNECTED");
+        }
       }
 
       // Record successful tick in the breaker
@@ -72,15 +80,27 @@ export class ProviderManager extends EventEmitter {
           
           if (breaker) {
             breaker.recordFailure();
+            const breakerState = breaker.getState();
+            
+            // Map status values to explicit state machine statuses
+            if (breakerState === "OPEN") {
+              this.setProviderState(id, id === this.activeProviderId ? "FAILOVER" : "DEGRADED");
+            } else {
+              this.setProviderState(id, "DISCONNECTED");
+            }
+
             // Trigger failover if active provider is tripped
             if (!breaker.isAvailable() && id === this.activeProviderId) {
               console.error(`[ProviderManager] Active provider ${id} failed health checks. Running failover swap.`);
               this.handleFailover();
             }
+          } else {
+            this.setProviderState(id, "DISCONNECTED");
           }
         } else if (status === "connected") {
           m.reconnectCount++;
           m.healthScore = Math.min(100, m.healthScore + 10);
+          this.setProviderState(id, "CONNECTED");
           if (breaker) {
             breaker.recordSuccess();
           }
@@ -91,10 +111,21 @@ export class ProviderManager extends EventEmitter {
   }
 
   /**
+   * Helper to safely transitions states and emit metrics changes
+   */
+  private setProviderState(providerId: string, state: ProviderState) {
+    const m = this.metrics.get(providerId);
+    if (m && m.state !== state) {
+      console.log(`[ProviderManager] Provider ${providerId} state transitioned: ${m.state} -> ${state}`);
+      m.state = state;
+      this.emit("state_changed", { id: providerId, state });
+    }
+  }
+
+  /**
    * Automatic failover switch routing logic
    */
   private handleFailover() {
-    // Priority order: oanda -> yahoo -> simulator
     const order = ["oanda", "yahoo", "simulator"];
     for (const id of order) {
       const provider = this.providers.get(id);
@@ -125,6 +156,10 @@ export class ProviderManager extends EventEmitter {
     // Update activeFlags inside metrics
     this.metrics.forEach((m, id) => {
       m.activeFlag = (id === providerId);
+      // Update state indicator for active/inactive transitions
+      if (id === providerId && m.state === "FAILOVER") {
+        m.state = "CONNECTED";
+      }
     });
 
     console.log(`[ProviderManager] Active provider shifted from ${previousId} to ${providerId}`);
@@ -156,6 +191,7 @@ export class ProviderManager extends EventEmitter {
             health_score: m.healthScore,
             last_update: new Date(m.lastUpdate).toISOString(),
             active_flag: m.activeFlag,
+            status: m.state, // Map explicit state word to the status db field
             updated_at: new Date().toISOString()
           });
 
@@ -185,6 +221,7 @@ export class ProviderManager extends EventEmitter {
       this.syncTimer = null;
     }
     for (const [id, provider] of this.providers.entries()) {
+      this.setProviderState(id, "STOPPED");
       try {
         await provider.disconnect();
       } catch (err: any) {

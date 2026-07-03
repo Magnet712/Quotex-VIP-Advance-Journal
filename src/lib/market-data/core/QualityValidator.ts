@@ -1,9 +1,36 @@
 import { NormalizedTick } from "../types";
 
+export interface ValidatorConfig {
+  spikeThreshold: number;       // e.g. 0.02 (2% deviation limit)
+  weekendFilter: boolean;       // e.g. true
+  maxOutOfOrderDelayMs: number; // e.g. 5000 (5 seconds lag allowed)
+}
+
 export class QualityValidator {
   private static lastValidTicks = new Map<string, NormalizedTick>();
   private static priceHistories = new Map<string, number[]>();
   private static MOVING_AVERAGE_PERIOD = 10;
+
+  private static config: ValidatorConfig = {
+    spikeThreshold: 0.02, // 2%
+    weekendFilter: true,
+    maxOutOfOrderDelayMs: 5000 // 5 seconds
+  };
+
+  /**
+   * Sets custom validation configuration parameter options dynamically
+   */
+  public static setConfig(newConfig: Partial<ValidatorConfig>): void {
+    this.config = { ...this.config, ...newConfig };
+    console.log("[QualityValidator] Dynamic configuration updated:", this.config);
+  }
+
+  /**
+   * Returns active validation configuration settings
+   */
+  public static getConfig(): ValidatorConfig {
+    return this.config;
+  }
 
   /**
    * Verifies if a given timestamp is during standard weekend forex market closures
@@ -32,7 +59,7 @@ export class QualityValidator {
     }
 
     // 2. Weekend market check
-    if (this.isWeekend(tick.timestamp)) {
+    if (this.config.weekendFilter && this.isWeekend(tick.timestamp)) {
       // Reject live feed data during weekend closure periods
       return false;
     }
@@ -42,8 +69,8 @@ export class QualityValidator {
     // 3. Out-of-order check
     if (lastTick) {
       const timeDiff = tick.timestamp - lastTick.timestamp;
-      if (timeDiff < -5000) {
-        // Tick is more than 5 seconds in the past, reject
+      if (timeDiff < -this.config.maxOutOfOrderDelayMs) {
+        // Tick is lagging beyond configuration threshold, reject
         console.warn(`[QualityValidator] Rejected stale tick on ${tick.pair}: lag of ${timeDiff}ms.`);
         return false;
       }
@@ -62,8 +89,8 @@ export class QualityValidator {
       
       const pctDeviation = Math.abs(tick.price - movingAvg) / movingAvg;
       
-      // Reject price deviations exceeding 2% (0.02)
-      if (pctDeviation > 0.02) {
+      // Reject price deviations exceeding configurable threshold
+      if (pctDeviation > this.config.spikeThreshold) {
         console.error(`[QualityValidator] Anomaly detected on ${tick.pair}: Price ${tick.price} deviated by ${(pctDeviation * 100).toFixed(2)}% from moving average ${movingAvg}.`);
         return false;
       }

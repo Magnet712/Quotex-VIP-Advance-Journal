@@ -1,9 +1,28 @@
 import { NormalizedTick, NormalizedCandle } from "../types";
 
+export interface CacheMetrics {
+  currentSize: number;
+  overwriteCount: number;
+  droppedTicks: number;
+  droppedCandles: number;
+}
+
 export class CandleCache {
   private static caches = new Map<string, NormalizedCandle[]>();
   private static currentTicks = new Map<string, NormalizedTick[]>();
   private static MAX_CAPACITY = 200;
+
+  // Cache debug counters
+  private static metrics = new Map<string, CacheMetrics>();
+
+  private static getOrInitMetrics(pair: string): CacheMetrics {
+    let m = this.metrics.get(pair);
+    if (!m) {
+      m = { currentSize: 0, overwriteCount: 0, droppedTicks: 0, droppedCandles: 0 };
+      this.metrics.set(pair, m);
+    }
+    return m;
+  }
 
   /**
    * Appends a valid tick to the current tick aggregator buffer for a pair
@@ -15,6 +34,14 @@ export class CandleCache {
       this.currentTicks.set(tick.pair, ticks);
     }
     ticks.push(tick);
+  }
+
+  /**
+   * Records a dropped tick metric
+   */
+  public static recordDroppedTick(pair: string): void {
+    const m = this.getOrInitMetrics(pair);
+    m.droppedTicks++;
   }
 
   /**
@@ -32,6 +59,8 @@ export class CandleCache {
 
     let open = 0, high = -Infinity, low = Infinity, close = 0, volume = 0, delta = 0;
 
+    const m = this.getOrInitMetrics(pair);
+
     if (ticks.length === 0) {
       // If no ticks arrived, carry over the close price from the last candle
       if (history.length > 0) {
@@ -43,6 +72,7 @@ export class CandleCache {
         volume = 0;
         delta = 0;
       } else {
+        m.droppedCandles++;
         return null;
       }
     } else {
@@ -53,7 +83,6 @@ export class CandleCache {
         high = Math.max(high, t.price);
         low = Math.min(low, t.price);
         volume += t.volume;
-        // In trade updates, volume delta is standard
         delta += t.volume;
       });
     }
@@ -76,8 +105,10 @@ export class CandleCache {
     // Enforce fixed-capacity ring buffer limit
     if (history.length > this.MAX_CAPACITY) {
       history.shift();
+      m.overwriteCount++;
     }
 
+    m.currentSize = history.length;
     return candle;
   }
 
@@ -89,11 +120,23 @@ export class CandleCache {
   }
 
   /**
+   * Exposes active metrics for debugging
+   */
+  public static getCacheMetrics(pair: string): CacheMetrics {
+    const m = this.getOrInitMetrics(pair);
+    m.currentSize = (this.caches.get(pair) || []).length;
+    return m;
+  }
+
+  /**
    * Preloads historical candles (used for initial backfills)
    */
   public static preloadHistory(pair: string, candles: NormalizedCandle[]): void {
     const history = candles.slice(-this.MAX_CAPACITY);
     this.caches.set(pair, history);
+
+    const m = this.getOrInitMetrics(pair);
+    m.currentSize = history.length;
   }
 
   /**
@@ -102,5 +145,6 @@ export class CandleCache {
   public static reset(): void {
     this.caches.clear();
     this.currentTicks.clear();
+    this.metrics.clear();
   }
 }
