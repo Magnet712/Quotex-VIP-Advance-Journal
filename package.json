@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npx ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" src/scripts/signal-worker-v2.js & next dev",
+    "dev": "next dev",
     "build": "next build",
-    "start": "npx ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" src/scripts/signal-worker-v2.js & next start",
+    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {

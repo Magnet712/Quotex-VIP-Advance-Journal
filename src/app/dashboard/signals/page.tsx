@@ -1,25 +1,21 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import {
-  TrendingUp, TrendingDown, Clock, AlertTriangle, Zap,
-  Target, Activity, RefreshCw, Shield, Radio, BarChart2,
-  ChevronUp, ChevronDown, Eye, Filter, Signal, Database, Award, Lock,
-  Bell, Volume2, X, Clipboard, Check, Layers, AlertCircle, ShieldAlert,
-  Play, BookOpen
+  Clock, AlertTriangle, Zap,
+  Target, Activity, RefreshCw, Radio, BarChart2,
+  ChevronUp, ChevronDown, Eye, Filter, Signal, Database, Lock,
+  Bell, X
 } from 'lucide-react';
 
 import { 
-  saveSignal, updateSignalResult, getSignalPerformance, 
-  getPairPerformanceMap, getActiveLiveMarketSignals,
-  getServerTime, getSignalHistory
+  getSignalPerformance, 
+  getPairPerformanceMap,
+  getServerTime, getSignalHistory, scanLiveMarketAsset, getMarketStatus, ScanResult
 } from '@/app/actions/signals';
 import { getSignalMode } from '@/app/actions/signal_mode';
 import { getPublicOptimizationSettings, getUserAccessState } from '@/app/actions/admin_optimization';
 import { canAccess } from '@/lib/permissions';
-import LockedFeature from '@/components/LockedFeature';
 
 // ─── Live Market Forex Pairs ─────────────────────────────────────────
 const LIVE_MARKET_PAIRS = [
@@ -302,13 +298,76 @@ function useISTClock(timeOffset: number) {
   return time;
 }
 
+interface SignalRecord {
+  id: string;
+  pair: string;
+  direction: 'CALL' | 'PUT' | 'WAIT';
+  entry_time: string;
+  expiry_time: string;
+  confidence: number;
+  result: string;
+  source: string;
+  timeframe?: string;
+  strategy_name?: string;
+  risk_level?: string;
+}
+
 type SignalStatus = 'ACTIVE' | 'SCANNING' | 'NO_SIGNAL' | 'LOADING_NEXT';
 
+interface PairSignal {
+  pair: string;
+  direction: 'CALL' | 'PUT';
+  confidence: number;
+  strategy: string;
+  entry_price?: number;
+  expiry_time?: string;
+  entryPrice?: number;
+  expiryTime?: string;
+  strategy_version?: string;
+  quality_score?: number;
+  is_premium?: boolean;
+  blockedReason?: string;
+  risk?: string;
+}
+
 interface PairSignalState {
-  signal: any;
+  signal: PairSignal | null;
   status: SignalStatus;
   expiresIn: number;
   generatedAt: string;
+}
+
+interface UserAccessState {
+  isLoggedIn: boolean;
+  isAdmin: boolean;
+  vipAccess: boolean;
+  premiumAccess?: boolean;
+  status?: string;
+}
+
+interface ToastMessage {
+  id: string;
+  symbol: string;
+  direction: string;
+  timestamp: Date;
+}
+
+interface SelectedSignalType {
+  pairSymbol: string;
+  type: string;
+  direction: 'CALL' | 'PUT' | 'WAIT';
+  confidence: number;
+  strategy?: string;
+  strategy_name?: string;
+  entryPrice?: number;
+  entry_price?: number;
+  rsi?: number;
+  stochBias?: string;
+  smaStatus?: string;
+  superTrend?: string;
+  superTrendStrength?: string;
+  ofPattern?: { pattern?: string; icon?: string; desc?: string };
+  pair?: string;
 }
 
 export default function SignalsPage() {
@@ -316,29 +375,28 @@ export default function SignalsPage() {
   const [timeOffset, setTimeOffset] = useState(0);
   const timeOffsetRef = useRef(0);
   const istTime = useISTClock(timeOffset);
-  const supabase = createClient();
   const [subTab, setSubTab] = useState<'live_otc' | 'simulation' | 'live_market'>('live_otc');
-  const [liveMarketSignals, setLiveMarketSignals] = useState<any[]>([]);
+  const [liveMarketSignals, setLiveMarketSignals] = useState<SignalRecord[]>([]);
   const [windowSeed, setWindowSeed] = useState(0);
   const windowSeedRef = useRef(0);
   const [pairStates, setPairStates] = useState<PairSignalState[]>([]);
   const [refreshIn, setRefreshIn] = useState(() => 60 - new Date().getSeconds());
   const [filterDir, setFilterDir] = useState<'ALL' | 'CALL' | 'PUT'>('ALL');
   const [filterRisk, setFilterRisk] = useState<'ALL' | 'LOW' | 'MEDIUM' | 'HIGH'>('ALL');
-  const [filterConf, setFilterConf] = useState<'ALL' | '90+'>('ALL');
+  const [filterConf] = useState<'ALL' | '90+'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPairs, setSelectedPairs] = useState<Set<string>>(
     () => new Set(OTC_PAIRS.map(p => p.short))
   );
   
   // Interactive Modal Details State
-  const [selectedSignal, setSelectedSignal] = useState<any>(null);
+  const [selectedSignal, setSelectedSignal] = useState<SelectedSignalType | null>(null);
   
   // Toast notifications & sound alerts
-  const [activeToasts, setActiveToasts] = useState<any[]>([]);
+  const [activeToasts, setActiveToasts] = useState<ToastMessage[]>([]);
 
   // Timeline list state
-  const [timelineSignals, setTimelineSignals] = useState<any[]>([]);
+  const [timelineSignals, setTimelineSignals] = useState<SignalRecord[]>([]);
 
   const [winRate, setWinRate] = useState<number | null>(null);
   const [otcStats, setOtcStats] = useState<{ winRate: number | null; totalToday: number }>({ winRate: null, totalToday: 0 });
@@ -347,8 +405,25 @@ export default function SignalsPage() {
   const [signalMode, setSignalModeState] = useState<string>('SIMULATION');
   const [dataSourceOnline, setDataSourceOnline] = useState(true);
 
+  // ─── Manual Scanning Live Forex States ────────────────────────────────────
+  const [selectedLivePair, setSelectedLivePair] = useState('EUR/USD');
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanResult, setScanResult] = useState<ScanResult['result'] | null>(null);
+  const [frontendCooldowns, setFrontendCooldowns] = useState<Record<string, number>>({});
+  const [scanHistory, setScanHistory] = useState<{
+    pair: string;
+    direction: 'CALL' | 'PUT' | 'WAIT';
+    confidence: number;
+    timestamp: string;
+    entryPrice: number;
+    result: ScanResult['result'];
+  }[]>([]);
+  const [pairFilter, setPairFilter] = useState('');
+  const [marketOpen, setMarketOpen] = useState(true);
+  const [nextCandleRemaining, setNextCandleRemaining] = useState(0);
+
   // Admin optimization settings & User roles
-  const [userAccess, setUserAccess] = useState<any>({ isLoggedIn: false, isAdmin: false, vipAccess: false, premiumAccess: false, status: 'pending' });
+  const [userAccess, setUserAccess] = useState<UserAccessState>({ isLoggedIn: false, isAdmin: false, vipAccess: false, premiumAccess: false, status: 'pending' });
   const [optSettings, setOptSettings] = useState<Record<string, string>>({
     min_confidence: '80',
     allowed_signal_hours: '08:00-12:00,18:00-22:00',
@@ -363,11 +438,9 @@ export default function SignalsPage() {
   });
   const [pairPerfMap, setPairPerfMap] = useState<Record<string, number>>({});
 
-  const activeSignalIds = useRef<Map<string, { id: string; entryPrice: number; direction: 'CALL' | 'PUT' }>>(new Map());
-  const prevSignalIds = useRef<Map<string, { id: string; entryPrice: number; direction: 'CALL' | 'PUT' }>>(new Map());
   const pendingStates = useRef<PairSignalState[] | null>(null);
   const pendingForSeed = useRef<number>(-1);
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // sound chime notifier
   const triggerNewSignalChime = useCallback((symbol: string, direction: string) => {
@@ -463,7 +536,7 @@ export default function SignalsPage() {
           quality_score,
           is_premium,
           blockedReason
-        } as any,
+        } as unknown as PairSignal,
         status: 'ACTIVE',
         expiresIn: 60,
         generatedAt: timeStr,
@@ -498,6 +571,143 @@ export default function SignalsPage() {
       console.error('Error refreshing stats:', err);
     }
   }, []);
+
+  // ─── Manual Scanning Live Forex Handlers & Effects ──────────────────────────
+  useEffect(() => {
+    if (subTab !== 'live_market') return;
+
+    let isMounted = true;
+
+    void (async () => {
+      const statusRes = await getMarketStatus();
+      if (statusRes.success && isMounted) {
+        setTimeout(() => {
+          if (isMounted) setMarketOpen(statusRes.open);
+        }, 0);
+      }
+    })();
+    
+    const cachedHistory = localStorage.getItem('live_scan_history');
+    if (cachedHistory) {
+      try {
+        const parsed = JSON.parse(cachedHistory);
+        const historyObj = (Array.isArray(parsed) ? parsed : []).map((item: Record<string, unknown>) => {
+          const resObj = item.result as Record<string, unknown> | undefined;
+          return {
+            pair: String(item.pair || 'EUR/USD'),
+            direction: (item.direction || 'WAIT') as 'CALL' | 'PUT' | 'WAIT',
+            confidence: Number(item.confidence || resObj?.confidence || 0),
+            timestamp: String(item.timestamp || ''),
+            entryPrice: Number(item.entryPrice || resObj?.entryPrice || 0),
+            result: item.result as ScanResult['result']
+          };
+        });
+        setTimeout(() => {
+          if (isMounted) setScanHistory(historyObj);
+        }, 0);
+      } catch (e) {
+        console.error('Failed to parse scan history:', e);
+      }
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [subTab]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFrontendCooldowns(prev => {
+        const updated: Record<string, number> = {};
+        let changed = false;
+        Object.entries(prev).forEach(([key, val]) => {
+          if (val > 1) {
+            updated[key] = val - 1;
+            changed = true;
+          } else {
+            changed = true;
+          }
+        });
+        return changed ? updated : prev;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const sec = (65 - now.getSeconds()) % 60;
+      setNextCandleRemaining(sec === 0 ? 60 : sec);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleScanLiveMarket = async (pairToScan = selectedLivePair) => {
+    if (scanLoading) return;
+
+    if (!marketOpen) {
+      alert("Analysis restricted: Forex market is currently closed.");
+      return;
+    }
+    
+    const currentCooldown = frontendCooldowns[pairToScan] || 0;
+    if (currentCooldown > 0) return;
+
+    setScanLoading(true);
+    setSelectedLivePair(pairToScan);
+    try {
+      const res = await scanLiveMarketAsset(pairToScan);
+      if (res.success && res.result) {
+        setScanResult(res.result);
+
+        // Update client-side history in localStorage
+        const newHistoryItem = {
+          pair: pairToScan,
+          direction: res.result.direction,
+          confidence: res.result.confidence,
+          timestamp: new Date().toLocaleTimeString(),
+          entryPrice: res.result.entryPrice,
+          result: res.result
+        };
+
+        setScanHistory(prev => {
+          const filtered = prev.filter(item => !(item.pair === pairToScan && item.timestamp.substring(0, 5) === newHistoryItem.timestamp.substring(0, 5)));
+          const updated = [newHistoryItem, ...filtered].slice(0, 10);
+          localStorage.setItem('live_scan_history', JSON.stringify(updated));
+          return updated;
+        });
+        
+        const cooldownVal = res.cooldownRemaining ?? parseInt(optSettings.live_scan_cooldown_seconds ?? '30', 10);
+        if (cooldownVal > 0) {
+          setFrontendCooldowns(prev => ({
+            ...prev,
+            [pairToScan]: cooldownVal
+          }));
+        }
+
+        // Notification chime sound on successful CALL or PUT trigger
+        if (res.result.direction === 'CALL' || res.result.direction === 'PUT') {
+          triggerNewSignalChime(pairToScan, res.result.direction);
+        }
+      } else {
+        if (res.error === 'Cooldown active' && res.cooldownRemaining) {
+          setFrontendCooldowns(prev => ({
+            ...prev,
+            [pairToScan]: res.cooldownRemaining || 30
+          }));
+        } else {
+          alert(`Scan failed: ${res.error || 'Unknown error'}`);
+        }
+      }
+    } catch (err) {
+      const errorObj = err as Error;
+      console.error('[Scan error]:', err);
+      alert(`Scan failed: ${errorObj.message || 'Execution error'}`);
+    } finally {
+      setScanLoading(false);
+    }
+  };
 
   // Fetch real win rate + signal mode + admin settings on mount
   useEffect(() => {
@@ -547,7 +757,10 @@ export default function SignalsPage() {
   // Reset selected pairs when subTab changes to match current active assets
   useEffect(() => {
     const list = subTab !== 'live_market' ? OTC_PAIRS : LIVE_MARKET_PAIRS;
-    setSelectedPairs(new Set(list.map(p => p.short)));
+    const timer = setTimeout(() => {
+      setSelectedPairs(new Set(list.map(p => p.short)));
+    }, 0);
+    return () => clearTimeout(timer);
   }, [subTab]);
 
   // Alert on new window seed (OTC)
@@ -555,40 +768,31 @@ export default function SignalsPage() {
     if (windowSeed === 0 || loading || subTab === 'live_market') return;
     const active = pairStates.find(ps => ps.status === 'ACTIVE' && ps.signal);
     if (active && active.signal) {
-      triggerNewSignalChime(active.signal.pair || 'AUD/USD', active.signal.direction);
+      const sig = active.signal;
+      const timer = setTimeout(() => {
+        triggerNewSignalChime(sig.pair || 'AUD/USD', sig.direction);
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [windowSeed, loading, subTab, triggerNewSignalChime]);
+  }, [windowSeed, loading, subTab, triggerNewSignalChime, pairStates]);
 
   // Alert on new live market signals
   const prevLiveCount = useRef(0);
   useEffect(() => {
     if (loading || subTab !== 'live_market') return;
     if (liveMarketSignals.length > prevLiveCount.current) {
-      const latest = liveMarketSignals[0];
+      const latest = liveMarketSignals[0] as { pair: string; direction: string } | undefined;
       if (latest) {
-        triggerNewSignalChime(latest.pair, latest.direction);
+        const timer = setTimeout(() => {
+          triggerNewSignalChime(latest.pair, latest.direction);
+        }, 0);
+        return () => clearTimeout(timer);
       }
     }
     prevLiveCount.current = liveMarketSignals.length;
   }, [liveMarketSignals, loading, subTab, triggerNewSignalChime]);
 
-  // Live market webhooks poller (existing)
-  useEffect(() => {
-    if (subTab !== 'live_market') return;
-    async function fetchLive() {
-      try {
-        const res = await getActiveLiveMarketSignals();
-        if (res.success && res.signals) {
-          setLiveMarketSignals(res.signals);
-        }
-      } catch (err) {
-        console.error('Failed to fetch active webhook signals:', err);
-      }
-    }
-    fetchLive();
-    const poller = setInterval(fetchLive, 5000);
-    return () => clearInterval(poller);
-  }, [subTab]);
+  // Live market background polling disabled under MVP v1.3 Event-Driven User Scan Architecture
 
   // Countdown timer clock ticks loop
   useEffect(() => {
@@ -644,7 +848,7 @@ export default function SignalsPage() {
 
   // Filter lists based on search & selectors
   const filtered = pairStates
-    .map((ps, idx) => ({ ps, pair: OTC_PAIRS[idx], idx }))
+    .map((ps, idx) => ({ ps, pair: OTC_PAIRS[idx] }))
     .filter(({ ps, pair }) => {
       if (!selectedPairs.has(pair.short)) return false;
       if (filterDir !== 'ALL' && ps.signal?.direction !== filterDir) return false;
@@ -659,9 +863,18 @@ export default function SignalsPage() {
       return true;
     });
 
+  interface LiveMarketSignalType {
+    pair: string;
+    confidence: number | string;
+    direction: string;
+    risk_level: string;
+    strategy_name: string;
+    [key: string]: unknown;
+  }
+
   // Group active live market signals by pair and keep the strongest one (highest confidence) to avoid conflicting directions
-  const strongestLiveSignalsMap = new Map<string, any>();
-  liveMarketSignals.forEach(sig => {
+  const strongestLiveSignalsMap = new Map<string, LiveMarketSignalType>();
+  (liveMarketSignals as unknown as LiveMarketSignalType[]).forEach(sig => {
     const existing = strongestLiveSignalsMap.get(sig.pair);
     if (!existing || Number(sig.confidence) > Number(existing.confidence)) {
       strongestLiveSignalsMap.set(sig.pair, sig);
@@ -687,12 +900,12 @@ export default function SignalsPage() {
     ? pairStates.filter(p => p.status === 'ACTIVE').length
     : filteredLiveMarket.length;
 
-  const handleCardClick = (sig: any, pair: any, type: string) => {
+  const handleCardClick = (sig: PairSignal | ScanResult['result'] | null, pair: { symbol: string; [key: string]: unknown } | null, type: string) => {
     if (!hasAccess) {
       window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: { requestedPlan: 'premium' } }));
       return;
     }
-    if (sig) {
+    if (sig && pair) {
       setSelectedSignal({ ...sig, pairSymbol: pair.symbol, type });
     }
   };
@@ -852,7 +1065,7 @@ export default function SignalsPage() {
                 <div className="flex gap-2">
                   <select
                     value={filterDir}
-                    onChange={(e) => setFilterDir(e.target.value as any)}
+                    onChange={(e) => setFilterDir(e.target.value as 'ALL' | 'CALL' | 'PUT')}
                     className="bg-[#02050b] border border-glass-border px-2.5 py-2 rounded text-slate-300"
                   >
                     <option value="ALL">ALL DIRECTIONS</option>
@@ -861,7 +1074,7 @@ export default function SignalsPage() {
                   </select>
                   <select
                     value={filterRisk}
-                    onChange={(e) => setFilterRisk(e.target.value as any)}
+                    onChange={(e) => setFilterRisk(e.target.value as 'ALL' | 'LOW' | 'MEDIUM' | 'HIGH')}
                     className="bg-[#02050b] border border-glass-border px-2.5 py-2 rounded text-slate-300"
                   >
                     <option value="ALL">ALL RISK</option>
@@ -939,7 +1152,7 @@ export default function SignalsPage() {
             {/* Signal Cards Grid */}
             {subTab !== 'live_market' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filtered.map(({ ps, pair, idx }) => (
+                {filtered.map(({ ps, pair }) => (
                   <SignalCard 
                     key={pair.short} 
                     pair={pair} 
@@ -955,18 +1168,224 @@ export default function SignalsPage() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredLiveMarket.map((sig) => (
-                  <LiveMarketSignalCard 
-                    key={sig.id} 
-                    signal={sig} 
-                    hasAccess={hasAccess}
-                    onClick={() => handleCardClick(sig, { symbol: sig.pair }, 'Forex')}
+              <div className="space-y-6">
+                {/* Trader Market Status Dashboard */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 font-mono text-[10px]">
+                  <div className="glass-panel p-3.5 border border-glass-border/40 rounded-xl flex flex-col justify-center text-left">
+                    <span className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">MARKET STATUS</span>
+                    <span className={`text-sm font-extrabold mt-1.5 uppercase ${marketOpen ? 'text-neon-green' : 'text-rose-500'}`}>
+                      {marketOpen ? '🟢 OPEN' : '🔴 CLOSED'}
+                    </span>
+                    <span className="text-slate-600 text-[8px] mt-0.5">FOREX GMT SYSTEM STATUS</span>
+                  </div>
+
+                  <div className="glass-panel p-3.5 border border-glass-border/40 rounded-xl flex flex-col justify-center text-left">
+                    <span className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">ANALYSIS ENGINE</span>
+                    <span className="text-slate-200 font-extrabold text-sm mt-1.5 uppercase">
+                      v1.3 PRODUCTION
+                    </span>
+                    <span className="text-slate-600 text-[8px] mt-0.5">ACTIVE STRATEGY CONFLUENCE</span>
+                  </div>
+
+                  <div className="glass-panel p-3.5 border border-glass-border/40 rounded-xl flex flex-col justify-center text-left">
+                    <span className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">LAST CLOSED CANDLE</span>
+                    <span className="text-slate-200 font-extrabold text-sm mt-1.5 uppercase">
+                      {scanResult ? (
+                        (() => {
+                          try {
+                            const d = new Date(scanResult.lastCandleTime);
+                            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+                          } catch {
+                            return 'N/A';
+                          }
+                        })()
+                      ) : 'AWAIT SCAN'}
+                    </span>
+                    <span className="text-slate-600 text-[8px] mt-0.5">LATEST RETRIEVED INTERVAL</span>
+                  </div>
+
+                  <div className="glass-panel p-3.5 border border-glass-border/40 rounded-xl flex flex-col justify-center text-left">
+                    <span className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">NEXT CANDLE BOUNDARY</span>
+                    <span className="text-yellow-400 font-extrabold text-sm mt-1.5 uppercase animate-pulse">
+                      IN {nextCandleRemaining}S
+                    </span>
+                    <span className="text-slate-600 text-[8px] mt-0.5">TRIGGER TO FRESH ANALYSIS</span>
+                  </div>
+                </div>
+
+                {/* Manual Scan Selector & Trigger (21 Pairs Grid) */}
+                <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4 font-mono text-xs text-left">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-glass-border/30 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-gold-vip animate-pulse" />
+                      <span className="font-extrabold text-slate-200 text-[10px] uppercase tracking-wider flex items-center gap-1.5">
+                        Market Confluence Analyzer (21 Pairs Grid)
+                        <span className="text-slate-600 text-[9px] font-normal font-sans">|</span>
+                        <span className={marketOpen ? 'text-neon-green font-bold' : 'text-rose-500 font-bold'}>
+                          MARKET: {marketOpen ? '🟢 OPEN' : '🔴 CLOSED'}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="relative w-full sm:w-48">
+                      <input
+                        type="text"
+                        placeholder="SEARCH ASSET..."
+                        value={pairFilter}
+                        onChange={(e) => setPairFilter(e.target.value)}
+                        className="w-full bg-[#02050b] border border-glass-border px-2.5 py-1.5 rounded text-[10px] text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-neon-green/30"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
+                    {LIVE_MARKET_PAIRS.filter(p => p.symbol.toLowerCase().includes(pairFilter.toLowerCase())).map(p => {
+                      const cooldown = frontendCooldowns[p.symbol] || 0;
+                      const isSelected = selectedLivePair === p.symbol;
+                      const isCurrentLoading = scanLoading && isSelected;
+                      
+                      // Lookup cached analysis direction
+                      const historyMatch = scanHistory.find(h => h.pair === p.symbol);
+                      const direction = historyMatch?.direction;
+
+                      const volStars = p.vol === 'HIGH' ? '★★★★★' : p.vol === 'MEDIUM' ? '★★★☆☆' : '★★☆☆☆';
+                      const majorsList = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'NZD/USD'];
+                      const exoticsList = ['USD/INR', 'USD/SGD', 'USD/MXN', 'USD/ZAR'];
+                      const spreadVal = majorsList.includes(p.symbol) ? 'Low' : exoticsList.includes(p.symbol) ? 'High' : 'Medium';
+                      
+                      let statusText = 'Ready';
+                      if (!marketOpen) statusText = 'Closed';
+                      else if (cooldown > 0) statusText = `${cooldown}s`;
+
+                      return (
+                        <div
+                          key={p.symbol}
+                          className={`p-3 rounded-lg border flex flex-col justify-between gap-3.5 transition-all text-left bg-[#02050b]/60 border-glass-border/30 ${
+                            isSelected ? 'border-purple-500/40 bg-purple-500/[0.02] shadow-[0_0_12px_rgba(168,85,247,0.03)]' : 'hover:border-slate-800'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className="text-[11px] font-extrabold text-slate-100 tracking-wide block">{p.symbol}</span>
+                              <div className="space-y-0.5 mt-1.5 text-[8px] text-slate-500 font-medium">
+                                <div>VOLATILITY: <span className="text-gold-vip">{volStars}</span></div>
+                                <div>SPREAD: <span className="text-slate-300 font-bold">{spreadVal}</span></div>
+                                <div>STATUS: <span className={
+                                  statusText === 'Ready' ? 'text-neon-green font-bold' : statusText === 'Closed' ? 'text-rose-500 font-bold' : 'text-yellow-500 font-bold animate-pulse'
+                                }>{statusText.toUpperCase()}</span></div>
+                              </div>
+                            </div>
+                            
+                            {direction && (
+                              <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+                                direction === 'CALL' ? 'text-neon-green border-neon-green/20 bg-neon-green/[0.01]' : direction === 'PUT' ? 'text-rose-400 border-rose-500/20 bg-rose-500/[0.01]' : 'text-amber-400 border-amber-500/20 bg-amber-500/[0.01]'
+                              }`}>
+                                {direction}
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => handleScanLiveMarket(p.symbol)}
+                            disabled={scanLoading || cooldown > 0}
+                            className="w-full py-1.5 rounded bg-purple-600/90 hover:bg-purple-500 disabled:bg-slate-900 border border-purple-500/20 disabled:border-slate-800 font-extrabold text-white disabled:text-slate-600 text-[9px] uppercase tracking-widest transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                          >
+                            {isCurrentLoading ? (
+                              <>
+                                <RefreshCw className="h-2.5 w-2.5 animate-spin" />
+                                SCANNING...
+                              </>
+                            ) : cooldown > 0 ? (
+                              <>
+                                <Clock className="h-2.5 w-2.5 text-slate-600" />
+                                {cooldown}S
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="h-2.5 w-2.5 text-yellow-400 animate-pulse" />
+                                ANALYZE
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {LIVE_MARKET_PAIRS.filter(p => p.symbol.toLowerCase().includes(pairFilter.toLowerCase())).length === 0 && (
+                      <div className="col-span-3 text-center py-6 text-slate-600 font-bold uppercase tracking-wider text-[9px]">
+                        No pairs match search filter.
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* Scan Outcome Container */}
+                {scanLoading ? (
+                  <div className="glass-panel p-8 rounded-xl border border-glass-border flex flex-col items-center justify-center py-20 gap-3 font-mono">
+                    <Activity className="h-8 w-8 text-purple-500 animate-spin" />
+                    <span className="text-[10px] font-bold text-purple-400 tracking-widest uppercase animate-pulse">Analyzing Indicator Confluence...</span>
+                  </div>
+                ) : scanResult ? (
+                  <ManualScanResultCard 
+                    result={scanResult} 
+                    pair={selectedLivePair} 
+                    onRefreshTrigger={handleScanLiveMarket}
                   />
-                ))}
-                {filteredLiveMarket.length === 0 && (
-                  <div className="col-span-2 text-center py-16 text-slate-600 font-mono text-xs">
-                    No active live market signals detected. Awaiting indicator triggers...
+                ) : (
+                  <div className="glass-panel p-8 rounded-xl border border-glass-border flex flex-col items-center justify-center py-20 gap-2 font-mono text-slate-600 text-xs text-center opacity-45">
+                    <Eye className="h-8 w-8 text-slate-700" />
+                    <span className="uppercase tracking-widest text-[9px] font-bold">Awaiting Market Analysis</span>
+                    <span className="text-[8px] max-w-[280px]">Select a currency pair above and click Analyze to execute indicator checks and determine entry setups.</span>
+                  </div>
+                )}
+
+                {/* Client-Side Scan History Panel */}
+                {scanHistory.length > 0 && (
+                  <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-3 font-mono text-left">
+                    <div className="flex items-center justify-between border-b border-glass-border/30 pb-2">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 text-slate-500" />
+                        Local Session History (Last 10)
+                      </span>
+                      <button 
+                        onClick={() => {
+                          setScanHistory([]);
+                          localStorage.removeItem('live_scan_history');
+                        }}
+                        className="text-[8px] text-slate-600 hover:text-slate-400 uppercase font-bold transition-colors cursor-pointer"
+                      >
+                        Clear History
+                      </button>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                      {scanHistory.map((item, idx) => {
+                        const isCall = item.direction === 'CALL';
+                        const isPut = item.direction === 'PUT';
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              setSelectedLivePair(item.pair);
+                              setScanResult(item.result);
+                            }}
+                            className={`p-2 rounded border border-slate-900 bg-slate-950/40 hover:bg-slate-900/60 transition-all cursor-pointer text-left space-y-1 relative group ${
+                              selectedLivePair === item.pair && scanResult && item.result && scanResult.entryTime === item.result.entryTime ? 'border-purple-500/40 bg-purple-500/[0.02]' : ''
+                            }`}
+                          >
+                            <div className="flex justify-between items-center text-[10px]">
+                              <span className="font-bold text-slate-300">{item.pair}</span>
+                              <span className="text-[8px] text-slate-600 font-sans">{(item.timestamp || '').substring(0, 5)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-[9px] font-extrabold flex items-center gap-0.5 ${
+                                isCall ? 'text-neon-green' : isPut ? 'text-rose-400' : 'text-slate-500'
+                              }`}>
+                                {isCall ? 'CALL' : isPut ? 'PUT' : 'WAIT'}
+                              </span>
+                              <span className="text-[8px] text-slate-400 font-bold">{item.result?.confidence || 0}%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1287,155 +1706,261 @@ function SignalCard({
 }
 
 // ─── Live Market Signal Card with Blurred Preview ────────────────────────────
-function LiveMarketSignalCard({
-  signal,
-  hasAccess,
-  onClick
-}: {
-  signal: any;
-  hasAccess: boolean;
-  onClick: () => void;
-}) {
-  const isCall = signal.direction === 'CALL';
-  const isActive = signal.result === 'PENDING';
+interface ManualScanResultProps {
+  result: {
+    direction: "CALL" | "PUT" | "WAIT";
+    confidence: number;
+    qualityScore: number;
+    strategy: string;
+    entryPrice: number;
+    entryTime: string;
+    expiryTime: string;
+    risk: "LOW" | "MEDIUM" | "HIGH";
+    recommendation: "CALL" | "PUT" | "WAIT";
+    reasons: { label: string; checked: boolean; text: string }[];
+    indicators: {
+      ema21: number | null;
+      sma50: number | null;
+      rsi: number | null;
+      cci: number | null;
+      stochK: number | null;
+      stochD: number | null;
+      atr: number | null;
+      supertrend: number | null;
+      supertrendDirection: number;
+      bodySize: number;
+      upperWick: number;
+      lowerWick: number;
+    };
+    lastCandleTime: string;
+    analysisGeneratedTime: string;
+    cacheExpiresTime: string;
+    marketBias: string;
+    recommendationText: string;
+    analysisEngine: string;
+    avoidReason: string;
+    entryReason: string;
+    nextCandleProbability: number;
+    trendStrength: number;
+    dataSource: string;
+    cacheStatus: "Fresh" | "Cached";
+    cacheAgeSeconds: number;
+  };
+  pair: string;
+  onRefreshTrigger?: (pair: string) => void;
+}
 
-  const [expiresIn, setExpiresIn] = useState(() => {
-    return Math.max(0, Math.round((new Date(signal.expiry_time).getTime() - Date.now()) / 1000));
-  });
+// ─── Event-Driven Live Market Scan Result Card ──────────────────────────────
+function ManualScanResultCard({
+  result,
+  pair,
+  onRefreshTrigger
+}: ManualScanResultProps) {
+  const isCall = result.direction === 'CALL';
+  const isPut = result.direction === 'PUT';
+  const isWait = result.direction === 'WAIT';
+
+  const starsCount = Math.round(result.confidence / 20);
+  const starsStr = '★'.repeat(starsCount) + '☆'.repeat(5 - starsCount);
+
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setExpiresIn(prev => {
-        const next = Math.max(0, Math.round((new Date(signal.expiry_time).getTime() - Date.now()) / 1000));
-        if (next === 0) clearInterval(timer);
-        return next;
-      });
-    }, 1000);
+    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [signal.expiry_time]);
+  }, []);
 
-  const borderColor = !isActive
-    ? (signal.result === 'WIN' ? 'border-neon-green/25 bg-neon-green/[0.01]' : 'border-rose-500/25 bg-rose-500/[0.01]')
-    : isCall
-    ? 'border-neon-green/25 shadow-[0_0_20px_rgba(0,230,118,0.04)]'
-    : 'border-rose-500/25 shadow-[0_0_20px_rgba(239,68,68,0.04)]';
+  const isFreshReady = result.cacheExpiresTime 
+    ? (currentTime > new Date(result.cacheExpiresTime).getTime()) 
+    : false;
+
+  const formattedTimes = (() => {
+    try {
+      const lastCandleDate = new Date(result.lastCandleTime);
+      const entryDate = new Date(lastCandleDate.getTime() + 60 * 1000);
+      const expiryDate = new Date(entryDate.getTime() + 60 * 1000);
+      
+      const formatTime = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      return {
+        entry: formatTime(entryDate),
+        expiry: formatTime(expiryDate)
+      };
+    } catch {
+      return { entry: 'N/A', expiry: 'N/A' };
+    }
+  })();
+
+  const nextCandleStartsIn = (() => {
+    if (!result.cacheExpiresTime) return 0;
+    const expiresMs = new Date(result.cacheExpiresTime).getTime();
+    const nextStartMs = expiresMs - 5000;
+    const diff = Math.max(0, Math.ceil((nextStartMs - currentTime) / 1000));
+    return diff;
+  })();
 
   return (
-    <div 
-      onClick={isActive ? onClick : undefined}
-      className={`glass-panel rounded-xl border transition-all duration-300 overflow-hidden relative ${borderColor} ${isActive ? 'cursor-pointer hover:scale-[1.01]' : ''}`}
-    >
-      
-      {/* Blurred overlay locker for standard/Free users */}
-      {isActive && !hasAccess && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-slate-950/85 backdrop-blur-[2px] rounded-xl text-center space-y-3.5 z-10 font-mono">
-          <div className="p-2.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400">
-            <Lock className="h-4.5 w-4.5" />
-          </div>
-          <div className="space-y-0.5">
-            <div className="text-[10px] font-bold text-slate-200 uppercase tracking-wider">Premium Access Required</div>
-            <p className="text-[8px] text-slate-500 max-w-[200px] leading-relaxed">
-              Upgrade to unlock directional indicators, entry positions, and confluence counts.
-            </p>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: { requestedPlan: 'premium' } }));
-            }}
-            className="px-4 py-1.5 rounded bg-purple-600 hover:bg-purple-500 text-white font-bold text-[9px] uppercase tracking-wider transition-colors shadow-md"
-          >
-            Upgrade Now
-          </button>
+    <div className={`glass-panel rounded-xl border p-5 space-y-5 font-mono text-xs text-left ${
+      isCall ? 'border-neon-green/30 bg-neon-green/[0.01]' : isPut ? 'border-rose-500/30 bg-rose-500/[0.01]' : 'border-amber-500/20 bg-amber-500/[0.005]'
+    }`}>
+      {/* 1. Header Decision Block */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-glass-border/30 pb-3">
+        <div>
+          <h2 className="text-xl font-extrabold text-slate-100 tracking-wide flex items-center gap-2">
+            {pair}
+            <span className={`text-xs font-black px-2.5 py-0.5 rounded uppercase tracking-wider border ${
+              isCall ? 'text-neon-green border-neon-green/20 bg-neon-green/5' : isPut ? 'text-rose-500 border-rose-500/20 bg-rose-500/5' : 'text-amber-400 border-amber-500/20 bg-amber-500/5'
+            }`}>
+              {isCall ? '🟢 CALL' : isPut ? '🔴 PUT' : '🟡 WAIT'}
+            </span>
+          </h2>
+          <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1 block">
+            CONFLUENCE SIGNAL DIRECTIVE
+          </span>
+        </div>
+        <div className="text-left sm:text-right">
+          <span className="text-[8px] text-slate-500 block uppercase font-bold tracking-wider">ENGINE VERSION</span>
+          <span className="text-[9px] text-slate-300 font-bold">v{result.analysisEngine || "1.3"}</span>
+        </div>
+      </div>
+
+      {isFreshReady && (
+        <div className="bg-neon-green/5 border border-neon-green/20 rounded p-2.5 text-[10px] text-neon-green font-bold flex items-center justify-between animate-pulse">
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-neon-green inline-block animate-ping" />
+            🟢 NEW CANDLE COMPLETED — FRESH ANALYSIS READY
+          </span>
+          {onRefreshTrigger && (
+            <button 
+              onClick={() => onRefreshTrigger(pair)}
+              className="px-2.5 py-1 rounded bg-neon-green text-[#02050b] text-[8px] font-extrabold tracking-wider hover:bg-emerald-400 uppercase transition-colors cursor-pointer"
+            >
+              Analyze Again
+            </button>
+          )}
         </div>
       )}
 
-      {/* Card Header */}
-      <div className={`px-4 pt-4 pb-3 flex items-start justify-between ${isActive ? (isCall ? 'bg-neon-green/[0.02]' : 'bg-rose-500/[0.02]') : ''}`}>
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-extrabold font-mono text-slate-100 tracking-wider">
-              {signal.pair}
-            </span>
-            <span className="text-[8px] font-mono text-gold-vip border border-gold-vip/30 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">LIVE FOREX</span>
-          </div>
-          <div className="text-[9px] font-mono text-slate-600 truncate max-w-[130px]">
-            STRATEGY: <span className="text-slate-400 font-bold uppercase">{signal.strategy_name}</span>
-          </div>
+      {/* 2. Institutional Decision Parameters */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3.5 rounded-lg border border-slate-900 bg-slate-950/30 text-left">
+          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">Confidence</span>
+          <span className="text-xs font-extrabold text-gold-vip mt-1.5 block tracking-wider">{starsStr}</span>
+          <span className="text-[7.5px] text-slate-400 font-bold mt-1 block">{result.confidence}% Probability</span>
         </div>
 
-        <div className="flex flex-col items-end gap-1">
-          {isActive ? (
-            <span className="flex items-center gap-1 text-[8px] font-mono font-bold text-neon-green bg-neon-green/10 px-1.5 py-0.5 rounded border border-neon-green/20">
-              <span className="h-1.5 w-1.5 rounded-full bg-neon-green animate-pulse" />
-              ACTIVE
-            </span>
-          ) : (
-            <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded border ${
-              signal.result === 'WIN' 
-                ? 'text-neon-green bg-neon-green/10 border-neon-green/20' 
-                : 'text-rose-400 bg-rose-500/10 border-rose-500/20'
-            }`}>
-              {signal.result}
-            </span>
-          )}
+        <div className="p-3.5 rounded-lg border border-slate-900 bg-slate-950/30 text-left">
+          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">Trend Strength</span>
+          <span className="text-xs font-extrabold text-slate-200 mt-1.5 block font-mono">
+            {(() => {
+              const score = result.trendStrength || result.qualityScore || 70;
+              const filled = Math.round(score / 10);
+              return '█'.repeat(filled) + '░'.repeat(10 - filled);
+            })()}
+          </span>
+          <span className="text-[7.5px] text-slate-400 font-bold mt-1 block">INDEX: {result.trendStrength || result.qualityScore}%</span>
+        </div>
+
+        <div className="p-3.5 rounded-lg border border-slate-900 bg-slate-950/30 text-left">
+          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">Market Bias</span>
+          <span className={`text-xs font-extrabold mt-1.5 block uppercase ${
+            isCall ? 'text-neon-green' : isPut ? 'text-rose-400' : 'text-slate-400'
+          }`}>{result.marketBias}</span>
+          <span className="text-[7.5px] text-slate-400 font-bold mt-1 block">DIRECTIONS ALIGNED</span>
+        </div>
+
+        <div className="p-3.5 rounded-lg border border-slate-900 bg-slate-950/30 text-left">
+          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">Signal Expiration</span>
+          <span className="text-xs font-extrabold text-yellow-400 mt-1.5 block uppercase animate-pulse">
+            {nextCandleStartsIn > 0 ? `${nextCandleStartsIn}s` : 'EXPIRING'}
+          </span>
+          <span className="text-[7.5px] text-slate-400 font-bold mt-1 block">NEXT CANDLE LIMIT</span>
         </div>
       </div>
 
-      {/* Card Body */}
-      <div className={`px-4 pb-4 pt-1 space-y-4 ${isActive && !hasAccess ? 'blur-[3px] select-none pointer-events-none' : ''}`}>
-        <div className="grid grid-cols-2 gap-3 items-center">
-          <div className={`flex flex-col justify-center items-center py-2.5 rounded-lg border ${
-            isCall 
-              ? 'bg-neon-green/5 border-neon-green/10 text-neon-green' 
-              : 'bg-rose-500/5 border-rose-500/10 text-rose-400'
-          }`}>
-            <span className="text-[8px] font-mono text-slate-500 tracking-wider">DIRECTION</span>
-            <span className="text-xs font-extrabold font-mono flex items-center gap-0.5">
-              {isCall ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-              {hasAccess ? signal.direction : 'LOCK'}
-            </span>
-          </div>
-
-          <div className="flex flex-col justify-center items-center py-2.5 rounded-lg border border-slate-900 bg-slate-950/30">
-            <span className="text-[8px] font-mono text-slate-500 tracking-wider">EXPIRY</span>
-            <span className="text-xs font-extrabold font-mono text-slate-200">
-              {isActive ? (
-                expiresIn > 0 ? (
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5 animate-spin" />
-                    {expiresIn}s
-                  </span>
-                ) : (
-                  'RESOLVING...'
-                )
-              ) : (
-                'CLOSED'
-              )}
-            </span>
-          </div>
+      {/* 3. 1-Minute Binary Trade Times Table */}
+      <div className="bg-[#020617]/70 border border-slate-900 rounded-lg p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div>
+          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">ENTRY CANDLE</span>
+          <span className="text-xs font-extrabold text-slate-200 mt-1 block">{formattedTimes.entry} UTC</span>
         </div>
+        <div>
+          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">EXPIRY TIME</span>
+          <span className="text-xs font-extrabold text-rose-400 mt-1 block">{formattedTimes.expiry} UTC</span>
+        </div>
+        <div>
+          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">VALID FOR</span>
+          <span className="text-xs font-extrabold text-slate-200 mt-1 block">NEXT CANDLE ONLY</span>
+        </div>
+        <div>
+          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">ENTRY PRICE</span>
+          <span className="text-xs font-extrabold text-slate-200 mt-1 block">{result.entryPrice}</span>
+        </div>
+      </div>
 
-        <div className="bg-[#020617]/60 border border-glass-border/30 rounded-lg p-3 space-y-2.5 text-xs font-mono">
-          <div className="flex justify-between border-b border-slate-900 pb-1.5">
-            <span className="text-slate-500">ENTRY PRICE:</span>
-            <span className="text-slate-200 font-bold">{hasAccess ? signal.entry_price : '•.••••'}</span>
+      {/* 4. Directive Box */}
+      <div className={`p-3.5 rounded-lg border text-left text-xs ${
+        isCall ? 'bg-neon-green/[0.02] border-neon-green/10 text-slate-200' : isPut ? 'bg-rose-500/[0.02] border-rose-500/10 text-slate-200' : 'bg-slate-900/40 border-slate-800 text-slate-300'
+      }`}>
+        <span className="text-[8px] text-slate-500 uppercase tracking-widest font-bold block mb-1">Recommendation Directive</span>
+        <span className="text-xs leading-relaxed">{result.recommendationText}</span>
+      </div>
+
+      {/* 5. Checklist Reasons */}
+      <div className="space-y-2 border-t border-glass-border/30 pt-4 text-left">
+        <span className="text-[9px] text-slate-500 uppercase tracking-widest block font-bold">Analysis Confluence Checklist</span>
+        
+        {isWait && (
+          <div className="text-[10px] text-amber-400/90 font-bold leading-relaxed border border-amber-500/20 bg-amber-500/[0.02] p-2 rounded">
+            🟡 WAIT: Current market conditions do not satisfy the confluence requirements.
           </div>
-          {signal.expiry_price && (
-            <div className="flex justify-between border-b border-slate-900 pb-1.5">
-              <span className="text-slate-500">CLOSE PRICE:</span>
-              <span className={`font-bold ${signal.result === 'WIN' ? 'text-neon-green' : 'text-rose-400'}`}>
-                {signal.expiry_price}
+        )}
+
+        <div className="space-y-1.5 mt-2">
+          {result.reasons.map((reason, idx) => (
+            <div key={idx} className="flex items-start gap-2 text-xs">
+              <span className={`font-bold shrink-0 ${reason.checked ? 'text-neon-green' : 'text-slate-600'}`}>
+                {reason.checked ? '✓' : '✗'}
+              </span>
+              <span className={reason.checked ? 'text-slate-200' : 'text-slate-500'}>
+                <span className="font-bold text-[10px] text-slate-400 mr-1.5">{reason.label}:</span>
+                {reason.text}
               </span>
             </div>
-          )}
-          <div className="flex justify-between items-center">
-            <span className="text-slate-500">CONFIDENCE:</span>
-            <span className="text-slate-200 font-bold">{hasAccess ? `${signal.confidence}%` : '••%'}</span>
-          </div>
+          ))}
         </div>
       </div>
 
+      {/* 6. Raw Indicators Block */}
+      <div className="space-y-2 font-mono text-xs border-t border-glass-border/30 pt-3">
+        <span className="text-[9px] text-slate-500 uppercase tracking-widest block mb-2 font-bold">Raw Indicator Values</span>
+        
+        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+          <div className="flex justify-between border-b border-slate-900 pb-1.5">
+            <span className="text-slate-500">RSI (14):</span>
+            <span className="text-slate-200 font-semibold">{result.indicators.rsi?.toFixed(2) ?? 'N/A'}</span>
+          </div>
+          <div className="flex justify-between border-b border-slate-900 pb-1.5">
+            <span className="text-slate-500">Stoch %K / %D:</span>
+            <span className="text-slate-200 font-semibold">{result.indicators.stochK?.toFixed(2) ?? 'N/A'} / {result.indicators.stochD?.toFixed(2) ?? 'N/A'}</span>
+          </div>
+          <div className="flex justify-between border-b border-slate-900 pb-1.5">
+            <span className="text-slate-500">CCI (14):</span>
+            <span className="text-slate-200 font-semibold">{result.indicators.cci?.toFixed(2) ?? 'N/A'}</span>
+          </div>
+          <div className="flex justify-between border-b border-slate-900 pb-1.5">
+            <span className="text-slate-500">ATR (14):</span>
+            <span className="text-slate-200 font-semibold">{result.indicators.atr?.toFixed(5) ?? 'N/A'}</span>
+          </div>
+          <div className="flex justify-between border-b border-slate-900 pb-1.5">
+            <span className="text-slate-500">SuperTrend:</span>
+            <span className="text-slate-200 font-semibold">{result.indicators.supertrendDirection === 1 ? 'BULLISH' : 'BEARISH'} ({result.indicators.supertrend?.toFixed(5) ?? 'N/A'})</span>
+          </div>
+          <div className="flex justify-between border-b border-slate-900 pb-1.5">
+            <span className="text-slate-500">Wicks (U/L/B):</span>
+            <span className="text-slate-200 font-semibold">U:{result.indicators.upperWick.toFixed(5)} / L:{result.indicators.lowerWick.toFixed(5)} / B:{result.indicators.bodySize.toFixed(5)}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

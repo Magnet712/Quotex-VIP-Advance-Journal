@@ -18,6 +18,12 @@
 import { createClient }    from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath }  from 'next/cache';
+import { evaluateSignal } from '@/lib/market-data/core/SignalEngine';
+import { ProviderManager } from '@/lib/market-data/core/ProviderManager';
+import { TwelveDataProvider } from '@/lib/market-data/forex/adapters/TwelveDataProvider';
+import { CandleCache } from '@/lib/market-data/core/CandleCache';
+import { NormalizedCandle } from '@/lib/market-data/types';
+import { getUserAccessState } from '@/app/actions/admin_optimization';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 export interface SaveSignalInput {
@@ -113,9 +119,10 @@ export async function saveSignal(input: SaveSignalInput) {
     }
 
     return { success: true, signalId: data.id };
-  } catch (err: any) {
+  } catch (err) {
+    const errorObj = err as Error;
     console.error('[saveSignal] Unexpected error:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: errorObj.message };
   }
 }
 
@@ -219,9 +226,10 @@ export async function updateSignalResult(
 
     revalidatePath('/dashboard/signal-history');
     return { success: true, result };
-  } catch (err: any) {
+  } catch (err) {
+    const errorObj = err as Error;
     console.error('[updateSignalResult] Unexpected error:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: errorObj.message };
   }
 }
 
@@ -254,8 +262,9 @@ export async function saveCandle(input: SaveCandleInput) {
     }
 
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (err) {
+    const errorObj = err as Error;
+    return { success: false, error: errorObj.message };
   }
 }
 
@@ -310,8 +319,9 @@ export async function getSignalHistory(filters: SignalHistoryFilters = {}) {
     }
 
     return { success: true, signals: data ?? [], total: count ?? 0 };
-  } catch (err: any) {
-    return { success: false, error: err.message, signals: [], total: 0 };
+  } catch (err) {
+    const errorObj = err as Error;
+    return { success: false, error: errorObj.message, signals: [], total: 0 };
   }
 }
 
@@ -363,8 +373,9 @@ export async function getSignalPerformance(source?: 'simulation' | 'live_otc' | 
       success: true,
       stats: { total, wins, losses, pending, accuracy, totalToday },
     };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (err) {
+    const errorObj = err as Error;
+    return { success: false, error: errorObj.message };
   }
 }
 
@@ -447,9 +458,10 @@ export async function getActiveLiveMarketSignals() {
 
     if (error) throw error;
     return { success: true, signals: data ?? [] };
-  } catch (err: any) {
-    console.error('[getActiveLiveMarketSignals] Error:', err.message);
-    return { success: false, error: err.message, signals: [] };
+  } catch (err) {
+    const errorObj = err as Error;
+    console.error('[getActiveLiveMarketSignals] Error:', errorObj.message);
+    return { success: false, error: errorObj.message, signals: [] };
   }
 }
 
@@ -499,9 +511,10 @@ export async function getPublicSignalPerformance() {
       success: true,
       stats: { total, wins, losses, pending, accuracy, dailyAverage }
     };
-  } catch (err: any) {
+  } catch (err) {
+    const errorObj = err as Error;
     console.error('[getPublicSignalPerformance] Unexpected error:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: errorObj.message };
   }
 }
 
@@ -524,9 +537,10 @@ export async function getPublicRecentSignals(limit = 6) {
     }
 
     return { success: true, signals: data ?? [] };
-  } catch (err: any) {
+  } catch (err) {
+    const errorObj = err as Error;
     console.error('[getPublicRecentSignals] Unexpected error:', err);
-    return { success: false, error: err.message, signals: [] };
+    return { success: false, error: errorObj.message, signals: [] };
   }
 }
 
@@ -570,9 +584,391 @@ export async function getPublicCommunityStats() {
         premiumMembers: premiumMembers ?? 0
       }
     };
-  } catch (err: any) {
+  } catch (err) {
+    const errorObj = err as Error;
     console.error('[getPublicCommunityStats] Unexpected error:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: errorObj.message };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Event-Driven User Scan Architecture Registries (Next.js Global Lifespans)
+// ─────────────────────────────────────────────────────────────────────────────
+const globalUserLastScan = (((global as unknown as Record<string, unknown>).userLastScan || new Map<string, number>())) as Map<string, number>;
+(global as unknown as Record<string, unknown>).userLastScan = globalUserLastScan;
+
+const globalPairLastScan = (((global as unknown as Record<string, unknown>).pairLastScan || new Map<string, number>())) as Map<string, number>;
+(global as unknown as Record<string, unknown>).pairLastScan = globalPairLastScan;
+
+const globalScanCache = (((global as unknown as Record<string, unknown>).scanCache || new Map<string, { pair: string; result: ScanResult['result']; expiresAt: number }>())) as Map<string, { pair: string; result: ScanResult['result']; expiresAt: number }>;
+(global as unknown as Record<string, unknown>).scanCache = globalScanCache;
+
+const globalInFlightFetches = (((global as unknown as Record<string, unknown>).inFlightFetches || new Map<string, Promise<NormalizedCandle[]>>())) as Map<string, Promise<NormalizedCandle[]>>;
+(global as unknown as Record<string, unknown>).inFlightFetches = globalInFlightFetches;
+
+interface QueueRequest {
+  pair: string;
+  resolve: (candles: NormalizedCandle[]) => void;
+  reject: (err: Error) => void;
+}
+
+let batchQueue: QueueRequest[] = [];
+let batchTimeout: NodeJS.Timeout | null = null;
+let globalManager: ProviderManager | null = null;
+
+function incrementGlobalCounter(key: string, amount = 1) {
+  const g = global as unknown as Record<string, number>;
+  g[key] = (g[key] || 0) + amount;
+}
+
+/**
+ * Helper: checks if the international Forex markets are open.
+ * Sunday 22:00 UTC to Friday 22:00 UTC.
+ */
+function isForexMarketOpen(): boolean {
+  const now = new Date();
+  const day = now.getUTCDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const hours = now.getUTCHours();
+  
+  if (day === 6) return false;
+  if (day === 5 && hours >= 22) return false;
+  if (day === 0 && hours < 22) return false;
+  return true;
+}
+
+/**
+ * Server Action: Exposes market state diagnostics.
+ */
+export async function getMarketStatus(): Promise<{ success: boolean; open: boolean }> {
+  return { success: true, open: isForexMarketOpen() };
+}
+
+async function getProviderManager() {
+  if (globalManager) return globalManager;
+  const supabase = await createClient();
+  globalManager = new ProviderManager(supabase);
+  
+  const twelvedata = new TwelveDataProvider();
+  globalManager.registerProvider(twelvedata);
+  globalManager.setActiveProvider(twelvedata.id);
+  
+  await twelvedata.connect().catch((e: Error) => console.error("[Server Action] TwelveData connect error:", e.message));
+  return globalManager;
+}
+
+async function queueCandleFetch(pair: string, limit: number): Promise<NormalizedCandle[]> {
+  return new Promise((resolve, reject) => {
+    batchQueue.push({ pair, resolve, reject });
+    if (!batchTimeout) {
+      batchTimeout = setTimeout(() => {
+        void processBatch(limit);
+      }, 50);
+    }
+  });
+}
+
+async function processBatch(limit: number) {
+  const currentBatch = [...batchQueue];
+  batchQueue = [];
+  batchTimeout = null;
+  
+  if (currentBatch.length === 0) return;
+  
+  const pairs = Array.from(new Set(currentBatch.map(r => r.pair)));
+  console.log(`[Batch Queue] Executing Twelve Data request for symbols: ${pairs.join(", ")}`);
+  
+  try {
+    const manager = await getProviderManager();
+    const results = await manager.fetchHistoricCandlesBatch(pairs, limit);
+    
+    incrementGlobalCounter('actualApiCallsCount');
+    incrementGlobalCounter('apiCreditsUsed', pairs.length);
+    
+    currentBatch.forEach(req => {
+      req.resolve(results.get(req.pair) || []);
+    });
+  } catch (err: unknown) {
+    const errorInstance = err instanceof Error ? err : new Error(String(err));
+    console.error(`[Batch Queue Error] Failed to process batch request:`, errorInstance.message);
+    currentBatch.forEach(req => {
+      req.reject(errorInstance);
+    });
+  }
+}
+
+export interface ScanResult {
+  success: boolean;
+  error?: string;
+  cooldownRemaining?: number;
+  result?: {
+    direction: "CALL" | "PUT" | "WAIT";
+    confidence: number;
+    qualityScore: number;
+    strategy: string;
+    entryPrice: number;
+    entryTime: string;
+    expiryTime: string;
+    risk: "LOW" | "MEDIUM" | "HIGH";
+    recommendation: "CALL" | "PUT" | "WAIT";
+    reasons: { label: string; checked: boolean; text: string }[];
+    indicators: {
+      ema21: number | null;
+      sma50: number | null;
+      rsi: number | null;
+      cci: number | null;
+      stochK: number | null;
+      stochD: number | null;
+      atr: number | null;
+      supertrend: number | null;
+      supertrendDirection: number;
+      bodySize: number;
+      upperWick: number;
+      lowerWick: number;
+    };
+    lastCandleTime: string;
+    analysisGeneratedTime: string;
+    cacheExpiresTime: string;
+    marketBias: string;
+    recommendationText: string;
+    analysisEngine: string;
+    avoidReason: string;
+    entryReason: string;
+    nextCandleProbability: number;
+    trendStrength: number;
+    dataSource: string;
+    cacheStatus: "Fresh" | "Cached";
+    cacheAgeSeconds: number;
+  };
+}
+
+/**
+ * ACTION: scanLiveMarketAsset
+ * Event-Driven manual scanner trigger endpoint for Live Market tab.
+ * Implements request coalescing, user session limits, global pair caching,
+ * market hours guards, and SignalEngine evaluation.
+ */
+export async function scanLiveMarketAsset(pair: string): Promise<ScanResult> {
+  const { ok } = await checkApproved();
+  if (!ok) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id;
+    if (!userId) {
+      return { success: false, error: 'User session not found' };
+    }
+
+    // Retrieve access level to enforce user session cooldown (Premium: 15s, Free: 60s)
+    const access = await getUserAccessState();
+    const isPremium = access.premiumAccess || access.vipAccess || access.isAdmin;
+    const userCooldownMs = isPremium ? 15000 : 60000;
+
+    const now = Date.now();
+    const userLastScanTime = globalUserLastScan.get(userId) || 0;
+    const userElapsed = now - userLastScanTime;
+
+    if (userElapsed < userCooldownMs) {
+      return {
+        success: false,
+        error: 'Cooldown active',
+        cooldownRemaining: Math.ceil((userCooldownMs - userElapsed) / 1000)
+      };
+    }
+
+    // Cooldown is 30 seconds per pair globally
+    const pairCooldownMs = 30000;
+    const lastPairScan = globalPairLastScan.get(pair) || 0;
+    const pairElapsed = now - lastPairScan;
+
+    // Check if there is a cached result
+    const cached = globalScanCache.get(pair);
+    const hasValidCache = cached && cached.result && cached.expiresAt > now;
+
+    // If cache is still valid, return it immediately without hitting Twelve Data
+    if (hasValidCache && cached && cached.result) {
+      incrementGlobalCounter('cacheHitsCount');
+      incrementGlobalCounter('apiCreditsSaved');
+      incrementGlobalCounter('manualScansCount');
+      globalUserLastScan.set(userId, now);
+      const cooldownRemaining = Math.max(0, Math.ceil((lastPairScan + pairCooldownMs - now) / 1000));
+      const ageSeconds = Math.max(0, Math.floor((now - new Date(cached.result.analysisGeneratedTime).getTime()) / 1000));
+      return {
+        success: true,
+        result: {
+          ...cached.result,
+          cacheStatus: "Cached",
+          cacheAgeSeconds: ageSeconds
+        },
+        cooldownRemaining
+      };
+    }
+
+    // If cache has expired, but we are still inside the 30-second cooldown period,
+    // we serve the expired cached result if available to protect our Twelve Data API limits.
+    if (pairElapsed < pairCooldownMs && cached && cached.result) {
+      incrementGlobalCounter('cacheHitsCount');
+      incrementGlobalCounter('apiCreditsSaved');
+      incrementGlobalCounter('manualScansCount');
+      globalUserLastScan.set(userId, now);
+      const ageSeconds = Math.max(0, Math.floor((now - new Date(cached.result.analysisGeneratedTime).getTime()) / 1000));
+      return {
+        success: true,
+        result: {
+          ...cached.result,
+          cacheStatus: "Cached",
+          cacheAgeSeconds: ageSeconds
+        },
+        cooldownRemaining: Math.ceil((pairCooldownMs - pairElapsed) / 1000)
+      };
+    }
+
+    // Enforce Market Status checks: No wasted Twelve Data API calls if Forex market is closed!
+    const marketOpen = isForexMarketOpen();
+    if (!marketOpen) {
+      if (cached && cached.result) {
+        // Serve expired cache on weekends rather than failing
+        const ageSeconds = Math.max(0, Math.floor((now - new Date(cached.result.analysisGeneratedTime).getTime()) / 1000));
+        return {
+          success: true,
+          result: {
+            ...cached.result,
+            cacheStatus: "Cached",
+            cacheAgeSeconds: ageSeconds
+          },
+          cooldownRemaining: 0
+        };
+      }
+      return {
+        success: false,
+        error: 'Market is closed'
+      };
+    }
+
+    // Implement Request Coalescing using shared in-flight Promise map
+    let fetchPromise = globalInFlightFetches.get(pair);
+    if (!fetchPromise) {
+      console.log(`[Scan Pipeline] Queueing fresh coalesced market query for: ${pair}`);
+      fetchPromise = queueCandleFetch(pair, 60);
+      globalInFlightFetches.set(pair, fetchPromise);
+      fetchPromise.finally(() => {
+        globalInFlightFetches.delete(pair);
+      });
+    } else {
+      console.log(`[Request Coalescing] Reusing active in-flight request for: ${pair}`);
+    }
+
+    let candles: NormalizedCandle[] = [];
+    try {
+      candles = await fetchPromise;
+    } catch (err: unknown) {
+      const errorInstance = err instanceof Error ? err : new Error(String(err));
+      return { success: false, error: `Failed to fetch market data: ${errorInstance.message}` };
+    }
+
+    if (candles.length < 52) {
+      return { success: false, error: `Insufficient candle history returned: ${candles.length}/52` };
+    }
+
+    incrementGlobalCounter('manualScansCount');
+
+    // Preload history into CandleCache for SignalEngine consumption
+    CandleCache.preloadHistory(pair, candles);
+
+    // Evaluate signal using the SignalEngine (which reads from CandleCache)
+    const engineRes = evaluateSignal(pair);
+    const entryTime = new Date();
+    const expiryTime = new Date(entryTime.getTime() + 60 * 1000); // 1-minute expiration
+
+    const lastCandle = candles[candles.length - 1];
+    const nextCandleTime = Math.ceil(now / 60000) * 60000 + 5000;
+    const expiresAt = nextCandleTime > now ? nextCandleTime : now + 60000;
+
+    // Compile Rich AI Descriptive Analysis
+    let marketBias = "Neutral / Range";
+    let recommendationText = "Awaiting strong momentum confirmation. Avoid taking entries under high volatility/range conditions.";
+
+    if (engineRes.direction === 'CALL') {
+      marketBias = engineRes.confidence >= 85 ? "Strong Buy" : "Buy Bias";
+      recommendationText = "Wait for current candle to close. Enter next candle (CALL).";
+    } else if (engineRes.direction === 'PUT') {
+      marketBias = engineRes.confidence >= 85 ? "Strong Sell" : "Sell Bias";
+      recommendationText = "Wait for current candle to close. Enter next candle (PUT).";
+    }
+
+    const scanResultData = {
+      direction: engineRes.direction,
+      confidence: engineRes.confidence,
+      qualityScore: engineRes.qualityScore,
+      strategy: engineRes.strategy,
+      entryPrice: lastCandle?.close || 0,
+      entryTime: entryTime.toISOString(),
+      expiryTime: expiryTime.toISOString(),
+      risk: engineRes.risk,
+      recommendation: engineRes.recommendation,
+      reasons: engineRes.reasons,
+      indicators: engineRes.indicators,
+      lastCandleTime: lastCandle?.timestamp ? new Date(lastCandle.timestamp).toISOString() : entryTime.toISOString(),
+      analysisGeneratedTime: entryTime.toISOString(),
+      cacheExpiresTime: new Date(expiresAt).toISOString(),
+      marketBias,
+      recommendationText,
+      analysisEngine: "v1.3",
+      avoidReason: "",
+      entryReason: engineRes.strategy,
+      nextCandleProbability: engineRes.confidence,
+      trendStrength: engineRes.qualityScore,
+      dataSource: "Twelve Data",
+      cacheStatus: "Fresh" as const,
+      cacheAgeSeconds: 0
+    };
+
+    // Cache the full indicators analysis
+    globalScanCache.set(pair, {
+      pair,
+      result: scanResultData,
+      expiresAt
+    });
+
+    globalPairLastScan.set(pair, now);
+    globalUserLastScan.set(userId, now);
+
+    return {
+      success: true,
+      result: scanResultData,
+      cooldownRemaining: Math.ceil(pairCooldownMs / 1000)
+    };
+  } catch (err: unknown) {
+    const errorInstance = err instanceof Error ? err : new Error(String(err));
+    console.error('[scanLiveMarketAsset] Execution exception:', errorInstance.message);
+    return { success: false, error: errorInstance.message };
+  }
+}
+
+/**
+ * ACTION: getScannerStats
+ * Exposes diagnostic metrics and saved credit telemetry counts.
+ */
+export async function getScannerStats(): Promise<{ success: boolean; stats?: Record<string, number>; error?: string }> {
+  try {
+    const used = ((global as unknown as Record<string, number>).apiCreditsUsed) || 0;
+    const remaining = Math.max(0, 800 - used);
+    return {
+      success: true,
+      stats: {
+        apiCreditsUsed: used,
+        apiCreditsRemaining: remaining,
+        apiCreditsSaved: ((global as unknown as Record<string, number>).apiCreditsSaved) || 0,
+        manualScansCount: ((global as unknown as Record<string, number>).manualScansCount) || 0,
+        cacheHitsCount: ((global as unknown as Record<string, number>).cacheHitsCount) || 0,
+        actualApiCallsCount: ((global as unknown as Record<string, number>).actualApiCallsCount) || 0
+      }
+    };
+  } catch (err) {
+    const errorObj = err as Error;
+    return { success: false, error: errorObj.message };
   }
 }
 

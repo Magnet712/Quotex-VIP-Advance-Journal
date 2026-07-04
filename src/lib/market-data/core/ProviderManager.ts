@@ -231,6 +231,45 @@ export class ProviderManager extends EventEmitter {
   }
 
   /**
+   * Fetches historical candles from the active provider
+   */
+  public async fetchHistoricCandles(pair: string, limit: number): Promise<any[]> {
+    const provider = this.getActiveProvider();
+    if (!provider) {
+      throw new Error("[ProviderManager] No active provider configured.");
+    }
+    return provider.fetchHistoricCandles(pair, limit);
+  }
+
+  /**
+   * Fetches historical candles batch from the active provider if supported, else falls back to sequential fetches
+   */
+  public async fetchHistoricCandlesBatch(pairs: string[], limit: number): Promise<Map<string, any[]>> {
+    const provider = this.getActiveProvider();
+    if (!provider) {
+      throw new Error("[ProviderManager] No active provider configured.");
+    }
+    
+    // Check if the provider has a batch fetch capability
+    if (typeof (provider as any).fetchHistoricCandlesBatch === "function") {
+      return (provider as any).fetchHistoricCandlesBatch(pairs, limit);
+    }
+    
+    // Sequential fallback
+    const results = new Map<string, any[]>();
+    for (const pair of pairs) {
+      try {
+        const candles = await provider.fetchHistoricCandles(pair, limit);
+        results.set(pair, candles);
+      } catch (err: any) {
+        console.error(`[ProviderManager] Failed fetching candles for ${pair}:`, err.message);
+        results.set(pair, []);
+      }
+    }
+    return results;
+  }
+
+  /**
    * Shuts down all registered provider connections
    */
   public async shutdown(): Promise<void> {

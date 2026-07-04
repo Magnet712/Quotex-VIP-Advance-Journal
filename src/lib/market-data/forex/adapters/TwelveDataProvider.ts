@@ -83,19 +83,8 @@ export class TwelveDataProvider extends BaseProvider {
   public async connect(): Promise<void> {
     if (this.active) return;
     this.active = true;
-
-    if (!this.apiKey) {
-      console.warn("[TwelveData] API Key missing. Running in simulated fallback mode.");
-      this.emitStatusChange("error");
-      return;
-    }
-
-    if (this.wsDisabled) {
-      console.log("[TwelveData] WS permanently disabled. Starting REST loop directly.");
-      this.startRESTFallback();
-    } else {
-      this.connectWebSocket();
-    }
+    console.log("[TwelveData] Provider active. Running in event-driven manual scan mode (background polling/WebSocket disabled).");
+    this.emitStatusChange("connected");
   }
 
   public async disconnect(): Promise<void> {
@@ -194,6 +183,85 @@ export class TwelveDataProvider extends BaseProvider {
           resolve([]);
         });
       }).on("error", () => resolve([]));
+    });
+  }
+
+  /**
+   * Fetches historical candles for multiple symbols in a single batch request
+   */
+  public async fetchHistoricCandlesBatch(pairs: string[], limit: number): Promise<Map<string, NormalizedCandle[]>> {
+    const results = new Map<string, NormalizedCandle[]>();
+    if (!this.apiKey) {
+      console.warn("[TwelveData] Credentials missing, returning empty batch backfill.");
+      pairs.forEach(p => results.set(p, []));
+      return results;
+    }
+
+    if (pairs.length === 0) return results;
+
+    // For single pair, delegate to standard single-pair fetch logic
+    if (pairs.length === 1) {
+      const candles = await this.fetchHistoricCandles(pairs[0], limit);
+      results.set(pairs[0], candles);
+      return results;
+    }
+
+    return new Promise((resolve) => {
+      const symbols = pairs.join(",");
+      const options = {
+        hostname: "api.twelvedata.com",
+        path: `/time_series?symbol=${symbols}&interval=1min&outputsize=${limit}&apikey=${this.apiKey}`,
+        method: "GET"
+      };
+
+      https.get(options, (res) => {
+        let data = "";
+        res.on("data", chunk => data += chunk);
+        res.on("end", () => {
+          try {
+            const json = JSON.parse(data);
+            pairs.forEach(pair => {
+              const item = json[pair];
+              if (item && item.values && Array.isArray(item.values)) {
+                const candles = item.values.map((v: any) => ({
+                  timestamp: new Date(v.datetime + " UTC").toISOString(),
+                  open: parseFloat(v.open),
+                  high: parseFloat(v.high),
+                  low: parseFloat(v.low),
+                  close: parseFloat(v.close),
+                  volume: parseInt(v.volume || "0"),
+                  cvd: 0
+                }));
+                results.set(pair, candles.reverse());
+              } else {
+                // Check if symbol matches single pair format without the symbol key (in case API returns single-object representation)
+                if (pairs.length === 1 && json.values && Array.isArray(json.values)) {
+                  const candles = json.values.map((v: any) => ({
+                    timestamp: new Date(v.datetime + " UTC").toISOString(),
+                    open: parseFloat(v.open),
+                    high: parseFloat(v.high),
+                    low: parseFloat(v.low),
+                    close: parseFloat(v.close),
+                    volume: parseInt(v.volume || "0"),
+                    cvd: 0
+                  }));
+                  results.set(pair, candles.reverse());
+                } else {
+                  results.set(pair, []);
+                }
+              }
+            });
+          } catch (err: any) {
+            console.error("[TwelveData Batch Fetch Error]:", err.message);
+            pairs.forEach(p => results.set(p, []));
+          }
+          resolve(results);
+        });
+      }).on("error", (err) => {
+        console.error("[TwelveData Batch HTTPS Error]:", err.message);
+        pairs.forEach(p => results.set(p, []));
+        resolve(results);
+      });
     });
   }
 
