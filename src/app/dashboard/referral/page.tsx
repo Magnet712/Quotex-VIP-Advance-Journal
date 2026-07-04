@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { 
-  Award, Copy, Check, Users, Gift, FileText, ShieldAlert, Sparkles
+  Award, Copy, Check, Users, Gift, FileText, ShieldAlert, Sparkles, TrendingUp
 } from 'lucide-react';
 
 export default function ReferralPage() {
@@ -90,7 +90,7 @@ export default function ReferralPage() {
           
           <div className="space-y-2">
             <span className="text-[9px] font-mono text-gold-vip uppercase tracking-widest block font-bold">your partner broker invitation link</span>
-            <h2 className="text-lg font-bold font-mono text-slate-200">Share Link & Unlock Premium</h2>
+            <h2 className="text-lg font-bold font-mono text-slate-200">Invite 5 Verified Traders → Get 1 Month Premium FREE</h2>
             <p className="text-xs text-slate-400 leading-relaxed font-sans max-w-xl">
               Invite other traders to register an account with our partner broker. For every **5 successfully verified referrals** who register using your link and verify their Trader ID, you unlock **1 Month of Premium Signal Pro access** completely free!
             </p>
@@ -194,7 +194,7 @@ export default function ReferralPage() {
 
       </div>
 
-      {/* Tabs Layout: Referred Users & T&C */}
+      {/* Tabs Layout: Referred Users & Instructions/T&C */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         {/* Referred Users Table */}
@@ -249,51 +249,88 @@ export default function ReferralPage() {
           </div>
         </div>
 
-        {/* Terms & Conditions Box */}
-        <div className="glass-panel p-6 rounded-2xl border border-glass-border space-y-4">
-          <div className="flex items-center gap-2 border-b border-glass-border pb-3">
-            <FileText className="h-4 w-4 text-gold-vip" />
-            <h2 className="text-xs font-bold font-mono uppercase tracking-widest text-slate-200">
-              Terms & Conditions
-            </h2>
-          </div>
-
-          <div className="space-y-4 text-left font-sans text-xs text-slate-400 leading-normal max-h-[300px] overflow-y-auto pr-1">
-            <div className="space-y-1.5">
-              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">1. Referral Rewards</h3>
-              <p>
-                No cash payments or monetary commissions are provided. Instead, referrals earn you direct extensions of Premium Signal Pro access (1 month for every 5 successfully referred traders).
-              </p>
+        {/* Right Column: How It Works & Terms */}
+        <div className="space-y-6">
+          
+          {/* How It Works Card */}
+          <div className="glass-panel p-6 rounded-2xl border border-glass-border space-y-4">
+            <div className="flex items-center gap-2 border-b border-glass-border pb-3">
+              <TrendingUp className="h-4 w-4 text-neon-green" />
+              <h2 className="text-xs font-bold font-mono uppercase tracking-widest text-slate-200">
+                How It Works
+              </h2>
             </div>
-
-            <div className="space-y-1.5">
-              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">2. Broker Registration</h3>
-              <p>
-                Referred users must register their account using your unique link and complete a minimum broker deposit to verify their profile and count as a successful referral.
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">3. Reward Distribution</h3>
-              <p>
-                Premium months are automatically activated on your account once you reach each 5-referral milestone (5, 10, 15, etc.). Extensions are cumulative and do not expire.
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">4. Anti-Fraud Policy</h3>
-              <p>
-                Duplicate registrations, self-referrals, or registering dummy accounts to manipulate the milestone count are strictly audited and will result in subscription termination.
-              </p>
+            <div className="space-y-3.5 text-xs text-slate-400 font-sans leading-normal">
+              <div className="flex gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-mono font-bold text-slate-300 shrink-0 text-[10px]">1</span>
+                <span>Share your broker invitation link.</span>
+              </div>
+              <div className="flex gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-mono font-bold text-slate-300 shrink-0 text-[10px]">2</span>
+                <span>Your friend registers using your link.</span>
+              </div>
+              <div className="flex gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-mono font-bold text-slate-300 shrink-0 text-[10px]">3</span>
+                <span>Your friend submits their Trader ID on this website.</span>
+              </div>
+              <div className="flex gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-mono font-bold text-slate-300 shrink-0 text-[10px]">4</span>
+                <span>We verify the Trader ID against our partner portal.</span>
+              </div>
+              <div className="flex gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-gold-vip/25 border border-gold-vip/45 text-gold-vip flex items-center justify-center font-mono font-bold shrink-0 text-[10px]">5</span>
+                <span className="text-slate-300 font-semibold font-mono">Every 5 verified referrals = 1 month Premium.</span>
+              </div>
             </div>
           </div>
 
-          <div className="bg-slate-950/70 border border-slate-900/60 rounded p-3 flex gap-2 items-start text-[10px] text-slate-500 font-sans">
-            <ShieldAlert className="h-4 w-4 text-gold-vip mt-0.5 shrink-0" />
-            <span>
-              Quotex VIP reserves the right to audit signups and adjust referral validations to guarantee fair system promotion.
-            </span>
+          {/* Terms & Conditions Box */}
+          <div className="glass-panel p-6 rounded-2xl border border-glass-border space-y-4">
+            <div className="flex items-center gap-2 border-b border-glass-border pb-3">
+              <FileText className="h-4 w-4 text-gold-vip" />
+              <h2 className="text-xs font-bold font-mono uppercase tracking-widest text-slate-200">
+                Terms & Conditions
+              </h2>
+            </div>
+
+            <div className="space-y-4 text-left font-sans text-xs text-slate-400 leading-normal max-h-[220px] overflow-y-auto pr-1">
+              <div className="space-y-1.5">
+                <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">1. Referral Rewards</h3>
+                <p>
+                  No cash payments or monetary commissions are provided. Instead, referrals earn you direct extensions of Premium Signal Pro access (1 month for every 5 successfully referred traders).
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">2. Broker Registration</h3>
+                <p>
+                  Referred users must register their account using your unique link and complete a minimum broker deposit to verify their profile and count as a successful referral.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">3. Reward Distribution</h3>
+                <p>
+                  Premium months are automatically activated on your account once you reach each 5-referral milestone (5, 10, 15, etc.). Extensions are cumulative and do not expire.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">4. Anti-Fraud Policy</h3>
+                <p>
+                  Duplicate registrations, self-referrals, or registering dummy accounts to manipulate the milestone count are strictly audited and will result in subscription termination.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-950/70 border border-slate-900/60 rounded p-3 flex gap-2 items-start text-[10px] text-slate-500 font-sans">
+              <ShieldAlert className="h-4 w-4 text-gold-vip mt-0.5 shrink-0" />
+              <span>
+                Quotex VIP reserves the right to audit signups and adjust referral validations to guarantee fair system promotion.
+              </span>
+            </div>
           </div>
+          
         </div>
 
       </div>

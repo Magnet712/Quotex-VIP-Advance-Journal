@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     username TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
     vip_access BOOLEAN NOT NULL DEFAULT FALSE,
+    referred_by_trader_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
