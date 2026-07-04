@@ -421,6 +421,12 @@ export default function SignalsPage() {
   const [pairFilter, setPairFilter] = useState('');
   const [marketOpen, setMarketOpen] = useState(true);
   const [nextCandleRemaining, setNextCandleRemaining] = useState(0);
+  const [isTimelineVisible, setIsTimelineVisible] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('timeline_visible') !== 'false';
+    }
+    return true;
+  });
 
   // Admin optimization settings & User roles
   const [userAccess, setUserAccess] = useState<UserAccessState>({ isLoggedIn: false, isAdmin: false, vipAccess: false, premiumAccess: false, status: 'pending' });
@@ -1396,16 +1402,26 @@ export default function SignalsPage() {
           {/* RIGHT COLUMN: Chronological Timeline Feed */}
           <div className="space-y-6">
             <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4">
-              <div className="flex items-center justify-between border-b border-glass-border/40 pb-3">
+              <div className="flex items-center justify-between border-b border-glass-border/40 pb-3 font-mono text-xs">
                 <div className="flex items-center gap-1.5">
                   <Activity className="h-4.5 w-4.5 text-gold-vip" />
-                  <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">Signal Audit Timeline</span>
+                  <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">Signal Audit Timeline</span>
                 </div>
-                <span className="text-[8px] font-mono text-slate-500 uppercase">Live outcomes</span>
+                <button
+                  onClick={() => {
+                    const next = !isTimelineVisible;
+                    setIsTimelineVisible(next);
+                    localStorage.setItem('timeline_visible', String(next));
+                  }}
+                  className="px-2 py-0.5 rounded border border-glass-border bg-slate-950 text-slate-400 hover:text-slate-200 text-[8px] font-bold uppercase transition-colors cursor-pointer"
+                >
+                  {isTimelineVisible ? 'Hide' : 'Show'}
+                </button>
               </div>
 
-              {/* Timeline feed wrapper */}
-              <div className="space-y-3.5 max-h-[600px] overflow-y-auto pr-1 relative">
+              {isTimelineVisible && (
+                /* Timeline feed wrapper */
+                <div className="space-y-3.5 max-h-[600px] overflow-y-auto pr-1 relative animate-fadeIn">
                 {/* Lock overlay for non-premium members */}
                 {!hasAccess && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-slate-950/40 z-20 text-center space-y-2.5 font-mono">
@@ -1461,6 +1477,7 @@ export default function SignalsPage() {
                   )}
                 </div>
               </div>
+              )}
             </div>
           </div>
 
