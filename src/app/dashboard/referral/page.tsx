@@ -1,16 +1,55 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { 
-  Award, Copy, Check, Users, MousePointerClick, 
-  Sparkles, ExternalLink, ShieldAlert, FileText, CheckCircle,
-  TrendingUp, HelpCircle, Gift
+  Award, Copy, Check, Users, Gift, FileText, ShieldAlert, Sparkles
 } from 'lucide-react';
 
 export default function ReferralPage() {
+  const [profile, setProfile] = useState<any>(null);
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const supabase = createClient();
 
   const referralLink = 'https://broker-qx.pro/sign-up/?lid=1712337';
+
+  useEffect(() => {
+    async function loadReferralData() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+
+        // 1. Fetch current profile
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (userProfile) {
+          setProfile(userProfile);
+
+          // 2. Fetch real database referrals registered under this user's trader_id
+          const { data: referralList } = await supabase
+            .from('users')
+            .select('trader_id, created_at, status')
+            .eq('referred_by_trader_id', userProfile.trader_id)
+            .order('created_at', { ascending: false });
+
+          if (referralList) {
+            setReferrals(referralList);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load referral dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadReferralData();
+  }, [supabase]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);
@@ -18,27 +57,20 @@ export default function ReferralPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Mocked statistics for MVP demonstration
-  const stats = {
-    clicks: 142,
-    registrations: 14,
-    conversions: 8, // 8 conversions total
-    premiumMonthsEarned: 1, // 1 month unlocked (since 8 / 5 = 1, with 3 progress)
-    progressToNext: 3 // 3/5 progress toward the 2nd month
-  };
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Users className="h-8 w-8 animate-spin text-neon-green" />
+        <span className="text-xs font-mono text-slate-500">RETRIEVING DB REFERRAL LEDGER...</span>
+      </div>
+    );
+  }
 
-  // Mocked referred users list (Commissions columns removed)
-  const referredUsers = [
-    { id: 'trader_9481', date: '2026-07-02', status: 'Active VIP', milestone: 'Counted' },
-    { id: 'trader_3821', date: '2026-06-28', status: 'Active VIP', milestone: 'Counted' },
-    { id: 'trader_1049', date: '2026-06-25', status: 'Active VIP', milestone: 'Counted' },
-    { id: 'trader_8754', date: '2026-06-22', status: 'Active VIP', milestone: 'Counted' },
-    { id: 'trader_6201', date: '2026-06-19', status: 'Active VIP', milestone: 'Counted' },
-    { id: 'trader_5510', date: '2026-06-14', status: 'Active VIP', milestone: 'Counted' },
-    { id: 'trader_4409', date: '2026-06-11', status: 'Active VIP', milestone: 'Counted' },
-    { id: 'trader_1102', date: '2026-06-08', status: 'Active VIP', milestone: 'Counted' },
-    { id: 'trader_2930', date: '2026-06-05', status: 'Pending Deposit', milestone: 'Pending' }
-  ];
+  // Calculate real metrics based on database rows
+  const approvedReferralsCount = referrals.filter(r => r.status === 'approved').length;
+  const progressToNext = approvedReferralsCount % 5;
+  const premiumMonthsEarned = Math.floor(approvedReferralsCount / 5);
+  const nextMilestoneRemaining = 5 - progressToNext;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 w-full max-w-5xl mx-auto animate-fadeIn text-left">
@@ -60,7 +92,7 @@ export default function ReferralPage() {
             <span className="text-[9px] font-mono text-gold-vip uppercase tracking-widest block font-bold">your partner broker invitation link</span>
             <h2 className="text-lg font-bold font-mono text-slate-200">Share Link & Unlock Premium</h2>
             <p className="text-xs text-slate-400 leading-relaxed font-sans max-w-xl">
-              Invite other traders to register an account with our partner broker. For every **5 successfully verified referrals** who register under your link and verify their Trader ID, you unlock **1 Month of Premium Signal Pro access** completely free!
+              Invite other traders to register an account with our partner broker. For every **5 successfully verified referrals** who register using your link and verify their Trader ID, you unlock **1 Month of Premium Signal Pro access** completely free!
             </p>
           </div>
 
@@ -98,15 +130,15 @@ export default function ReferralPage() {
           
           <div className="space-y-2">
             <div className="flex justify-between font-mono text-xs text-slate-400">
-              <span>Progress:</span>
-              <span className="text-gold-vip font-bold">{stats.progressToNext} / 5 Referrals</span>
+              <span>Approved Referrals:</span>
+              <span className="text-gold-vip font-bold">{progressToNext} / 5</span>
             </div>
             
             {/* Progress Bar */}
             <div className="w-full bg-slate-950 border border-slate-900 rounded-full h-2.5 overflow-hidden">
               <div 
                 className="bg-gold-vip h-full rounded-full transition-all duration-500" 
-                style={{ width: `${(stats.progressToNext / 5) * 100}%` }}
+                style={{ width: `${(progressToNext / 5) * 100}%` }}
               />
             </div>
           </div>
@@ -114,61 +146,49 @@ export default function ReferralPage() {
           <div className="bg-slate-950/60 border border-slate-900/60 p-3 rounded text-[11px] text-slate-400 font-sans leading-relaxed flex gap-2">
             <Gift className="h-4 w-4 text-gold-vip shrink-0 mt-0.5" />
             <span>
-              Get **{5 - stats.progressToNext} more** successful VIP registrations to automatically extend your active subscription for another month!
+              Get **{nextMilestoneRemaining} more** successful VIP registrations to automatically extend your active subscription for another month!
             </span>
           </div>
         </div>
 
       </div>
 
-      {/* Statistics Metrics Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Trustworthy Metrics Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
-        {/* Metric 1 */}
-        <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">link clicks</span>
-            <MousePointerClick className="h-4 w-4 text-slate-400" />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold font-mono text-slate-100">{stats.clicks}</h3>
-            <span className="text-[10px] text-slate-500 font-mono">Unique visitors</span>
-          </div>
-        </div>
-
-        {/* Metric 2 */}
+        {/* Metric 1: Approved Referrals */}
         <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between">
           <div className="flex items-center justify-between text-blue-400">
-            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">registrations</span>
+            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">approved referrals</span>
             <Users className="h-4 w-4 text-blue-400" />
           </div>
           <div>
-            <h3 className="text-xl font-bold font-mono text-slate-100">{stats.registrations}</h3>
-            <span className="text-[10px] text-slate-500 font-mono">Referred signups</span>
-          </div>
-        </div>
-
-        {/* Metric 3 */}
-        <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-emerald-400">
-            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">successful vip</span>
-            <Award className="h-4 w-4 text-emerald-400" />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold font-mono text-slate-100">{stats.conversions}</h3>
+            <h3 className="text-xl font-bold font-mono text-slate-100">{approvedReferralsCount}</h3>
             <span className="text-[10px] text-slate-500 font-mono">Verified broker IDs</span>
           </div>
         </div>
 
-        {/* Metric 4 */}
+        {/* Metric 2: Premium Earned */}
         <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between">
           <div className="flex items-center justify-between text-gold-vip">
-            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">unlocked pro</span>
+            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">premium earned</span>
             <Sparkles className="h-4 w-4 text-gold-vip" />
           </div>
           <div>
-            <h3 className="text-xl font-bold font-mono text-slate-100">{stats.premiumMonthsEarned} Month</h3>
+            <h3 className="text-xl font-bold font-mono text-slate-100">{premiumMonthsEarned} Month{premiumMonthsEarned !== 1 && 's'}</h3>
             <span className="text-[10px] text-slate-500 font-mono">Premium access granted</span>
+          </div>
+        </div>
+
+        {/* Metric 3: Next Reward */}
+        <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-emerald-400">
+            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">next reward</span>
+            <Award className="h-4 w-4 text-emerald-400" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold font-mono text-slate-100">{nextMilestoneRemaining} More</h3>
+            <span className="text-[10px] text-slate-500 font-mono">Referrals to next month</span>
           </div>
         </div>
 
@@ -182,42 +202,50 @@ export default function ReferralPage() {
           <div className="flex items-center justify-between border-b border-glass-border pb-3">
             <div className="space-y-1">
               <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold font-mono">conversions logs</span>
-              <h2 className="text-sm font-bold font-mono text-slate-200">Referred Accounts List</h2>
+              <h2 className="text-sm font-bold font-mono text-slate-200">Approved Referral History</h2>
             </div>
             <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded font-mono uppercase font-bold">
-              Real-time
+              Database
             </span>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-xs font-mono text-slate-300">
-              <thead>
-                <tr className="border-b border-slate-900 text-slate-500 text-left">
-                  <th className="py-2.5 font-bold">Trader ID</th>
-                  <th className="py-2.5 font-bold">Registration Date</th>
-                  <th className="py-2.5 font-bold">Broker Verification</th>
-                  <th className="py-2.5 font-bold text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-900/40">
-                {referredUsers.map((user, idx) => (
-                  <tr key={idx} className="hover:bg-slate-900/20 transition-colors">
-                    <td className="py-3 text-slate-200 font-bold">{user.id}</td>
-                    <td className="py-3 text-slate-400">{user.date}</td>
-                    <td className="py-3">
-                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                        Quotex Partner Link
-                      </span>
-                    </td>
-                    <td className="py-3 text-right">
-                      <span className={`text-[10px] uppercase font-bold ${user.status === 'Active VIP' ? 'text-emerald-400' : 'text-gold-vip'}`}>
-                        {user.status}
-                      </span>
-                    </td>
+            {referrals.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-xs font-mono">
+                No referrals found. Share your link above to start onboarding traders!
+              </div>
+            ) : (
+              <table className="w-full text-xs font-mono text-slate-300">
+                <thead>
+                  <tr className="border-b border-slate-900 text-slate-500 text-left">
+                    <th className="py-2.5 font-bold">Trader ID</th>
+                    <th className="py-2.5 font-bold">Registration Date</th>
+                    <th className="py-2.5 font-bold">Broker Verification</th>
+                    <th className="py-2.5 font-bold text-right">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-900/40">
+                  {referrals.map((user, idx) => (
+                    <tr key={idx} className="hover:bg-slate-900/20 transition-colors">
+                      <td className="py-3 text-slate-200 font-bold">{user.trader_id}</td>
+                      <td className="py-3 text-slate-400">
+                        {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="py-3">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          Partner Link Verification
+                        </span>
+                      </td>
+                      <td className="py-3 text-right">
+                        <span className={`text-[10px] uppercase font-bold ${user.status === 'approved' ? 'text-emerald-400' : 'text-gold-vip'}`}>
+                          {user.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
