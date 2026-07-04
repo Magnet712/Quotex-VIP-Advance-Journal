@@ -181,7 +181,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const communityGroup = [
     { name: 'Telegram', href: 'https://t.me/Magnetoftrade', icon: Send, isExternal: true },
     { name: 'YouTube', href: 'https://youtube.com/@magnetoftrade7751?si=Un1BlRIvS8z2Nd7W', icon: Video, isExternal: true },
-    { name: 'Referral Program', href: '/register-info', icon: Award }
+    { name: 'Referral Program', href: '/dashboard/referral', icon: Award }
   ];
 
   if (loading) {
