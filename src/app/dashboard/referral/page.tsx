@@ -1,55 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import React, { useState } from 'react';
 import { 
   Award, Copy, Check, Users, MousePointerClick, 
-  Wallet, ExternalLink, ShieldAlert, FileText, CheckCircle,
-  TrendingUp, HelpCircle
+  Sparkles, ExternalLink, ShieldAlert, FileText, CheckCircle,
+  TrendingUp, HelpCircle, Gift
 } from 'lucide-react';
 
 export default function ReferralPage() {
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const supabase = createClient();
 
-  useEffect(() => {
-    async function loadProfile() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) return;
-
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (userProfile) {
-          setProfile(userProfile);
-        }
-      } catch (err) {
-        console.error('Failed to load profile for referral page:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadProfile();
-  }, [supabase]);
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <Users className="h-8 w-8 animate-spin text-neon-green" />
-        <span className="text-xs font-mono text-slate-500">RETRIEVING PARTNER RELATIONSHIPS...</span>
-      </div>
-    );
-  }
-
-  // Fallback to anonymous ID if not logged in / profile missing during local preview
-  const referralId = profile?.trader_id || profile?.id?.substring(0, 8) || 'partner';
-  const referralLink = `https://quotex-vip.com/join?ref=${referralId}`;
+  const referralLink = 'https://broker-qx.pro/sign-up/?lid=1712337';
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);
@@ -57,21 +18,26 @@ export default function ReferralPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Mocked statistics tracking for MVP demonstration
+  // Mocked statistics for MVP demonstration
   const stats = {
     clicks: 142,
     registrations: 14,
-    conversions: 3,
-    earnings: 45.00
+    conversions: 8, // 8 conversions total
+    premiumMonthsEarned: 1, // 1 month unlocked (since 8 / 5 = 1, with 3 progress)
+    progressToNext: 3 // 3/5 progress toward the 2nd month
   };
 
-  // Mocked referred users list
+  // Mocked referred users list (Commissions columns removed)
   const referredUsers = [
-    { id: 'trader_9481', date: '2026-07-02', status: 'Approved', commission: '$15.00', tier: 'VIP Journal' },
-    { id: 'trader_3821', date: '2026-06-28', status: 'Approved', commission: '$15.00', tier: 'VIP Journal' },
-    { id: 'trader_1049', date: '2026-06-25', status: 'Approved', commission: '$15.00', tier: 'VIP Journal' },
-    { id: 'trader_8754', date: '2026-06-22', status: 'Pending Deposit', commission: '$0.00', tier: 'Free Plan' },
-    { id: 'trader_6201', date: '2026-06-19', status: 'Pending Review', commission: '$0.00', tier: 'Free Plan' }
+    { id: 'trader_9481', date: '2026-07-02', status: 'Active VIP', milestone: 'Counted' },
+    { id: 'trader_3821', date: '2026-06-28', status: 'Active VIP', milestone: 'Counted' },
+    { id: 'trader_1049', date: '2026-06-25', status: 'Active VIP', milestone: 'Counted' },
+    { id: 'trader_8754', date: '2026-06-22', status: 'Active VIP', milestone: 'Counted' },
+    { id: 'trader_6201', date: '2026-06-19', status: 'Active VIP', milestone: 'Counted' },
+    { id: 'trader_5510', date: '2026-06-14', status: 'Active VIP', milestone: 'Counted' },
+    { id: 'trader_4409', date: '2026-06-11', status: 'Active VIP', milestone: 'Counted' },
+    { id: 'trader_1102', date: '2026-06-08', status: 'Active VIP', milestone: 'Counted' },
+    { id: 'trader_2930', date: '2026-06-05', status: 'Pending Deposit', milestone: 'Pending' }
   ];
 
   return (
@@ -91,10 +57,10 @@ export default function ReferralPage() {
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-gold-vip/5 rounded-full blur-3xl pointer-events-none" />
           
           <div className="space-y-2">
-            <span className="text-[9px] font-mono text-gold-vip uppercase tracking-widest block font-bold">your unique invitation url</span>
-            <h2 className="text-lg font-bold font-mono text-slate-200">Share & Earn VIP Rewards</h2>
+            <span className="text-[9px] font-mono text-gold-vip uppercase tracking-widest block font-bold">your partner broker invitation link</span>
+            <h2 className="text-lg font-bold font-mono text-slate-200">Share Link & Unlock Premium</h2>
             <p className="text-xs text-slate-400 leading-relaxed font-sans max-w-xl">
-              Invite other traders to join the Quotex VIP Advance Journal. When they register an account under your link and deposit or upgrade, you will receive recurring premium commissions, and they unlock journal metrics instantly.
+              Invite other traders to register an account with our partner broker. For every **5 successfully verified referrals** who register under your link and verify their Trader ID, you unlock **1 Month of Premium Signal Pro access** completely free!
             </p>
           </div>
 
@@ -123,31 +89,33 @@ export default function ReferralPage() {
           </div>
         </div>
 
-        {/* Quick Guidelines Card */}
-        <div className="glass-panel p-6 rounded-2xl border border-glass-border space-y-4 text-xs font-sans">
-          <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">how it works</span>
-          <div className="space-y-4">
-            <div className="flex gap-3">
-              <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-mono font-bold text-slate-400 shrink-0">1</span>
-              <div>
-                <strong className="text-slate-200 block font-mono">Invite Traders</strong>
-                <span className="text-slate-400">Share your custom link on forums, Telegram channels, or blogs.</span>
-              </div>
+        {/* Dynamic Milestone Progress Card */}
+        <div className="glass-panel p-6 rounded-2xl border border-glass-border flex flex-col justify-between space-y-4 text-xs font-sans relative overflow-hidden">
+          <div>
+            <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">milestone progress</span>
+            <h3 className="text-sm font-bold font-mono text-slate-200 mt-1">Next Premium Month</h3>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between font-mono text-xs text-slate-400">
+              <span>Progress:</span>
+              <span className="text-gold-vip font-bold">{stats.progressToNext} / 5 Referrals</span>
             </div>
-            <div className="flex gap-3">
-              <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-mono font-bold text-slate-400 shrink-0">2</span>
-              <div>
-                <strong className="text-slate-200 block font-mono">User Onboarding</strong>
-                <span className="text-slate-400">Referred user completes verification with our partner broker link.</span>
-              </div>
+            
+            {/* Progress Bar */}
+            <div className="w-full bg-slate-950 border border-slate-900 rounded-full h-2.5 overflow-hidden">
+              <div 
+                className="bg-gold-vip h-full rounded-full transition-all duration-500" 
+                style={{ width: `${(stats.progressToNext / 5) * 100}%` }}
+              />
             </div>
-            <div className="flex gap-3">
-              <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-mono font-bold text-slate-400 shrink-0">3</span>
-              <div>
-                <strong className="text-slate-200 block font-mono">Collect Payouts</strong>
-                <span className="text-slate-400">Earn up to 15% revenue share commission on premium journal packages.</span>
-              </div>
-            </div>
+          </div>
+
+          <div className="bg-slate-950/60 border border-slate-900/60 p-3 rounded text-[11px] text-slate-400 font-sans leading-relaxed flex gap-2">
+            <Gift className="h-4 w-4 text-gold-vip shrink-0 mt-0.5" />
+            <span>
+              Get **{5 - stats.progressToNext} more** successful VIP registrations to automatically extend your active subscription for another month!
+            </span>
           </div>
         </div>
 
@@ -171,36 +139,36 @@ export default function ReferralPage() {
         {/* Metric 2 */}
         <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between">
           <div className="flex items-center justify-between text-blue-400">
-            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">signups</span>
+            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">registrations</span>
             <Users className="h-4 w-4 text-blue-400" />
           </div>
           <div>
             <h3 className="text-xl font-bold font-mono text-slate-100">{stats.registrations}</h3>
-            <span className="text-[10px] text-slate-500 font-mono">Trader ID registrations</span>
+            <span className="text-[10px] text-slate-500 font-mono">Referred signups</span>
           </div>
         </div>
 
         {/* Metric 3 */}
         <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between">
           <div className="flex items-center justify-between text-emerald-400">
-            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">conversions</span>
+            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">successful vip</span>
             <Award className="h-4 w-4 text-emerald-400" />
           </div>
           <div>
             <h3 className="text-xl font-bold font-mono text-slate-100">{stats.conversions}</h3>
-            <span className="text-[10px] text-slate-500 font-mono">VIP upgrades verified</span>
+            <span className="text-[10px] text-slate-500 font-mono">Verified broker IDs</span>
           </div>
         </div>
 
         {/* Metric 4 */}
         <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between">
           <div className="flex items-center justify-between text-gold-vip">
-            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">commissions</span>
-            <Wallet className="h-4 w-4 text-gold-vip" />
+            <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">unlocked pro</span>
+            <Sparkles className="h-4 w-4 text-gold-vip" />
           </div>
           <div>
-            <h3 className="text-xl font-bold font-mono text-slate-100">${stats.earnings.toFixed(2)}</h3>
-            <span className="text-[10px] text-slate-500 font-mono">Unpaid partner balance</span>
+            <h3 className="text-xl font-bold font-mono text-slate-100">{stats.premiumMonthsEarned} Month</h3>
+            <span className="text-[10px] text-slate-500 font-mono">Premium access granted</span>
           </div>
         </div>
 
@@ -227,8 +195,7 @@ export default function ReferralPage() {
                 <tr className="border-b border-slate-900 text-slate-500 text-left">
                   <th className="py-2.5 font-bold">Trader ID</th>
                   <th className="py-2.5 font-bold">Registration Date</th>
-                  <th className="py-2.5 font-bold">Active Tier</th>
-                  <th className="py-2.5 font-bold text-center">Commission</th>
+                  <th className="py-2.5 font-bold">Broker Verification</th>
                   <th className="py-2.5 font-bold text-right">Status</th>
                 </tr>
               </thead>
@@ -238,13 +205,12 @@ export default function ReferralPage() {
                     <td className="py-3 text-slate-200 font-bold">{user.id}</td>
                     <td className="py-3 text-slate-400">{user.date}</td>
                     <td className="py-3">
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${user.tier === 'VIP Journal' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-800 text-slate-500'}`}>
-                        {user.tier}
+                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        Quotex Partner Link
                       </span>
                     </td>
-                    <td className="py-3 text-center text-gold-vip font-bold">{user.commission}</td>
                     <td className="py-3 text-right">
-                      <span className={`text-[10px] uppercase font-bold ${user.status === 'Approved' ? 'text-emerald-400' : user.status === 'Pending Deposit' ? 'text-gold-vip' : 'text-slate-500'}`}>
+                      <span className={`text-[10px] uppercase font-bold ${user.status === 'Active VIP' ? 'text-emerald-400' : 'text-gold-vip'}`}>
                         {user.status}
                       </span>
                     </td>
@@ -266,30 +232,30 @@ export default function ReferralPage() {
 
           <div className="space-y-4 text-left font-sans text-xs text-slate-400 leading-normal max-h-[300px] overflow-y-auto pr-1">
             <div className="space-y-1.5">
-              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">1. Revenue Sharing</h3>
+              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">1. Referral Rewards</h3>
               <p>
-                Partners receive up to 15% revenue share on direct VIP advance upgrades made by users signed up under their custom referral link.
+                No cash payments or monetary commissions are provided. Instead, referrals earn you direct extensions of Premium Signal Pro access (1 month for every 5 successfully referred traders).
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">2. Verification Rule</h3>
+              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">2. Broker Registration</h3>
               <p>
-                Referred users must pass standard Broker Trader ID validations to count toward premium commission conversions. Self-referrals are strictly checked and banned.
+                Referred users must register their account using your unique link and complete a minimum broker deposit to verify their profile and count as a successful referral.
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">3. Minimum Withdrawal</h3>
+              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">3. Reward Distribution</h3>
               <p>
-                The minimum withdrawal balance is **$50.00**. Earnings payouts are processed on the 1st of every calendar month via crypto (Tether TRC-20/ERC-20) or direct wallet transfers.
+                Premium months are automatically activated on your account once you reach each 5-referral milestone (5, 10, 15, etc.). Extensions are cumulative and do not expire.
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">4. Prohibited Ads</h3>
+              <h3 className="text-slate-300 font-semibold font-mono text-[11px] uppercase">4. Anti-Fraud Policy</h3>
               <p>
-                Promoting your link using paid advertisements bidding on our trademark keywords (e.g. "Quotex VIP", "Quotex Advance Journal") is prohibited and will result in commission forfeiture.
+                Duplicate registrations, self-referrals, or registering dummy accounts to manipulate the milestone count are strictly audited and will result in subscription termination.
               </p>
             </div>
           </div>
@@ -297,7 +263,7 @@ export default function ReferralPage() {
           <div className="bg-slate-950/70 border border-slate-900/60 rounded p-3 flex gap-2 items-start text-[10px] text-slate-500 font-sans">
             <ShieldAlert className="h-4 w-4 text-gold-vip mt-0.5 shrink-0" />
             <span>
-              Quotex VIP reserves the right to suspend partner credentials in cases of click-spamming or duplicate account fraud.
+              Quotex VIP reserves the right to audit signups and adjust referral validations to guarantee fair system promotion.
             </span>
           </div>
         </div>
