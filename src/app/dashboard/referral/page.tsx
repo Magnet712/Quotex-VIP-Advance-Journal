@@ -92,7 +92,7 @@ export default function ReferralPage() {
             <span className="text-[9px] font-mono text-gold-vip uppercase tracking-widest block font-bold">your partner broker invitation link</span>
             <h2 className="text-lg font-bold font-mono text-slate-200">Invite 5 Verified Traders → Get 1 Month Premium FREE</h2>
             <p className="text-xs text-slate-400 leading-relaxed font-sans max-w-xl">
-              Invite other traders to register an account with our partner broker. For every **5 successfully verified referrals** who register using your link and verify their Trader ID, you unlock **1 Month of Premium Signal Pro access** completely free!
+              Share your broker invitation link. Every 5 verified referrals unlocks 1 FREE month of Premium Signal Pro. Rewards are cumulative and automatically added after verification.
             </p>
           </div>
 
