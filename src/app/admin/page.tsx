@@ -1181,24 +1181,42 @@ export default function AdminDashboardPage() {
                     <tr className="border-b border-slate-900 bg-slate-950/80 text-slate-500 text-left">
                       <th className="p-3 font-bold">Referrer Trader ID</th>
                       <th className="p-3 font-bold">Referrer Username</th>
-                      <th className="p-3 font-bold text-center">Invited Count</th>
-                      <th className="p-3 font-bold text-center">Approved (Win-Rate)</th>
-                      <th className="p-3 font-bold text-center">Pending (Wait)</th>
-                      <th className="p-3 font-bold text-center">Free Premium Months</th>
+                      <th className="p-3 font-bold text-center">Conversions (Approved/Total)</th>
+                      <th className="p-3 font-bold text-center">Conversion Rate</th>
+                      <th className="p-3 font-bold text-center">Next Milestone Progress</th>
+                      <th className="p-3 font-bold text-center">Premium Rewards Earned</th>
                       <th className="p-3 font-bold text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-900/40">
                     {referralsLedger.map((r, idx) => {
                       const rewardMonths = Math.floor(r.approved / 5);
+                      const conversionRate = r.total > 0 ? Math.round((r.approved / r.total) * 100) : 0;
+                      const progressCount = r.approved % 5;
+                      const progressPercent = (progressCount / 5) * 100;
                       return (
                         <React.Fragment key={idx}>
                           <tr className="hover:bg-slate-900/20 transition-colors">
                             <td className="p-3 font-bold text-slate-200">{r.trader_id}</td>
                             <td className="p-3 text-slate-400">{r.username}</td>
-                            <td className="p-3 text-center text-slate-300">{r.total}</td>
-                            <td className="p-3 text-center text-emerald-400">{r.approved}</td>
-                            <td className="p-3 text-center text-amber-400">{r.pending}</td>
+                            <td className="p-3 text-center text-slate-300">
+                              <span className="text-emerald-400 font-bold">{r.approved}</span> / <span className="text-slate-500">{r.total}</span>
+                            </td>
+                            <td className="p-3 text-center">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                conversionRate >= 80 ? 'bg-emerald-500/10 text-emerald-400' : conversionRate >= 50 ? 'bg-amber-500/10 text-amber-400' : 'bg-rose-500/10 text-rose-400'
+                              }`}>
+                                {conversionRate}%
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center justify-center gap-2">
+                                <div className="w-16 bg-slate-950 border border-slate-900 rounded-full h-1.5 overflow-hidden shrink-0">
+                                  <div className="bg-gold-vip h-full rounded-full" style={{ width: `${progressPercent}%` }} />
+                                </div>
+                                <span className="text-[10px] text-slate-500">{progressCount}/5</span>
+                              </div>
+                            </td>
                             <td className="p-3 text-center text-gold-vip font-extrabold">{rewardMonths} Month{rewardMonths !== 1 && 's'}</td>
                             <td className="p-3 text-right">
                               <button
@@ -1211,37 +1229,110 @@ export default function AdminDashboardPage() {
                               </button>
                             </td>
                           </tr>
-                          {/* Expanded list of referred friends */}
+                          {/* Expanded list of referred friends & milestones */}
                           {expandedAdminInvoice === r.trader_id && (
                             <tr>
-                              <td colSpan={7} className="bg-slate-950/60 p-4 border-t border-slate-900">
-                                <div className="space-y-3">
-                                  <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">referred traders list for {r.trader_id}</div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    {r.referredUsers.map((friend: any, fIdx: number) => (
-                                      <div key={fIdx} className="glass-panel p-3 rounded-lg border border-slate-900/60 flex items-center justify-between">
-                                        <div className="space-y-1">
-                                          <div className="font-bold text-slate-300">{friend.trader_id} ({friend.username || 'N/A'})</div>
-                                          <div className="text-[10px] text-slate-500">Joined: {new Date(friend.created_at).toLocaleDateString()}</div>
+                              <td colSpan={7} className="bg-slate-950/60 p-5 border-t border-slate-900">
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
+                                  {/* Left Pane: Referred Users */}
+                                  <div className="lg:col-span-7 space-y-3">
+                                    <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">referred friends database</div>
+                                    <div className="grid grid-cols-1 gap-2">
+                                      {r.referredUsers.map((friend: any, fIdx: number) => (
+                                        <div key={fIdx} className="glass-panel p-3 rounded-lg border border-slate-900/60 flex items-center justify-between">
+                                          <div className="space-y-1">
+                                            <div className="font-bold text-slate-300">{friend.trader_id} ({friend.username || 'N/A'})</div>
+                                            <div className="text-[10px] text-slate-500">Registered: {new Date(friend.created_at).toLocaleDateString()}</div>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold ${
+                                              friend.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : friend.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                            }`}>
+                                              {friend.status}
+                                            </span>
+                                            <button
+                                              onClick={() => {
+                                                setEditingReferrerUser(friend);
+                                                setNewReferrerTraderId(r.trader_id);
+                                              }}
+                                              className="px-2 py-1 rounded bg-slate-900 border border-glass-border hover:border-rose-500/30 text-[10px] text-slate-400 hover:text-rose-400 transition-all active:scale-95"
+                                            >
+                                              Modify Referrer
+                                            </button>
+                                          </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                          <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold ${
-                                            friend.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : friend.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                                          }`}>
-                                            {friend.status}
-                                          </span>
-                                          <button
-                                            onClick={() => {
-                                              setEditingReferrerUser(friend);
-                                              setNewReferrerTraderId(r.trader_id);
-                                            }}
-                                            className="px-2 py-1 rounded bg-slate-900 border border-glass-border hover:border-rose-500/30 text-[10px] text-slate-400 hover:text-rose-400 transition-all active:scale-95"
-                                          >
-                                            Modify Referrer
-                                          </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Right Pane: Rewards & Milestones */}
+                                  <div className="lg:col-span-5 space-y-4 font-sans">
+                                    <div className="space-y-2">
+                                      <div className="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold">Reward Progress</div>
+                                      <div className="bg-slate-900/40 p-3 rounded-lg border border-slate-900 space-y-3">
+                                        <div className="flex justify-between items-center text-[11px]">
+                                          <span className="text-slate-400 font-mono">Next Free Month:</span>
+                                          <span className="text-gold-vip font-extrabold font-mono">{r.approved % 5} / 5 Approved</span>
                                         </div>
+                                        {/* Visual progress bar */}
+                                        <div className="w-full bg-slate-950 border border-slate-900 rounded-full h-2.5 overflow-hidden">
+                                          <div className="bg-gold-vip h-full rounded-full" style={{ width: `${((r.approved % 5) / 5) * 100}%` }} />
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 leading-normal">
+                                          Unlocks 1 month of Premium Signal Pro automatically once the progress reaches 5/5.
+                                        </p>
                                       </div>
-                                    ))}
+                                    </div>
+
+                                    {/* Rewards Issued Ledger */}
+                                    <div className="space-y-2">
+                                      <div className="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold">Rewards Issued History</div>
+                                      <div className="bg-slate-900/40 rounded-lg border border-slate-900 overflow-hidden">
+                                        <table className="w-full text-[10px] font-mono text-slate-400">
+                                          <thead>
+                                            <tr className="border-b border-slate-900 bg-slate-950/80 text-slate-500 text-left">
+                                              <th className="p-2 font-bold">Reward Month</th>
+                                              <th className="p-2 font-bold">Triggered By</th>
+                                              <th className="p-2 font-bold">Status</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-slate-900/40">
+                                            {(() => {
+                                              const approvedSorted = r.referredUsers
+                                                .filter((u: any) => u.status === 'approved')
+                                                .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                                              
+                                              const rewards = [];
+                                              for (let i = 4; i < approvedSorted.length; i += 5) {
+                                                rewards.push({
+                                                  month: Math.floor((i + 1) / 5),
+                                                  triggeredBy: approvedSorted[i].trader_id,
+                                                  date: new Date(approvedSorted[i].created_at).toLocaleDateString()
+                                                });
+                                              }
+
+                                              if (rewards.length === 0) {
+                                                return (
+                                                  <tr>
+                                                    <td colSpan={3} className="p-4 text-center text-slate-600 italic">
+                                                      No milestones reached yet.
+                                                    </td>
+                                                  </tr>
+                                                );
+                                              }
+
+                                              return rewards.map((rw, rwIdx) => (
+                                                <tr key={rwIdx}>
+                                                  <td className="p-2 font-bold text-gold-vip">+1 Premium Month (#{rw.month})</td>
+                                                  <td className="p-2">{rw.triggeredBy} ({rw.date})</td>
+                                                  <td className="p-2 text-emerald-400 font-bold">Granted</td>
+                                                </tr>
+                                              ));
+                                            })()}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               </td>
