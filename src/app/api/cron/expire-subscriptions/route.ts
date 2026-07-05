@@ -38,13 +38,26 @@ export async function GET(request: Request) {
 
     if (updateSubError) throw updateSubError;
 
-    // 4. Set premium_access to false in users table
-    const { error: updateUserError } = await admin
-      .from('users')
-      .update({ premium_access: false })
-      .in('id', userIds);
+    // 4. Overlap Check: Query any OTHER active/lifetime subscriptions that are still valid
+    const { data: stillActiveSubs } = await admin
+      .from('subscriptions')
+      .select('user_id')
+      .eq('status', 'ACTIVE')
+      .in('user_id', userIds)
+      .or(`expires_at.gt.${new Date().toISOString()},expires_at.is.null`);
 
-    if (updateUserError) throw updateUserError;
+    const stillActiveUserIds = new Set((stillActiveSubs ?? []).map(s => s.user_id));
+    const revokeUserIds = userIds.filter(uid => !stillActiveUserIds.has(uid));
+
+    // Only update premium_access to false for users who have no other valid active subscriptions
+    if (revokeUserIds.length > 0) {
+      const { error: updateUserError } = await admin
+        .from('users')
+        .update({ premium_access: false })
+        .in('id', revokeUserIds);
+
+      if (updateUserError) throw updateUserError;
+    }
 
     // 5. Create logs and notification entries
     const logPayloads = expiredSubs.map(sub => ({
