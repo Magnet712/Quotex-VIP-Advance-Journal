@@ -28,6 +28,7 @@ function RegisterInfoContent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [referredBy, setReferredBy] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is logged in
@@ -58,6 +59,12 @@ function RegisterInfoContent() {
 
     checkSession();
 
+    // Parse ref or trader parameters from URL query params
+    const refVal = searchParams.get('ref') || searchParams.get('trader');
+    if (refVal) {
+      setReferredBy(refVal);
+    }
+
     if (searchParams.get('pending') === 'true') {
       setIsPendingView(true);
     }
@@ -75,7 +82,7 @@ function RegisterInfoContent() {
     }
 
     try {
-      const res = await registerTrader(traderId, username, password);
+      const res = await registerTrader(traderId, username, password, referredBy || undefined);
       if (!res.success) {
         setError(res.error || 'Registration failed.');
         setLoading(false);

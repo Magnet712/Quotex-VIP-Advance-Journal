@@ -17,7 +17,7 @@ function getVirtualEmail(traderId: string): string {
  * Registers a new trader.
  * Creates an auth user with a virtual email, then inserts their profile with 'pending' status.
  */
-export async function registerTrader(traderId: string, username: string, password: string) {
+export async function registerTrader(traderId: string, username: string, password: string, referredBy?: string) {
   try {
     if (!traderId || !username || !password) {
       return { success: false, error: 'All fields are required.' };
@@ -34,6 +34,19 @@ export async function registerTrader(traderId: string, username: string, passwor
     const email = getVirtualEmail(traderId);
     const supabase = await createClient();
     const adminClient = createAdminClient();
+
+    // Validate referredBy exists in public.users
+    let validReferredBy: string | null = null;
+    if (referredBy) {
+      const { data: refUser } = await adminClient
+        .from('users')
+        .select('trader_id')
+        .eq('trader_id', referredBy.trim())
+        .maybeSingle();
+      if (refUser) {
+        validReferredBy = refUser.trader_id;
+      }
+    }
 
     // 1. Create the user using the admin client (bypasses signup restrictions)
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
@@ -72,6 +85,7 @@ export async function registerTrader(traderId: string, username: string, passwor
         username: username.trim(),
         status: 'pending',
         vip_access: false,
+        referred_by_trader_id: validReferredBy,
       });
 
     if (profileError) {
