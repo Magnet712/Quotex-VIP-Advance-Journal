@@ -10,10 +10,14 @@ export default function ReferralPage() {
   const [profile, setProfile] = useState<any>(null);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [copiedPlatform, setCopiedPlatform] = useState(false);
+  const [copiedBroker, setCopiedBroker] = useState(false);
   const supabase = createClient();
 
-  const referralLink = 'https://broker-qx.pro/sign-up/?lid=1712337';
+  const brokerLink = 'https://broker-qx.pro/sign-up/?lid=1712337';
+  const platformLink = typeof window !== 'undefined' 
+    ? `${window.location.origin}/register-info?ref=${profile?.trader_id || ''}` 
+    : '';
 
   useEffect(() => {
     async function loadReferralData() {
@@ -51,10 +55,16 @@ export default function ReferralPage() {
     loadReferralData();
   }, [supabase]);
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyPlatformLink = () => {
+    navigator.clipboard.writeText(platformLink);
+    setCopiedPlatform(true);
+    setTimeout(() => setCopiedPlatform(false), 2000);
+  };
+
+  const copyBrokerLink = () => {
+    navigator.clipboard.writeText(brokerLink);
+    setCopiedBroker(true);
+    setTimeout(() => setCopiedBroker(false), 2000);
   };
 
   if (loading) {
@@ -89,34 +99,64 @@ export default function ReferralPage() {
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-gold-vip/5 rounded-full blur-3xl pointer-events-none" />
           
           <div className="space-y-2">
-            <span className="text-[9px] font-mono text-gold-vip uppercase tracking-widest block font-bold">your partner broker invitation link</span>
+            <span className="text-[9px] font-mono text-gold-vip uppercase tracking-widest block font-bold">referral sponsor system</span>
             <h2 className="text-lg font-bold font-mono text-slate-200">Invite 5 Verified Traders → Get 1 Month Premium FREE</h2>
             <p className="text-xs text-slate-400 leading-relaxed font-sans max-w-xl">
-              Share your broker invitation link. Every 5 verified referrals unlocks 1 FREE month of Premium Signal Pro. Rewards are cumulative and automatically added after verification.
+              Share your custom platform link. Friends register their broker account under our VIP channel, submit their Trader ID, and unlock mutual premium benefits automatically.
             </p>
           </div>
 
-          <div className="space-y-2 pt-2">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex-1 bg-slate-950/80 border border-glass-border rounded px-3 py-2.5 font-mono text-xs text-slate-300 select-all overflow-x-auto whitespace-nowrap">
-                {referralLink}
+          <div className="space-y-4 pt-2">
+            {/* Link 1: Platform Referral Link */}
+            <div className="space-y-1.5">
+              <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">1. Your Referral Link (Share this with friends)</span>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1 bg-slate-950/80 border border-glass-border rounded px-3 py-2.5 font-mono text-xs text-slate-300 select-all overflow-x-auto whitespace-nowrap">
+                  {platformLink || 'Generating your referral link...'}
+                </div>
+                <button
+                  onClick={copyPlatformLink}
+                  className="px-5 py-2.5 rounded bg-gold-vip text-slate-950 font-mono font-bold text-xs uppercase tracking-wider transition-all hover:bg-yellow-400 active:scale-95 flex items-center justify-center gap-2 shrink-0 shadow-md shadow-gold-vip/10"
+                >
+                  {copiedPlatform ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copy URL
+                    </>
+                  )}
+                </button>
               </div>
-              <button
-                onClick={copyToClipboard}
-                className="px-5 py-2.5 rounded bg-gold-vip text-slate-950 font-mono font-bold text-xs uppercase tracking-wider transition-all hover:bg-yellow-400 active:scale-95 flex items-center justify-center gap-2 shrink-0 shadow-md shadow-gold-vip/10"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" />
-                    Copy URL
-                  </>
-                )}
-              </button>
+            </div>
+
+            {/* Link 2: Partner Broker Link (Used for registration) */}
+            <div className="space-y-1.5">
+              <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">2. Partner Broker Link (For manual signups)</span>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1 bg-slate-950/80 border border-glass-border rounded px-3 py-2.5 font-mono text-xs text-slate-300 select-all overflow-x-auto whitespace-nowrap">
+                  {brokerLink}
+                </div>
+                <button
+                  onClick={copyBrokerLink}
+                  className="px-5 py-2.5 rounded bg-slate-900 border border-glass-border hover:bg-slate-800 text-slate-300 font-mono font-bold text-xs uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0"
+                >
+                  {copiedBroker ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copy URL
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

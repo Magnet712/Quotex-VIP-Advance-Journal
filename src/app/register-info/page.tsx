@@ -9,7 +9,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { 
   TrendingUp, AlertCircle, CheckCircle, ArrowRight, 
-  HelpCircle, ExternalLink, ShieldCheck, Loader, LogOut 
+  HelpCircle, ExternalLink, ShieldCheck, Loader, LogOut, Sparkles
 } from 'lucide-react';
 
 function RegisterInfoContent() {
@@ -212,11 +212,18 @@ function RegisterInfoContent() {
             Quotex Advance Journal operates an exclusive, partner-funded model. You get advanced features completely free by trading through our compliance link.
           </p>
 
+          {referredBy && (
+            <div className="bg-gold-vip/5 border border-gold-vip/20 p-3 rounded text-[11px] font-mono text-gold-vip flex items-center gap-2 animate-fadeIn">
+              <Sparkles className="h-4 w-4 text-gold-vip shrink-0" />
+              <span>Invited by: <strong className="text-slate-200">{referredBy}</strong></span>
+            </div>
+          )}
+
           <ol className="space-y-4 text-xs font-sans text-slate-300">
             <li className="space-y-1">
-              <strong className="text-neon-green font-mono text-[10px] block">STEP 01: OPEN BROKER ACCOUNT</strong>
+              <strong className="text-neon-green font-mono text-[10px] block">STEP 01: CREATE BROKER ACCOUNT</strong>
               <span className="text-slate-400 text-[11px] leading-normal block">
-                Click the broker sign-up button and open a new live account.
+                Click the broker sign-up link below to register your new account.
               </span>
               <a
                 href="https://broker-qx.pro/sign-up/?lid=1712337"
@@ -224,19 +231,19 @@ function RegisterInfoContent() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-[10px] font-mono text-gold-vip hover:underline pt-0.5"
               >
-                OPEN ACCOUNT NOW <ExternalLink className="h-3 w-3" />
+                OPEN BROKER REGISTRATION <ExternalLink className="h-3 w-3" />
               </a>
             </li>
             <li className="space-y-1">
-              <strong className="text-neon-green font-mono text-[10px] block">STEP 02: SUBMIT REGISTRATION</strong>
+              <strong className="text-neon-green font-mono text-[10px] block">STEP 02: ENTER TRADER ID BELOW</strong>
               <span className="text-slate-400 text-[11px] leading-normal block">
-                Submit your new Trader ID and choose a platform password on the adjacent form.
+                Return to this page and complete the form using your new Broker Trader ID.
               </span>
             </li>
             <li className="space-y-1">
-              <strong className="text-neon-green font-mono text-[10px] block">STEP 03: WAIT FOR VIP AUDIT</strong>
+              <strong className="text-neon-green font-mono text-[10px] block">STEP 03: COMPLIANCE AUDIT</strong>
               <span className="text-slate-400 text-[11px] leading-normal block">
-                Compliance audits the ID. Once validated, your profile changes to APPROVED, unlocking full dashboard charts and journal tools.
+                The administrator verifies your Trader ID registration. Once approved, your VIP access is activated.
               </span>
             </li>
           </ol>
@@ -252,6 +259,11 @@ function RegisterInfoContent() {
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-neon-green/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="space-y-2">
+          {referredBy && (
+            <span className="text-[9px] font-mono text-gold-vip border border-gold-vip/25 bg-gold-vip/5 px-2 py-0.5 rounded inline-block font-bold">
+              Referral Sponsor: {referredBy}
+            </span>
+          )}
           <h2 className="text-lg sm:text-xl font-bold font-mono tracking-tight text-slate-100 uppercase">
             REGISTRATION FOR ACTIVATION
           </h2>
