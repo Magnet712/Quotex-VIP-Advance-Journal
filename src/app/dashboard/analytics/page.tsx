@@ -13,8 +13,347 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, Award, DollarSign, Target, Activity, 
-  Flame, ShieldAlert, BarChart3, Plus, ArrowRight, Loader, Trash2, Calendar, Zap
+  Flame, ShieldAlert, BarChart3, Plus, ArrowRight, Loader, Trash2, Calendar, Zap, Sparkles, Gift
 } from 'lucide-react';
+
+interface AITradingIntelligencePanelProps {
+  trades: any[];
+  netProfit: number;
+  winRate: number;
+  profitFactor: number;
+  consistencyScore: number;
+  avgWinAmount: number;
+  avgLossAmount: number;
+  drawdownData: any[];
+  strategyData: any[];
+  hourlyData: any[];
+}
+
+function AITradingIntelligencePanel({
+  trades,
+  netProfit,
+  winRate,
+  profitFactor,
+  consistencyScore,
+  avgWinAmount,
+  avgLossAmount,
+  drawdownData,
+  strategyData,
+  hourlyData
+}: AITradingIntelligencePanelProps) {
+  if (trades.length < 10) {
+    return (
+      <div className="glass-panel p-6 rounded-lg border border-glass-border space-y-6 mt-8">
+        <div className="border-b border-glass-border pb-4">
+          <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">AI ANALYTICS ENGINE</span>
+          <h2 className="text-xl font-bold font-mono tracking-tight text-slate-100">AI Trading Intelligence</h2>
+          <p className="text-xs text-slate-400 font-sans mt-1">
+            Personalized analysis of your trading behavior based on your journal statistics.
+          </p>
+        </div>
+        <div className="text-center py-8 text-slate-500 text-xs font-mono">
+          AI Trading Intelligence becomes available after at least 10 completed journal trades.
+        </div>
+      </div>
+    );
+  }
+
+  // Real Max Drawdown calculation from daily data points
+  const maxDrawdown = drawdownData.reduce((max, d) => Math.max(max, d.drawdown), 0);
+
+  // Analyzer Logic Interface (deterministic, rule-based)
+  const TradingPerformanceAnalyzer = {
+    generateStrength: () => {
+      if (maxDrawdown <= 5 && trades.length >= 10) {
+        return {
+          title: "Excellent Risk Management",
+          score: "★★★★★",
+          explanation: `Only ${maxDrawdown.toFixed(1)}% drawdown with a ${winRate.toFixed(1)}% win rate.`,
+          example: "This indicates highly disciplined risk controls and position sizing."
+        };
+      }
+      if (avgLossAmount > 0 && (avgWinAmount / avgLossAmount) >= 2.0) {
+        return {
+          title: "Large Reward/Risk Ratio",
+          score: "★★★★☆",
+          explanation: `Average winning trade is ${(avgWinAmount / avgLossAmount).toFixed(1)}x larger than your average loss.`,
+          example: "This allows you to maintain profitability even with lower win rates."
+        };
+      }
+      if (winRate >= 65) {
+        return {
+          title: "High Setup Accuracy",
+          score: "★★★★☆",
+          explanation: `Win rate of ${winRate.toFixed(1)}% over ${trades.length} trades.`,
+          example: "High accuracy indicates excellent market timing and high-probability setup selection."
+        };
+      }
+      if (profitFactor >= 2.0) {
+        return {
+          title: "Strong Profit Factor",
+          score: "★★★★☆",
+          explanation: `Profit factor of ${profitFactor.toFixed(2)} generated from net trades.`,
+          example: "You generate significantly more gross profits relative to your gross losses."
+        };
+      }
+      if (consistencyScore >= 80) {
+        return {
+          title: "Excellent Consistency",
+          score: "★★★★☆",
+          explanation: `Consistency score of ${consistencyScore}%.`,
+          example: "Stable sizing and predictable P&L variance indicates high emotional control."
+        };
+      }
+      return {
+        title: "Steady Trading Execution",
+        score: "★★★☆☆",
+        explanation: `Logged ${trades.length} active sessions under standardized setups.`,
+        example: "Maintaining a journal is the first step toward refining key edge variables."
+      };
+    },
+
+    generateWeakness: () => {
+      if (maxDrawdown > 15) {
+        return {
+          title: "High Drawdown Exposure",
+          explanation: `Peak drawdown has reached ${maxDrawdown.toFixed(1)}% of virtual balance.`,
+          solution: "Apply strict daily loss limits or reduce size to prevent capital erosion."
+        };
+      }
+      if (avgLossAmount > 0 && (avgWinAmount / avgLossAmount) < 1.2) {
+        return {
+          title: "Weak Risk-to-Reward Ratio",
+          explanation: `Average winning trade ($${Math.round(avgWinAmount)}) is only ${(avgWinAmount / avgLossAmount).toFixed(1)}x your average losing trade ($${Math.round(avgLossAmount)}).`,
+          solution: "Extend profit targets or select setups offering at least 1:1.5 standard RR to enhance long-term expectancy."
+        };
+      }
+      if (profitFactor < 1.1) {
+        return {
+          title: "Low Profit Factor",
+          explanation: `Profit factor of ${profitFactor.toFixed(2)} is close to break-even.`,
+          solution: "Filter out marginal trade setups and focus exclusively on high-conviction trades."
+        };
+      }
+      if (consistencyScore < 50) {
+        return {
+          title: "Poor Strategy Consistency",
+          explanation: `Consistency rating is low at ${consistencyScore}%.`,
+          solution: "Ensure you stick to a defined checklist before entry to avoid erratic trade behavior."
+        };
+      }
+      return {
+        title: "Room for Strategy Scaling",
+        explanation: "Standard metrics are balanced, but edge distribution has room to optimize.",
+        solution: "Focus on increasing the average win size or isolating low win rate strategies."
+      };
+    },
+
+    generateRecommendations: () => {
+      const list: Array<{ text: string; priority: 'High' | 'Medium' | 'Low' }> = [];
+
+      const rr = avgLossAmount > 0 ? avgWinAmount / avgLossAmount : 1;
+      if (rr < 1.5) {
+        list.push({
+          text: "Extend average profit targets to increase your Risk-to-Reward ratio above 1:1.5.",
+          priority: "High"
+        });
+      }
+
+      if (maxDrawdown > 10) {
+        list.push({
+          text: "Cap individual trade risk to a maximum of 1-2% to lower portfolio drawdown.",
+          priority: "High"
+        });
+      }
+
+      const losingStrats = strategyData.filter(s => s.pl < 0);
+      if (losingStrats.length > 0) {
+        list.push({
+          text: `Review entry rules for the "${losingStrats[0].name}" strategy to prevent capital bleed.`,
+          priority: "High"
+        });
+      }
+
+      const losingHours = hourlyData.filter(h => h.pl < -50);
+      if (losingHours.length > 0) {
+        list.push({
+          text: `Restrict or avoid entering new positions during the underperforming hours: ${losingHours[0].name}.`,
+          priority: "Medium"
+        });
+      }
+
+      if (winRate < 50) {
+        list.push({
+          text: "Work on trade validation to increase accuracy and win rate above 50%.",
+          priority: "Medium"
+        });
+      }
+
+      if (consistencyScore < 60) {
+        list.push({
+          text: "Execute a pre-trade checklist before every position to stabilize consistency.",
+          priority: "Medium"
+        });
+      }
+
+      while (list.length < 5) {
+        if (list.length === 3) {
+          list.push({
+            text: "Ensure proper hydration and sleep to avoid trade fatigue during sessions.",
+            priority: "Low"
+          });
+        } else {
+          list.push({
+            text: "Continue logging all trades in your journal to accumulate statistically valid data.",
+            priority: "Low"
+          });
+        }
+      }
+
+      return list.slice(0, 5);
+    },
+
+    generateRoadmap: () => {
+      const rr = avgLossAmount > 0 ? avgWinAmount / avgLossAmount : 1;
+      return [
+        {
+          name: "Win Rate",
+          current: `${winRate.toFixed(1)}%`,
+          target: `${Math.max(Math.round(winRate + 5), 65)}%`,
+          progress: Math.min(10, Math.round((winRate / Math.max(winRate + 5, 65)) * 10))
+        },
+        {
+          name: "Profit Factor",
+          current: profitFactor.toFixed(2),
+          target: `${Math.max(Number((profitFactor + 0.5).toFixed(1)), 2.0)}`,
+          progress: Math.min(10, Math.round((profitFactor / Math.max(profitFactor + 0.5, 2.0)) * 10))
+        },
+        {
+          name: "Average RR",
+          current: rr.toFixed(1),
+          target: "2.0",
+          progress: Math.min(10, Math.round((rr / 2.0) * 10))
+        },
+        {
+          name: "Maximum Drawdown",
+          current: `${maxDrawdown.toFixed(1)}%`,
+          target: "5.0%",
+          progress: maxDrawdown <= 5 ? 10 : Math.max(1, Math.min(10, Math.round((5 / maxDrawdown) * 10)))
+        }
+      ];
+    }
+  };
+
+  const strength = TradingPerformanceAnalyzer.generateStrength();
+  const weakness = TradingPerformanceAnalyzer.generateWeakness();
+  const recommendations = TradingPerformanceAnalyzer.generateRecommendations();
+  const roadmap = TradingPerformanceAnalyzer.generateRoadmap();
+
+  const getProgressBar = (filledCount: number) => {
+    const filled = Math.max(0, Math.min(10, filledCount));
+    return "█".repeat(filled) + "░".repeat(10 - filled);
+  };
+
+  return (
+    <div className="glass-panel p-6 rounded-lg border border-glass-border space-y-6 mt-8">
+      <div className="border-b border-glass-border pb-4">
+        <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">AI ANALYTICS ENGINE</span>
+        <h2 className="text-xl font-bold font-mono tracking-tight text-slate-100">AI Trading Intelligence</h2>
+        <p className="text-xs text-slate-400 font-sans mt-1">
+          Personalized analysis of your trading behavior based on your journal statistics.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Card 1: Biggest Strength */}
+        <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4">
+          <div className="flex justify-between items-center text-emerald-400">
+            <span className="text-[10px] font-mono uppercase tracking-wider block font-bold">✓ Biggest Strength</span>
+            <span className="text-xs font-mono tracking-wider">{strength.score}</span>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold font-mono text-slate-200">{strength.title}</h3>
+            <p className="text-xs text-slate-400 font-mono leading-relaxed">{strength.explanation}</p>
+          </div>
+          <p className="text-[11px] text-slate-500 italic font-sans leading-relaxed pt-2 border-t border-slate-900">
+            {strength.example}
+          </p>
+        </div>
+
+        {/* Card 2: Biggest Weakness */}
+        <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4">
+          <div className="flex justify-between items-center text-rose-500">
+            <span className="text-[10px] font-mono uppercase tracking-wider block font-bold">⚠ Biggest Weakness</span>
+            <span className="text-xs font-mono uppercase tracking-wider text-rose-500 font-bold">Critical</span>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-bold font-mono text-slate-200">{weakness.title}</h3>
+            <p className="text-xs text-slate-400 font-mono leading-relaxed">{weakness.explanation}</p>
+          </div>
+          <p className="text-[11px] text-slate-500 italic font-sans leading-relaxed pt-2 border-t border-slate-900">
+            {weakness.solution}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Card 3: AI Recommendations */}
+        <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-900 pb-2">
+            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block font-bold">AI Recommendations</span>
+            <span className="text-[9px] bg-slate-950 border border-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono uppercase">
+              Action Plan
+            </span>
+          </div>
+          <ul className="space-y-3 font-sans text-xs">
+            {recommendations.map((rec, idx) => (
+              <li key={idx} className="flex items-start justify-between gap-3 text-slate-300">
+                <span className="leading-relaxed">{rec.text}</span>
+                <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border uppercase font-bold shrink-0 ${
+                  rec.priority === 'High' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 
+                  rec.priority === 'Medium' ? 'bg-gold-vip/10 text-gold-vip border-gold-vip/20' : 
+                  'bg-slate-800 text-slate-400 border-slate-700'
+                }`}>
+                  {rec.priority}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Card 4: Improvement Roadmap */}
+        <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-900 pb-2">
+            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block font-bold">Improvement Roadmap</span>
+            <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-mono uppercase font-bold">
+              Milestones
+            </span>
+          </div>
+          <div className="space-y-3.5">
+            {roadmap.map((item, idx) => (
+              <div key={idx} className="space-y-1.5 font-mono text-xs">
+                <div className="flex justify-between text-slate-400 text-[11px]">
+                  <span className="font-bold">{item.name}</span>
+                  <span>
+                    Current: <strong className="text-slate-200">{item.current}</strong> → Target: <strong className="text-gold-vip">{item.target}</strong>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-gold-vip font-mono font-bold tracking-tight text-xs">
+                    {getProgressBar(item.progress)}
+                  </span>
+                  <span className="text-[9px] text-slate-500 uppercase font-bold">
+                    {Math.round(item.progress * 10)}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
@@ -555,6 +894,21 @@ export default function AnalyticsPage() {
           </div>
 
         </div>
+      )}
+
+      {mounted && (
+        <AITradingIntelligencePanel
+          trades={trades}
+          netProfit={netProfit}
+          winRate={winRate}
+          profitFactor={profitFactor}
+          consistencyScore={consistencyScore}
+          avgWinAmount={avgWinAmount}
+          avgLossAmount={avgLossAmount}
+          drawdownData={drawdownData}
+          strategyData={strategyData}
+          hourlyData={hourlyData}
+        />
       )}
     </div>
   );
