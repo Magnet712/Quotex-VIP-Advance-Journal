@@ -1233,9 +1233,33 @@ export default function AdminDashboardPage() {
                           {expandedAdminInvoice === r.trader_id && (
                             <tr>
                               <td colSpan={7} className="bg-slate-950/60 p-5 border-t border-slate-900">
+                                {/* Lifetime Stats Grid */}
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5 text-left animate-fadeIn">
+                                  <div className="bg-slate-900/30 p-2.5 rounded border border-slate-900/60 flex flex-col justify-between">
+                                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">invited friends</span>
+                                    <span className="text-sm font-extrabold text-slate-200 mt-1">{r.total}</span>
+                                  </div>
+                                  <div className="bg-slate-900/30 p-2.5 rounded border border-slate-900/60 flex flex-col justify-between">
+                                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">approved count</span>
+                                    <span className="text-sm font-extrabold text-emerald-400 mt-1">{r.approved}</span>
+                                  </div>
+                                  <div className="bg-slate-900/30 p-2.5 rounded border border-slate-900/60 flex flex-col justify-between">
+                                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">pending count</span>
+                                    <span className="text-sm font-extrabold text-amber-400 mt-1">{r.pending}</span>
+                                  </div>
+                                  <div className="bg-slate-900/30 p-2.5 rounded border border-slate-900/60 flex flex-col justify-between">
+                                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">rejected count</span>
+                                    <span className="text-sm font-extrabold text-rose-500 mt-1">{r.total - r.approved - r.pending}</span>
+                                  </div>
+                                  <div className="bg-slate-900/30 p-2.5 rounded border border-slate-900/60 flex flex-col justify-between">
+                                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">rewards earned</span>
+                                    <span className="text-sm font-extrabold text-gold-vip mt-1">{Math.floor(r.approved / 5)} Month{Math.floor(r.approved / 5) !== 1 && 's'}</span>
+                                  </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
                                   {/* Left Pane: Referred Users */}
-                                  <div className="lg:col-span-7 space-y-3">
+                                  <div className="lg:col-span-6 space-y-3">
                                     <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">referred friends database</div>
                                     <div className="grid grid-cols-1 gap-2">
                                       {r.referredUsers.map((friend: any, fIdx: number) => (
@@ -1266,7 +1290,7 @@ export default function AdminDashboardPage() {
                                   </div>
 
                                   {/* Right Pane: Rewards & Milestones */}
-                                  <div className="lg:col-span-5 space-y-4 font-sans">
+                                  <div className="lg:col-span-6 space-y-4 font-sans">
                                     <div className="space-y-2">
                                       <div className="text-[10px] text-slate-500 uppercase tracking-widest font-mono font-bold">Reward Progress</div>
                                       <div className="bg-slate-900/40 p-3 rounded-lg border border-slate-900 space-y-3">
@@ -1291,9 +1315,10 @@ export default function AdminDashboardPage() {
                                         <table className="w-full text-[10px] font-mono text-slate-400">
                                           <thead>
                                             <tr className="border-b border-slate-900 bg-slate-950/80 text-slate-500 text-left">
-                                              <th className="p-2 font-bold">Reward Month</th>
-                                              <th className="p-2 font-bold">Triggered By</th>
-                                              <th className="p-2 font-bold">Status</th>
+                                              <th className="p-2.5 font-bold">Reward</th>
+                                              <th className="p-2.5 font-bold">Applied To</th>
+                                              <th className="p-2.5 font-bold">Validity Range</th>
+                                              <th className="p-2.5 font-bold text-center">Status</th>
                                             </tr>
                                           </thead>
                                           <tbody className="divide-y divide-slate-900/40">
@@ -1304,17 +1329,21 @@ export default function AdminDashboardPage() {
                                               
                                               const rewards = [];
                                               for (let i = 4; i < approvedSorted.length; i += 5) {
+                                                const startDate = new Date(approvedSorted[i].created_at);
+                                                const expiryDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+                                                const isActive = Date.now() < expiryDate.getTime();
                                                 rewards.push({
                                                   month: Math.floor((i + 1) / 5),
-                                                  triggeredBy: approvedSorted[i].trader_id,
-                                                  date: new Date(approvedSorted[i].created_at).toLocaleDateString()
+                                                  startStr: startDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+                                                  expiryStr: expiryDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+                                                  status: isActive ? 'Active' : 'Expired'
                                                 });
                                               }
 
                                               if (rewards.length === 0) {
                                                 return (
                                                   <tr>
-                                                    <td colSpan={3} className="p-4 text-center text-slate-600 italic">
+                                                    <td colSpan={4} className="p-4 text-center text-slate-600 italic">
                                                       No milestones reached yet.
                                                     </td>
                                                   </tr>
@@ -1322,10 +1351,19 @@ export default function AdminDashboardPage() {
                                               }
 
                                               return rewards.map((rw, rwIdx) => (
-                                                <tr key={rwIdx}>
-                                                  <td className="p-2 font-bold text-gold-vip">+1 Premium Month (#{rw.month})</td>
-                                                  <td className="p-2">{rw.triggeredBy} ({rw.date})</td>
-                                                  <td className="p-2 text-emerald-400 font-bold">Granted</td>
+                                                <tr key={rwIdx} className="hover:bg-slate-900/10">
+                                                  <td className="p-2.5 font-bold text-gold-vip">+1 Premium Month (#{rw.month})</td>
+                                                  <td className="p-2.5 text-slate-300">Premium Plan</td>
+                                                  <td className="p-2.5 text-slate-400">{rw.startStr} &ndash; {rw.expiryStr}</td>
+                                                  <td className="p-2.5 text-center">
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold ${
+                                                      rw.status === 'Active'
+                                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                        : 'bg-slate-950 text-slate-600 border border-slate-900'
+                                                    }`}>
+                                                      {rw.status}
+                                                    </span>
+                                                  </td>
                                                 </tr>
                                               ));
                                             })()}
