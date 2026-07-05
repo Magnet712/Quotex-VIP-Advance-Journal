@@ -47,6 +47,18 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/admin/login';
       return NextResponse.redirect(url);
     }
+
+    // Verify if the user is in public.admins
+    const { data: adminRecord } = await supabase
+      .from('admins')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!adminRecord) {
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
   }
 
   // Redirect authenticated users away from auth pages
@@ -56,8 +68,20 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
     if (url.pathname === '/admin/login') {
-      url.pathname = '/admin';
-      return NextResponse.redirect(url);
+      // Check admin status to prevent redirect loops for non-admins
+      const { data: adminRecord } = await supabase
+        .from('admins')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (adminRecord) {
+        url.pathname = '/admin';
+        return NextResponse.redirect(url);
+      } else {
+        url.pathname = '/dashboard';
+        return NextResponse.redirect(url);
+      }
     }
   }
 
