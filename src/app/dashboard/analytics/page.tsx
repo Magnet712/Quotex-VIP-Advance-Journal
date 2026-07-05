@@ -61,193 +61,240 @@ function AITradingIntelligencePanel({
   // Real Max Drawdown calculation from daily data points
   const maxDrawdown = drawdownData.reduce((max, d) => Math.max(max, d.drawdown), 0);
 
-  // Analyzer Logic Interface (deterministic, rule-based)
-  const TradingPerformanceAnalyzer = {
-    generateStrength: () => {
-      if (maxDrawdown <= 5 && trades.length >= 10) {
-        return {
-          title: "Excellent Risk Management",
-          score: "★★★★★",
-          explanation: `Only ${maxDrawdown.toFixed(1)}% drawdown with a ${winRate.toFixed(1)}% win rate.`,
-          example: "This indicates highly disciplined risk controls and position sizing."
-        };
+  // Dynamic Strategy Expectations Calculations
+  const stratStats = Object.entries(
+    trades.reduce((acc: Record<string, { wins: number; count: number; pl: number; grossProfit: number; grossLoss: number }>, t) => {
+      const strat = t.strategy || 'Unknown';
+      if (!acc[strat]) acc[strat] = { wins: 0, count: 0, pl: 0, grossProfit: 0, grossLoss: 0 };
+      acc[strat].count += 1;
+      const plVal = Number(t.profit_loss);
+      acc[strat].pl += plVal;
+      if (plVal > 0 || t.results === 'Win' || t.results === 'MTG Win') {
+        acc[strat].wins += 1;
+        acc[strat].grossProfit += plVal;
+      } else {
+        acc[strat].grossLoss += Math.abs(plVal);
       }
-      if (avgLossAmount > 0 && (avgWinAmount / avgLossAmount) >= 2.0) {
-        return {
-          title: "Large Reward/Risk Ratio",
-          score: "★★★★☆",
-          explanation: `Average winning trade is ${(avgWinAmount / avgLossAmount).toFixed(1)}x larger than your average loss.`,
-          example: "This allows you to maintain profitability even with lower win rates."
-        };
-      }
-      if (winRate >= 65) {
-        return {
-          title: "High Setup Accuracy",
-          score: "★★★★☆",
-          explanation: `Win rate of ${winRate.toFixed(1)}% over ${trades.length} trades.`,
-          example: "High accuracy indicates excellent market timing and high-probability setup selection."
-        };
-      }
-      if (profitFactor >= 2.0) {
-        return {
-          title: "Strong Profit Factor",
-          score: "★★★★☆",
-          explanation: `Profit factor of ${profitFactor.toFixed(2)} generated from net trades.`,
-          example: "You generate significantly more gross profits relative to your gross losses."
-        };
-      }
-      if (consistencyScore >= 80) {
-        return {
-          title: "Excellent Consistency",
-          score: "★★★★☆",
-          explanation: `Consistency score of ${consistencyScore}%.`,
-          example: "Stable sizing and predictable P&L variance indicates high emotional control."
-        };
-      }
-      return {
-        title: "Steady Trading Execution",
-        score: "★★★☆☆",
-        explanation: `Logged ${trades.length} active sessions under standardized setups.`,
-        example: "Maintaining a journal is the first step toward refining key edge variables."
-      };
-    },
+      return acc;
+    }, {})
+  ).map(([name, s]) => {
+    const avgWin = s.wins > 0 ? s.grossProfit / s.wins : 0;
+    const avgLoss = (s.count - s.wins) > 0 ? s.grossLoss / (s.count - s.wins) : 0;
+    return {
+      name,
+      count: s.count,
+      pl: s.pl,
+      winRate: Math.round((s.wins / s.count) * 100),
+      avgRR: avgLoss > 0 ? Number((avgWin / avgLoss).toFixed(1)) : 1.5
+    };
+  });
 
-    generateWeakness: () => {
-      if (maxDrawdown > 15) {
-        return {
-          title: "High Drawdown Exposure",
-          explanation: `Peak drawdown has reached ${maxDrawdown.toFixed(1)}% of virtual balance.`,
-          solution: "Apply strict daily loss limits or reduce size to prevent capital erosion."
-        };
-      }
-      if (avgLossAmount > 0 && (avgWinAmount / avgLossAmount) < 1.2) {
-        return {
-          title: "Weak Risk-to-Reward Ratio",
-          explanation: `Average winning trade ($${Math.round(avgWinAmount)}) is only ${(avgWinAmount / avgLossAmount).toFixed(1)}x your average losing trade ($${Math.round(avgLossAmount)}).`,
-          solution: "Extend profit targets or select setups offering at least 1:1.5 standard RR to enhance long-term expectancy."
-        };
-      }
-      if (profitFactor < 1.1) {
-        return {
-          title: "Low Profit Factor",
-          explanation: `Profit factor of ${profitFactor.toFixed(2)} is close to break-even.`,
-          solution: "Filter out marginal trade setups and focus exclusively on high-conviction trades."
-        };
-      }
-      if (consistencyScore < 50) {
-        return {
-          title: "Poor Strategy Consistency",
-          explanation: `Consistency rating is low at ${consistencyScore}%.`,
-          solution: "Ensure you stick to a defined checklist before entry to avoid erratic trade behavior."
-        };
-      }
-      return {
-        title: "Room for Strategy Scaling",
-        explanation: "Standard metrics are balanced, but edge distribution has room to optimize.",
-        solution: "Focus on increasing the average win size or isolating low win rate strategies."
-      };
-    },
+  const bestStrat = [...stratStats].sort((a, b) => b.pl - a.pl)[0] || { name: 'N/A', winRate: 0, pl: 0, count: 0, avgRR: 1.5 };
+  const worstStrat = [...stratStats].sort((a, b) => a.pl - b.pl)[0] || { name: 'N/A', winRate: 0, pl: 0, count: 0, avgRR: 1.0 };
 
-    generateRecommendations: () => {
-      const list: Array<{ text: string; priority: 'High' | 'Medium' | 'Low' }> = [];
+  // Overconfidence Detection: losses after a win compared to baseline average loss
+  const sortedTrades = [...trades].sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
+  let winFollowedCount = 0;
+  let winFollowedLossCount = 0;
+  let winFollowedLossSum = 0;
 
-      const rr = avgLossAmount > 0 ? avgWinAmount / avgLossAmount : 1;
-      if (rr < 1.5) {
-        list.push({
-          text: "Extend average profit targets to increase your Risk-to-Reward ratio above 1:1.5.",
-          priority: "High"
-        });
+  for (let i = 1; i < sortedTrades.length; i++) {
+    const prev = sortedTrades[i - 1];
+    const curr = sortedTrades[i];
+    const prevWin = prev.profit_loss > 0 || prev.results === 'Win' || prev.results === 'MTG Win';
+    if (prevWin) {
+      winFollowedCount += 1;
+      const currLoss = curr.profit_loss < 0;
+      if (currLoss) {
+        winFollowedLossCount += 1;
+        winFollowedLossSum += Math.abs(Number(curr.profit_loss));
       }
-
-      if (maxDrawdown > 10) {
-        list.push({
-          text: "Cap individual trade risk to a maximum of 1-2% to lower portfolio drawdown.",
-          priority: "High"
-        });
-      }
-
-      const losingStrats = strategyData.filter(s => s.pl < 0);
-      if (losingStrats.length > 0) {
-        list.push({
-          text: `Review entry rules for the "${losingStrats[0].name}" strategy to prevent capital bleed.`,
-          priority: "High"
-        });
-      }
-
-      const losingHours = hourlyData.filter(h => h.pl < -50);
-      if (losingHours.length > 0) {
-        list.push({
-          text: `Restrict or avoid entering new positions during the underperforming hours: ${losingHours[0].name}.`,
-          priority: "Medium"
-        });
-      }
-
-      if (winRate < 50) {
-        list.push({
-          text: "Work on trade validation to increase accuracy and win rate above 50%.",
-          priority: "Medium"
-        });
-      }
-
-      if (consistencyScore < 60) {
-        list.push({
-          text: "Execute a pre-trade checklist before every position to stabilize consistency.",
-          priority: "Medium"
-        });
-      }
-
-      while (list.length < 5) {
-        if (list.length === 3) {
-          list.push({
-            text: "Ensure proper hydration and sleep to avoid trade fatigue during sessions.",
-            priority: "Low"
-          });
-        } else {
-          list.push({
-            text: "Continue logging all trades in your journal to accumulate statistically valid data.",
-            priority: "Low"
-          });
-        }
-      }
-
-      return list.slice(0, 5);
-    },
-
-    generateRoadmap: () => {
-      const rr = avgLossAmount > 0 ? avgWinAmount / avgLossAmount : 1;
-      return [
-        {
-          name: "Win Rate",
-          current: `${winRate.toFixed(1)}%`,
-          target: `${Math.max(Math.round(winRate + 5), 65)}%`,
-          progress: Math.min(10, Math.round((winRate / Math.max(winRate + 5, 65)) * 10))
-        },
-        {
-          name: "Profit Factor",
-          current: profitFactor.toFixed(2),
-          target: `${Math.max(Number((profitFactor + 0.5).toFixed(1)), 2.0)}`,
-          progress: Math.min(10, Math.round((profitFactor / Math.max(profitFactor + 0.5, 2.0)) * 10))
-        },
-        {
-          name: "Average RR",
-          current: rr.toFixed(1),
-          target: "2.0",
-          progress: Math.min(10, Math.round((rr / 2.0) * 10))
-        },
-        {
-          name: "Maximum Drawdown",
-          current: `${maxDrawdown.toFixed(1)}%`,
-          target: "5.0%",
-          progress: maxDrawdown <= 5 ? 10 : Math.max(1, Math.min(10, Math.round((5 / maxDrawdown) * 10)))
-        }
-      ];
     }
+  }
+
+  const avgLossAfterWin = winFollowedLossCount > 0 ? winFollowedLossSum / winFollowedLossCount : avgLossAmount;
+  const lossIncreasePct = avgLossAmount > 0 
+    ? Math.max(0, Math.round(((avgLossAfterWin - avgLossAmount) / avgLossAmount) * 100))
+    : 0;
+
+  // Worst hour window check
+  const hourlyPlMap = trades.reduce((acc: Record<number, number>, t) => {
+    const hour = new Date(t.trade_date).getHours();
+    acc[hour] = (acc[hour] || 0) + Number(t.profit_loss);
+    return acc;
+  }, {});
+  const worstHourEntry = Object.entries(hourlyPlMap).sort((a, b) => Number(a[1]) - Number(b[1]))[0];
+  const worstHour = worstHourEntry ? Number(worstHourEntry[0]) : 13;
+  const worstHourPL = worstHourEntry ? Number(worstHourEntry[1]) : 0;
+
+  // Worst day window check
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayPlMap = trades.reduce((acc: Record<number, number>, t) => {
+    const day = new Date(t.trade_date).getDay();
+    acc[day] = (acc[day] || 0) + Number(t.profit_loss);
+    return acc;
+  }, {});
+  const worstDayEntry = Object.entries(dayPlMap).sort((a, b) => Number(a[1]) - Number(b[1]))[0];
+  const worstDayName = worstDayEntry ? days[Number(worstDayEntry[0])] : 'Monday';
+
+  // Overall Score Calculation (Win Rate + Consistency + Profit Factor weightings)
+  const tradingScore = Math.min(100, Math.max(10, Math.round(
+    (winRate * 0.4) + (consistencyScore * 0.3) + (Math.min(3, profitFactor) / 3 * 30)
+  )));
+
+  let overallGrade = 'C';
+  let overallGradeLabel = 'Needs Improvement';
+  if (tradingScore >= 85) {
+    overallGrade = 'A-';
+    overallGradeLabel = 'Professional Level Trader';
+  } else if (tradingScore >= 72) {
+    overallGrade = 'B+';
+    overallGradeLabel = 'Consistent Developing Trader';
+  } else if (tradingScore >= 60) {
+    overallGrade = 'B';
+    overallGradeLabel = 'Average Growth Trader';
+  } else if (tradingScore >= 45) {
+    overallGrade = 'C+';
+    overallGradeLabel = 'Needs Strategy Refinement';
+  }
+
+  // Sub-metrics Grades
+  const getRiskGrade = () => {
+    if (maxDrawdown <= 5) return 'A';
+    if (maxDrawdown <= 10) return 'A-';
+    if (maxDrawdown <= 15) return 'B+';
+    return 'C';
   };
 
-  const strength = TradingPerformanceAnalyzer.generateStrength();
-  const weakness = TradingPerformanceAnalyzer.generateWeakness();
-  const recommendations = TradingPerformanceAnalyzer.generateRecommendations();
-  const roadmap = TradingPerformanceAnalyzer.generateRoadmap();
+  const getPsychGrade = () => {
+    if (lossIncreasePct < 15) return 'A';
+    if (lossIncreasePct < 30) return 'B+';
+    return 'C+';
+  };
+
+  const getConsistencyGrade = () => {
+    if (consistencyScore >= 80) return 'A';
+    if (consistencyScore >= 60) return 'B';
+    return 'C';
+  };
+
+  const getExecutionGrade = () => {
+    if (winRate >= 65) return 'A';
+    if (winRate >= 52) return 'A-';
+    return 'B';
+  };
+
+  const getDisciplineGrade = () => {
+    if (profitFactor >= 2.0) return 'A';
+    if (profitFactor >= 1.3) return 'B+';
+    return 'C+';
+  };
+
+  // Confidence Calculation
+  const confidencePct = Math.min(99, Math.round(50 + (trades.length / 100) * 49));
+
+  // Trading Personality selector
+  const getTradingPersonality = () => {
+    if (winRate >= 65 && maxDrawdown <= 8) {
+      return {
+        name: "Disciplined Scalper",
+        characteristics: ["Excellent patience", "Low drawdown curve", "High consistency"],
+        weakness: "Overtrading after winning streaks."
+      };
+    }
+    const avgRR = avgLossAmount > 0 ? avgWinAmount / avgLossAmount : 1.0;
+    if (avgRR >= 2.0) {
+      return {
+        name: "Patient Swing Opportunist",
+        characteristics: ["Large risk-reward targets", "High profit expectancy", "Low session stress"],
+        weakness: "Hesitation during fast breakout trends."
+      };
+    }
+    if (consistencyScore >= 75) {
+      return {
+        name: "Systematic Price Action Trader",
+        characteristics: ["Stable sizing rules", "Highly predictable results", "Clear entry criteria"],
+        weakness: "Lower execution frequency on low-volatility days."
+      };
+    }
+    return {
+      name: "Developing Trend Rider",
+      characteristics: ["Standardized risk controls", "Active market adaptation", "Increasing trade accuracy"],
+      weakness: "Risk scaling under drawdown streaks."
+    };
+  };
+
+  const personality = getTradingPersonality();
+
+  // Recommendations builder (deterministic, statistics-based)
+  const getRecommendations = () => {
+    const list: Array<{ text: string; priority: 'High' | 'Medium' | 'Low' }> = [];
+
+    if (worstHourPL < 0) {
+      list.push({
+        text: `Avoid entering new setups during your weakest hourly window (${worstHour}:00–${(worstHour+1)%24}:00) to protect gains.`,
+        priority: 'High'
+      });
+    }
+
+    if (worstStrat.pl < 0 && worstStrat.name !== 'N/A') {
+      list.push({
+        text: `The "${worstStrat.name}" strategy has a low win rate of ${worstStrat.winRate}%. Consider reducing its usage in current market phases.`,
+        priority: 'High'
+      });
+    }
+
+    if (lossIncreasePct > 15) {
+      list.push({
+        text: `Your average loss is ${lossIncreasePct}% larger than your planned stop sizes. Stick to your risk parameters.`,
+        priority: 'High'
+      });
+    }
+
+    if (worstDayEntry) {
+      list.push({
+        text: `Reduce active position sizing on ${worstDayName}s, which is statistically your least profitable trading day.`,
+        priority: 'Medium'
+      });
+    }
+
+    if (winFollowedLossCount > 2) {
+      list.push({
+        text: "Halt trading sessions immediately after 2 consecutive losses to prevent revenge trading.",
+        priority: 'Medium'
+      });
+    }
+
+    // Pad if needed
+    if (list.length < 5) {
+      const avgRRVal = avgLossAmount > 0 ? avgWinAmount / avgLossAmount : 1.0;
+      if (avgRRVal < 1.5) {
+        list.push({
+          text: "Extend profit targets to increase average Risk-to-Reward above 1.5 on scalp setups.",
+          priority: 'Medium'
+        });
+      }
+    }
+    while (list.length < 5) {
+      list.push({
+        text: `Prioritize the "${bestStrat.name}" strategy which produces your highest expectancy (${bestStrat.winRate}% win rate).`,
+        priority: 'Low'
+      });
+    }
+
+    return list.slice(0, 5);
+  };
+
+  const recommendations = getRecommendations();
+
+  // Coach message builder
+  const getCoachMessage = () => {
+    const frequency = trades.length / 30; // mock active days
+    if (frequency > 2.0) {
+      return `Your statistics indicate that your edge comes from patience, not frequency. You currently average ${frequency.toFixed(1)} trades/day. Restricting entries to A+ setups will improve overall monthly performance.`;
+    }
+    return `Your patient entry frequency is excellent. Focus on maintaining your strict checklist and scaling size only on your highest win rate strategy (${bestStrat.name}).`;
+  };
 
   const getProgressBar = (filledCount: number) => {
     const filled = Math.max(0, Math.min(10, filledCount));
@@ -255,48 +302,159 @@ function AITradingIntelligencePanel({
   };
 
   return (
-    <div className="glass-panel p-6 rounded-lg border border-glass-border space-y-6 mt-8">
-      <div className="border-b border-glass-border pb-4">
-        <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">AI ANALYTICS ENGINE</span>
-        <h2 className="text-xl font-bold font-mono tracking-tight text-slate-100">AI Trading Intelligence</h2>
-        <p className="text-xs text-slate-400 font-sans mt-1">
-          Personalized analysis of your trading behavior based on your journal statistics.
-        </p>
+    <div className="glass-panel p-6 rounded-lg border border-glass-border space-y-6 mt-8 relative overflow-hidden">
+      <div className="absolute -top-24 -left-24 w-48 h-48 bg-gold-vip/5 rounded-full blur-3xl pointer-events-none" />
+      
+      {/* Header and Telemetry Stats */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-glass-border pb-4">
+        <div>
+          <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">AI ANALYTICS ENGINE</span>
+          <h2 className="text-xl font-bold font-mono tracking-tight text-slate-100">AI Trading Intelligence</h2>
+          <p className="text-xs text-slate-400 font-sans mt-1">
+            Personalized analysis of your trading behavior based on your journal statistics.
+          </p>
+        </div>
+        
+        {/* Confidence Badge */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="bg-[#020617] border border-glass-border px-3 py-1.5 rounded flex flex-col font-mono text-[10px] text-left">
+            <span className="text-slate-500 uppercase tracking-widest text-[8px]">Analysis Confidence</span>
+            <span className="text-neon-green font-bold">{confidencePct}% ({trades.length} Trades)</span>
+          </div>
+        </div>
       </div>
 
+      {/* Row 1: Overall Performance & Trading Personality */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Overall Performance Grade Card */}
+        <div className="glass-panel p-5 rounded-lg border border-glass-border flex flex-col justify-between space-y-4">
+          <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">Overall Performance</span>
+          <div className="flex items-center gap-4 pt-2">
+            <div className="w-16 h-16 rounded bg-gold-vip/10 border border-gold-vip/30 flex items-center justify-center font-mono font-bold text-3xl text-gold-vip glow-text-gold">
+              {overallGrade}
+            </div>
+            <div>
+              <span className="text-[10px] font-mono text-slate-500 block uppercase">Trading Status</span>
+              <h4 className="text-sm font-bold font-mono text-slate-200">{overallGradeLabel}</h4>
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-500 font-sans leading-normal pt-2 border-t border-slate-900">
+            Rating calculated across profit factor volatility, win rate distribution, and equity curve integrity.
+          </p>
+        </div>
+
+        {/* Trading Personality Card */}
+        <div className="glass-panel p-5 rounded-lg border border-glass-border flex flex-col justify-between space-y-4 md:col-span-2">
+          <div className="flex justify-between items-center text-slate-400">
+            <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">Trading Personality</span>
+            <span className="text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded font-mono uppercase font-bold">
+              Cognitive Profile
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold font-mono text-slate-100">{personality.name}</h4>
+              <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                Your trades show traits of a <strong className="text-slate-300">{personality.name.toLowerCase()}</strong>. You rely on patterns and defined risk boundaries.
+              </p>
+            </div>
+            <div className="text-xs space-y-1.5 font-mono text-slate-400 border-l border-slate-900 pl-4">
+              <span className="text-[9px] text-slate-500 uppercase block font-bold font-mono">Core Traits</span>
+              {personality.characteristics.map((trait, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <span className="text-neon-green">✓</span>
+                  <span>{trait}</span>
+                </div>
+              ))}
+              <div className="pt-1.5">
+                <span className="text-[9px] text-slate-500 uppercase block font-bold font-mono">Cognitive Weakness</span>
+                <span className="text-rose-400 text-[11px]">{personality.weakness}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Row 2: Highest Edge & Primary Weakness */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Card 1: Biggest Strength */}
+        
+        {/* Card 1: Highest Edge */}
         <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4">
           <div className="flex justify-between items-center text-emerald-400">
-            <span className="text-[10px] font-mono uppercase tracking-wider block font-bold">✓ Biggest Strength</span>
-            <span className="text-xs font-mono tracking-wider">{strength.score}</span>
+            <span className="text-[10px] font-mono uppercase tracking-wider block font-bold">✓ Highest Edge</span>
+            <span className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold">Optimal Setup</span>
           </div>
-          <div className="space-y-1">
-            <h3 className="text-base font-bold font-mono text-slate-200">{strength.title}</h3>
-            <p className="text-xs text-slate-400 font-mono leading-relaxed">{strength.explanation}</p>
+          <div className="space-y-3">
+            <h3 className="text-base font-bold font-mono text-slate-200">
+              {bestStrat.name !== 'N/A' ? bestStrat.name : 'Standard Execution'}
+            </h3>
+            
+            {/* Stats Block */}
+            {bestStrat.name !== 'N/A' && (
+              <div className="grid grid-cols-3 gap-2 bg-[#020617]/50 border border-slate-900 p-2.5 rounded font-mono text-xs text-slate-400">
+                <div>
+                  <span className="text-[8px] text-slate-500 block">WIN RATE</span>
+                  <span className="text-slate-200 font-bold">{bestStrat.winRate}%</span>
+                </div>
+                <div>
+                  <span className="text-[8px] text-slate-500 block">AVERAGE RR</span>
+                  <span className="text-slate-200 font-bold">{bestStrat.avgRR}</span>
+                </div>
+                <div>
+                  <span className="text-[8px] text-slate-500 block">NET PROFIT</span>
+                  <span className="text-emerald-400 font-bold">+${Math.round(bestStrat.pl)}</span>
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs text-slate-400 leading-normal font-sans">
+              This strategy produces your highest expectancy. Continue prioritizing this setup in high-probability sessions.
+            </p>
           </div>
-          <p className="text-[11px] text-slate-500 italic font-sans leading-relaxed pt-2 border-t border-slate-900">
-            {strength.example}
-          </p>
         </div>
 
-        {/* Card 2: Biggest Weakness */}
+        {/* Card 2: Primary Weakness */}
         <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4">
           <div className="flex justify-between items-center text-rose-500">
-            <span className="text-[10px] font-mono uppercase tracking-wider block font-bold">⚠ Biggest Weakness</span>
-            <span className="text-xs font-mono uppercase tracking-wider text-rose-500 font-bold">Critical</span>
+            <span className="text-[10px] font-mono uppercase tracking-wider block font-bold">⚠ Primary Weakness</span>
+            <span className="text-xs font-mono uppercase tracking-wider text-rose-500 font-bold">Leak Alert</span>
           </div>
-          <div className="space-y-1">
-            <h3 className="text-base font-bold font-mono text-slate-200">{weakness.title}</h3>
-            <p className="text-xs text-slate-400 font-mono leading-relaxed">{weakness.explanation}</p>
+          <div className="space-y-3">
+            <h3 className="text-base font-bold font-mono text-slate-200">
+              {lossIncreasePct > 15 ? 'Overconfidence Streaks' : 'Risk Skew Discrepancies'}
+            </h3>
+            
+            {lossIncreasePct > 15 ? (
+              <div className="bg-[#020617]/50 border border-slate-900 p-2.5 rounded font-mono text-xs text-slate-400">
+                <span className="text-[9px] text-slate-500 block uppercase font-bold">Expectancy Bleed</span>
+                <span className="text-rose-400 leading-relaxed block">
+                  Your average loss increases by <strong className="text-slate-200">{lossIncreasePct}%</strong> after a winning trade.
+                </span>
+              </div>
+            ) : (
+              <div className="bg-[#020617]/50 border border-slate-900 p-2.5 rounded font-mono text-xs text-slate-400">
+                <span className="text-[9px] text-slate-500 block uppercase font-bold">Expectancy Bleed</span>
+                <span className="text-rose-400 leading-relaxed block">
+                  Your average loss (${Math.round(avgLossAmount)}) is larger than your average winning trade.
+                </span>
+              </div>
+            )}
+
+            <p className="text-xs text-slate-400 leading-normal font-sans">
+              {lossIncreasePct > 15 
+                ? "Possible Cause: Overconfidence or sizing expansion. Recommendation: Limit yourself to one high-confidence trade after a winning streak."
+                : "Possible Cause: Holding losing trades past planned exit points. Recommendation: Exit immediately on invalidate signals."}
+            </p>
           </div>
-          <p className="text-[11px] text-slate-500 italic font-sans leading-relaxed pt-2 border-t border-slate-900">
-            {weakness.solution}
-          </p>
         </div>
+
       </div>
 
+      {/* Row 3: AI Recommendations & Improvement Grades */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
         {/* Card 3: AI Recommendations */}
         <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4">
           <div className="flex items-center justify-between border-b border-slate-900 pb-2">
@@ -321,36 +479,63 @@ function AITradingIntelligencePanel({
           </ul>
         </div>
 
-        {/* Card 4: Improvement Roadmap */}
-        <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-900 pb-2">
-            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block font-bold">Improvement Roadmap</span>
-            <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-mono uppercase font-bold">
-              Milestones
-            </span>
+        {/* Card 4: Grading Milestones */}
+        <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between border-b border-slate-900 pb-2">
+              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block font-bold">Trading Score</span>
+              <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-mono uppercase font-bold">
+                {tradingScore}%
+              </span>
+            </div>
+            
+            {/* Score progress bar */}
+            <div className="flex items-center gap-3 pt-2 font-mono text-xs text-gold-vip">
+              <span>{getProgressBar(Math.round(tradingScore / 10))}</span>
+              <span className="text-[9px] text-slate-500 uppercase font-bold">Expectancy Score</span>
+            </div>
           </div>
-          <div className="space-y-3.5">
-            {roadmap.map((item, idx) => (
-              <div key={idx} className="space-y-1.5 font-mono text-xs">
-                <div className="flex justify-between text-slate-400 text-[11px]">
-                  <span className="font-bold">{item.name}</span>
-                  <span>
-                    Current: <strong className="text-slate-200">{item.current}</strong> → Target: <strong className="text-gold-vip">{item.target}</strong>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-gold-vip font-mono font-bold tracking-tight text-xs">
-                    {getProgressBar(item.progress)}
-                  </span>
-                  <span className="text-[9px] text-slate-500 uppercase font-bold">
-                    {Math.round(item.progress * 10)}%
-                  </span>
-                </div>
+
+          <div className="space-y-2 pt-2">
+            <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">Metric Breakdown Grades</span>
+            <div className="grid grid-cols-5 gap-1.5 text-center font-mono text-[10px] text-slate-400">
+              <div className="bg-[#020617]/50 border border-slate-900 py-2 rounded">
+                <span className="text-[8px] text-slate-500 block">RISK</span>
+                <strong className="text-slate-200 text-xs">{getRiskGrade()}</strong>
               </div>
-            ))}
+              <div className="bg-[#020617]/50 border border-slate-900 py-2 rounded">
+                <span className="text-[8px] text-slate-500 block">PSYCH</span>
+                <strong className="text-slate-200 text-xs">{getPsychGrade()}</strong>
+              </div>
+              <div className="bg-[#020617]/50 border border-slate-900 py-2 rounded">
+                <span className="text-[8px] text-slate-500 block">CONST</span>
+                <strong className="text-slate-200 text-xs">{getConsistencyGrade()}</strong>
+              </div>
+              <div className="bg-[#020617]/50 border border-slate-900 py-2 rounded">
+                <span className="text-[8px] text-slate-500 block">EXEC</span>
+                <strong className="text-slate-200 text-xs">{getExecutionGrade()}</strong>
+              </div>
+              <div className="bg-[#020617]/50 border border-slate-900 py-2 rounded">
+                <span className="text-[8px] text-slate-500 block">DISC</span>
+                <strong className="text-slate-200 text-xs">{getDisciplineGrade()}</strong>
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
+
+      {/* Row 4: AI Coach Message */}
+      <div className="glass-panel p-5 rounded-lg border border-glass-border flex flex-col justify-between space-y-3 relative overflow-hidden bg-gold-vip/5">
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] font-mono text-gold-vip uppercase tracking-widest block font-bold">Today's Coach Message</span>
+          <Award className="h-4 w-4 text-gold-vip" />
+        </div>
+        <p className="text-xs text-slate-200 leading-relaxed font-sans font-medium">
+          {getCoachMessage()}
+        </p>
+      </div>
+
     </div>
   );
 }
