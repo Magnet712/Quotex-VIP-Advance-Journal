@@ -190,3 +190,116 @@ export async function getAdminStats() {
     },
   };
 }
+
+/**
+ * Fetches referral tracking summary for the admin dashboard.
+ */
+export async function getAdminReferralsLedger() {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) {
+    return { success: false, error: 'Unauthorized. Admin access required.' };
+  }
+
+  try {
+    const supabase = await createClient();
+    
+    // Fetch all users with referred_by_trader_id
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, trader_id, username, status, referred_by_trader_id, created_at');
+
+    if (error) throw error;
+
+    // Aggregate referrals by referrer in memory
+    const referrersMap: Record<string, {
+      trader_id: string;
+      username: string;
+      total: number;
+      approved: number;
+      pending: number;
+      referredUsers: any[];
+    }> = {};
+
+    // First populate referrers mapping
+    users.forEach(u => {
+      if (u.trader_id) {
+        referrersMap[u.trader_id] = {
+          trader_id: u.trader_id,
+          username: u.username || 'N/A',
+          total: 0,
+          approved: 0,
+          pending: 0,
+          referredUsers: []
+        };
+      }
+    });
+
+    // Count referrals
+    users.forEach(u => {
+      const referrerId = u.referred_by_trader_id;
+      if (referrerId && referrersMap[referrerId]) {
+        referrersMap[referrerId].total++;
+        if (u.status === 'approved') {
+          referrersMap[referrerId].approved++;
+        } else if (u.status === 'pending') {
+          referrersMap[referrerId].pending++;
+        }
+        referrersMap[referrerId].referredUsers.push({
+          id: u.id,
+          trader_id: u.trader_id,
+          username: u.username,
+          status: u.status,
+          created_at: u.created_at
+        });
+      }
+    });
+
+    // Convert map to array and filter out users who have zero referrals
+    const referralsLedger = Object.values(referrersMap)
+      .filter(r => r.total > 0)
+      .sort((a, b) => b.total - a.total);
+
+    return { success: true, ledger: referralsLedger };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Manually updates/corrects a user's referred_by_trader_id.
+ */
+export async function updateUserReferrer(userId: string, referrerTraderId: string | null) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) {
+    return { success: false, error: 'Unauthorized. Admin access required.' };
+  }
+
+  try {
+    const supabase = await createClient();
+
+    // If setting a referrer, validate that the referrerTraderId exists in users
+    if (referrerTraderId) {
+      const { data: refUser } = await supabase
+        .from('users')
+        .select('trader_id')
+        .eq('trader_id', referrerTraderId.trim())
+        .maybeSingle();
+
+      if (!refUser) {
+        return { success: false, error: 'Referrer Trader ID does not exist in users database.' };
+      }
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .update({ referred_by_trader_id: referrerTraderId ? referrerTraderId.trim() : null })
+      .eq('id', userId);
+
+    if (error) throw error;
+
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

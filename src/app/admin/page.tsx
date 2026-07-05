@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { 
   getAllUsers, updateUserStatus, toggleVipAccess, 
-  resetUserPassword, getAdminStats, togglePremiumAccess 
+  resetUserPassword, getAdminStats, togglePremiumAccess,
+  getAdminReferralsLedger, updateUserReferrer
 } from '@/app/actions/admin';
 import { 
   getAdminOptimizationSettings, 
@@ -30,7 +31,7 @@ import {
 } from 'lucide-react';
 import { getSignalMode, setSignalMode } from '@/app/actions/signal_mode';
 
-type AdminTab = 'users' | 'pipelines' | 'billing';
+type AdminTab = 'users' | 'pipelines' | 'billing' | 'referrals';
 
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -53,6 +54,11 @@ export default function AdminDashboardPage() {
   const [newPassword, setNewPassword] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // REFERRALS TAB STATE
+  const [referralsLedger, setReferralsLedger] = useState<any[]>([]);
+  const [editingReferrerUser, setEditingReferrerUser] = useState<any>(null);
+  const [newReferrerTraderId, setNewReferrerTraderId] = useState('');
 
   // PIPELINES TABS STATE
   const [signalMode, setSignalModeState] = useState<string>('SIMULATION');
@@ -165,6 +171,12 @@ export default function AdminDashboardPage() {
         setPaymentsTotal(ledgerRes.total || 0);
       }
 
+      // Load Referrals Ledger
+      const refLedgerRes = await getAdminReferralsLedger();
+      if (refLedgerRes.success && refLedgerRes.ledger) {
+        setReferralsLedger(refLedgerRes.ledger);
+      }
+
     } catch (err) {
       setAuthError(true);
     } finally {
@@ -223,6 +235,26 @@ export default function AdminDashboardPage() {
         await loadData();
       } else {
         setMessage({ type: 'error', text: res.error || 'Failed to toggle Premium status.' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Error occurred.' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUpdateReferrer = async (userId: string, referrerTraderId: string) => {
+    setActionLoading(userId);
+    setMessage(null);
+    try {
+      const res = await updateUserReferrer(userId, referrerTraderId || null);
+      if (res.success) {
+        setMessage({ type: 'success', text: 'User referrer updated successfully.' });
+        setEditingReferrerUser(null);
+        setNewReferrerTraderId('');
+        await loadData();
+      } else {
+        setMessage({ type: 'error', text: res.error || 'Failed to update referrer.' });
       }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Error occurred.' });
@@ -449,7 +481,8 @@ export default function AdminDashboardPage() {
           {[
             { id: 'users', label: 'TRADERS DATABASE', icon: Users },
             { id: 'pipelines', label: 'DATA PIPELINES', icon: Cpu },
-            { id: 'billing', label: 'SaaS BILLING & REVENUE', icon: CreditCard }
+            { id: 'billing', label: 'SaaS BILLING & REVENUE', icon: CreditCard },
+            { id: 'referrals', label: 'REFERRALS LEDGER', icon: Award }
           ].map(t => (
             <button
               key={t.id}
@@ -1086,6 +1119,195 @@ export default function AdminDashboardPage() {
                 </table>
               </div>
 
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: REFERRALS LEDGER */}
+        {adminTab === 'referrals' && (
+          <div className="space-y-6">
+            {/* Referrals Summary Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 animate-fadeIn">
+              <div className="glass-panel p-4 rounded-xl flex flex-col justify-between">
+                <div className="flex items-center justify-between text-slate-500 text-[9px] tracking-wider uppercase">
+                  <span>Total Referrers</span>
+                  <Users className="h-3.5 w-3.5 text-slate-500" />
+                </div>
+                <div className="text-xl font-bold mt-3 text-slate-200">
+                  {referralsLedger.length}
+                </div>
+              </div>
+              <div className="glass-panel p-4 rounded-xl flex flex-col justify-between">
+                <div className="flex items-center justify-between text-slate-500 text-[9px] tracking-wider uppercase">
+                  <span>Total Referred Friends</span>
+                  <UserPlus className="h-3.5 w-3.5 text-slate-500" />
+                </div>
+                <div className="text-xl font-bold mt-3 text-gold-vip font-extrabold">
+                  {referralsLedger.reduce((sum, r) => sum + r.total, 0)}
+                </div>
+              </div>
+              <div className="glass-panel p-4 rounded-xl flex flex-col justify-between">
+                <div className="flex items-center justify-between text-slate-500 text-[9px] tracking-wider uppercase">
+                  <span>Approved Friends</span>
+                  <UserCheck className="h-3.5 w-3.5 text-slate-500" />
+                </div>
+                <div className="text-xl font-bold mt-3 text-neon-green glow-text-green">
+                  {referralsLedger.reduce((sum, r) => sum + r.approved, 0)}
+                </div>
+              </div>
+              <div className="glass-panel p-4 rounded-xl flex flex-col justify-between">
+                <div className="flex items-center justify-between text-slate-500 text-[9px] tracking-wider uppercase">
+                  <span>Pending Friends</span>
+                  <Clock className="h-3.5 w-3.5 text-slate-500" />
+                </div>
+                <div className="text-xl font-bold mt-3 text-amber-400">
+                  {referralsLedger.reduce((sum, r) => sum + r.pending, 0)}
+                </div>
+              </div>
+            </div>
+
+            {/* Referrals ledger table */}
+            <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4">
+              <div className="flex items-center justify-between border-b border-glass-border/40 pb-3">
+                <div className="flex items-center gap-1.5">
+                  <Award className="h-4.5 w-4.5 text-gold-vip" />
+                  <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">Referrers & Invitations Tracker</span>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-lg border border-glass-border">
+                <table className="w-full text-xs font-mono text-slate-300">
+                  <thead>
+                    <tr className="border-b border-slate-900 bg-slate-950/80 text-slate-500 text-left">
+                      <th className="p-3 font-bold">Referrer Trader ID</th>
+                      <th className="p-3 font-bold">Referrer Username</th>
+                      <th className="p-3 font-bold text-center">Invited Count</th>
+                      <th className="p-3 font-bold text-center">Approved (Win-Rate)</th>
+                      <th className="p-3 font-bold text-center">Pending (Wait)</th>
+                      <th className="p-3 font-bold text-center">Free Premium Months</th>
+                      <th className="p-3 font-bold text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-900/40">
+                    {referralsLedger.map((r, idx) => {
+                      const rewardMonths = Math.floor(r.approved / 5);
+                      return (
+                        <React.Fragment key={idx}>
+                          <tr className="hover:bg-slate-900/20 transition-colors">
+                            <td className="p-3 font-bold text-slate-200">{r.trader_id}</td>
+                            <td className="p-3 text-slate-400">{r.username}</td>
+                            <td className="p-3 text-center text-slate-300">{r.total}</td>
+                            <td className="p-3 text-center text-emerald-400">{r.approved}</td>
+                            <td className="p-3 text-center text-amber-400">{r.pending}</td>
+                            <td className="p-3 text-center text-gold-vip font-extrabold">{rewardMonths} Month{rewardMonths !== 1 && 's'}</td>
+                            <td className="p-3 text-right">
+                              <button
+                                onClick={() => {
+                                  setExpandedAdminInvoice(expandedAdminInvoice === r.trader_id ? null : r.trader_id);
+                                }}
+                                className="px-2.5 py-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-glass-border text-slate-300 transition-colors"
+                              >
+                                {expandedAdminInvoice === r.trader_id ? 'Hide Details' : 'View Referrals'}
+                              </button>
+                            </td>
+                          </tr>
+                          {/* Expanded list of referred friends */}
+                          {expandedAdminInvoice === r.trader_id && (
+                            <tr>
+                              <td colSpan={7} className="bg-slate-950/60 p-4 border-t border-slate-900">
+                                <div className="space-y-3">
+                                  <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">referred traders list for {r.trader_id}</div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {r.referredUsers.map((friend: any, fIdx: number) => (
+                                      <div key={fIdx} className="glass-panel p-3 rounded-lg border border-slate-900/60 flex items-center justify-between">
+                                        <div className="space-y-1">
+                                          <div className="font-bold text-slate-300">{friend.trader_id} ({friend.username || 'N/A'})</div>
+                                          <div className="text-[10px] text-slate-500">Joined: {new Date(friend.created_at).toLocaleDateString()}</div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-bold ${
+                                            friend.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : friend.status === 'pending' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                          }`}>
+                                            {friend.status}
+                                          </span>
+                                          <button
+                                            onClick={() => {
+                                              setEditingReferrerUser(friend);
+                                              setNewReferrerTraderId(r.trader_id);
+                                            }}
+                                            className="px-2 py-1 rounded bg-slate-900 border border-glass-border hover:border-rose-500/30 text-[10px] text-slate-400 hover:text-rose-400 transition-all active:scale-95"
+                                          >
+                                            Modify Referrer
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+
+                    {referralsLedger.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center text-slate-500 uppercase">
+                          No active referrals found in the ledger.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Dialog: Modify Referrer */}
+        {editingReferrerUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-fadeIn">
+            <div className="w-full max-w-md glass-panel p-6 rounded-xl border border-glass-border space-y-4">
+              <div className="flex items-center gap-1.5 border-b border-glass-border/40 pb-3 text-gold-vip">
+                <Award className="h-5 w-5" />
+                <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-slate-200">Re-assign Referrer ID</h3>
+              </div>
+              <div className="text-[11px] font-sans text-slate-400 leading-relaxed">
+                You are manually editing the referrer relation for trader <strong className="text-slate-300">{editingReferrerUser.trader_id}</strong>. Set the Sponsor Trader ID below, or leave it blank to clear.
+              </div>
+              
+              <div className="space-y-1.5">
+                <label className="block text-[9px] font-mono font-bold tracking-wider text-slate-400 uppercase">
+                  Sponsor Trader ID
+                </label>
+                <input
+                  type="text"
+                  value={newReferrerTraderId}
+                  onChange={(e) => setNewReferrerTraderId(e.target.value)}
+                  placeholder="e.g. MAGNET001 (Leave blank to remove)"
+                  className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded font-mono text-xs text-slate-200 placeholder-slate-600 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => handleUpdateReferrer(editingReferrerUser.id, newReferrerTraderId)}
+                  disabled={actionLoading === editingReferrerUser.id}
+                  className="flex-1 py-2 rounded bg-gold-vip text-slate-950 font-bold text-xs font-mono uppercase tracking-wider hover:bg-yellow-400 transition-colors flex items-center justify-center gap-1"
+                >
+                  {actionLoading === editingReferrerUser.id ? <Loader className="h-3 w-3 animate-spin text-slate-950" /> : 'Confirm Save'}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingReferrerUser(null);
+                    setNewReferrerTraderId('');
+                  }}
+                  className="flex-1 py-2 rounded bg-slate-900 border border-glass-border text-slate-400 text-xs font-mono font-bold hover:text-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}
