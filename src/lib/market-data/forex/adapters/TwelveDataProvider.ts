@@ -149,7 +149,11 @@ export class TwelveDataProvider extends BaseProvider {
 
   public async fetchHistoricCandles(pair: string, limit: number): Promise<NormalizedCandle[]> {
     if (!this.apiKey) {
-      console.warn("[TwelveData] Credentials missing, returning empty historic backfill.");
+      console.warn(`[TwelveData Error] Credentials missing.
+Provider: TwelveData
+Pair: ${pair}
+Interval: 1min
+Reason: API Key not set inside environment variables.`);
       return [];
     }
 
@@ -178,11 +182,36 @@ export class TwelveDataProvider extends BaseProvider {
               }));
               resolve(candles.reverse());
               return;
+            } else {
+              console.error(`[TwelveData Error] API returned non-candle payload.
+Provider: TwelveData
+Pair: ${pair}
+Interval: 1min
+Request: GET https://${options.hostname}${options.path.split('&apikey=')[0]} (API Key hidden)
+Response Status: ${res.statusCode}
+Response Body: ${data}
+Reason: ${json.message || json.status || 'Unknown API Error'}`);
             }
-          } catch {}
+          } catch (err: any) {
+            console.error(`[TwelveData Error] Failed to parse JSON response.
+Provider: TwelveData
+Pair: ${pair}
+Interval: 1min
+Request: GET https://${options.hostname}${options.path.split('&apikey=')[0]} (API Key hidden)
+Response Status: ${res.statusCode}
+Response Body: ${data}
+Error: ${err.message}`);
+          }
           resolve([]);
         });
-      }).on("error", () => resolve([]));
+      }).on("error", (err) => {
+        console.error(`[TwelveData Error] HTTPS request execution failed.
+Provider: TwelveData
+Pair: ${pair}
+Interval: 1min
+Error: ${err.message}`);
+        resolve([]);
+      });
     });
   }
 
