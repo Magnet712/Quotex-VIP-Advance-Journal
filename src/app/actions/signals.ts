@@ -21,6 +21,7 @@ import { revalidatePath }  from 'next/cache';
 import { evaluateSignal } from '@/lib/market-data/core/SignalEngine';
 import { ProviderManager } from '@/lib/market-data/core/ProviderManager';
 import { TwelveDataProvider } from '@/lib/market-data/forex/adapters/TwelveDataProvider';
+import { YahooProvider } from '@/lib/market-data/forex/adapters/YahooProvider';
 import { CandleCache } from '@/lib/market-data/core/CandleCache';
 import { NormalizedCandle } from '@/lib/market-data/types';
 import { getUserAccessState } from '@/app/actions/admin_optimization';
@@ -650,9 +651,19 @@ async function getProviderManager() {
   
   const twelvedata = new TwelveDataProvider();
   globalManager.registerProvider(twelvedata);
-  globalManager.setActiveProvider(twelvedata.id);
   
-  await twelvedata.connect().catch((e: Error) => console.error("[Server Action] TwelveData connect error:", e.message));
+  const yahoo = new YahooProvider();
+  globalManager.registerProvider(yahoo);
+  
+  if (!process.env.TWELVEDATA_API_KEY) {
+    console.warn("[Server Action] TwelveData API key is missing. Defaulting active provider to Yahoo Finance.");
+    globalManager.setActiveProvider(yahoo.id);
+    await yahoo.connect().catch((e: Error) => console.error("[Server Action] Yahoo connect error:", e.message));
+  } else {
+    globalManager.setActiveProvider(twelvedata.id);
+    await twelvedata.connect().catch((e: Error) => console.error("[Server Action] TwelveData connect error:", e.message));
+  }
+  
   return globalManager;
 }
 
@@ -1075,7 +1086,17 @@ export async function settleManualSignal(signalId: string) {
 
     // 2. Fetch fresh price
     const manager = await getProviderManager();
-    const candles = await manager.fetchHistoricCandles(audit.pair, 2);
+    let candles = await manager.fetchHistoricCandles(audit.pair, 2);
+    if (!candles || candles.length === 0) {
+      console.warn(`[settleManualSignal] Active provider returned no candles for ${audit.pair}. Falling back to Yahoo Finance.`);
+      try {
+        const yahooProvider = new YahooProvider();
+        candles = await yahooProvider.fetchHistoricCandles(audit.pair, 2);
+      } catch (e: any) {
+        console.error(`[settleManualSignal] Yahoo fallback fetch failed:`, e.message);
+      }
+    }
+
     if (!candles || candles.length === 0) {
       return { success: false, error: 'Failed to fetch outcome candle' };
     }

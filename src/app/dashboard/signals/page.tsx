@@ -411,9 +411,7 @@ export default function SignalsPage() {
   const [scanLoading, setScanLoading] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult['result'] | null>(null);
   
-  // Manual Audit timeline and countdown states
-  const [manualAudits, setManualAudits] = useState<any[]>([]);
-  const [manualAuditsLoading, setManualAuditsLoading] = useState(false);
+  // Manual Audit countdown state
   const [clockTime, setClockTime] = useState(() => Date.now());
   const settlingIdsRef = useRef<Set<string>>(new Set());
 
@@ -560,11 +558,14 @@ export default function SignalsPage() {
 
   const refreshStats = useCallback(async () => {
     try {
+      const isLiveMarket = subTab === 'live_market';
       const [perfRes, livePerfRes, settingsRes, timelineRes] = await Promise.all([
         getSignalPerformance('live_otc'),
         getSignalPerformance('live_market'),
         getPublicOptimizationSettings(),
-        getSignalHistory({ page: 1, page_size: 15 })
+        isLiveMarket 
+          ? getManualSignalAudits() 
+          : getSignalHistory({ page: 1, page_size: 15 })
       ]);
       if (perfRes.success && perfRes.stats) {
         const win = perfRes.stats.accuracy > 0 ? perfRes.stats.accuracy : 84.5;
@@ -578,13 +579,27 @@ export default function SignalsPage() {
       if (settingsRes.success && settingsRes.settings) {
         setOptSettings(settingsRes.settings);
       }
-      if (timelineRes.success && timelineRes.signals) {
-        setTimelineSignals(timelineRes.signals);
+      if (timelineRes.success) {
+        if (isLiveMarket && 'audits' in timelineRes) {
+          const mapped = (timelineRes.audits || []).map((a: any) => ({
+            id: a.id,
+            pair: a.pair,
+            direction: a.direction,
+            entry_time: a.entry_time,
+            expiry_time: a.expiry_time,
+            confidence: a.confidence,
+            result: a.status,
+            source: a.provider
+          }));
+          setTimelineSignals(mapped);
+        } else if ('signals' in timelineRes) {
+          setTimelineSignals(timelineRes.signals || []);
+        }
       }
     } catch (err) {
       console.error('Error refreshing stats:', err);
     }
-  }, []);
+  }, [subTab]);
 
   // ─── Manual Scanning Live Forex Handlers & Effects ──────────────────────────
   useEffect(() => {
@@ -648,22 +663,11 @@ export default function SignalsPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const loadManualAudits = async () => {
-    try {
-      const res = await getManualSignalAudits();
-      if (res.success && res.audits) {
-        setManualAudits(res.audits);
-      }
-    } catch (err) {
-      console.error("Failed loading manual audits:", err);
-    }
-  };
-
   const settleExpiredSignal = async (id: string) => {
     try {
       const res = await settleManualSignal(id);
       if (res.success) {
-        await loadManualAudits();
+        void refreshStats();
       }
     } catch (err) {
       console.error(`Failed to settle manual signal ${id}:`, err);
@@ -676,8 +680,8 @@ export default function SignalsPage() {
       setClockTime(now);
 
       if (subTab === 'live_market') {
-        manualAudits.forEach(sig => {
-          if (sig.status === 'PENDING') {
+        timelineSignals.forEach(sig => {
+          if (sig.result === 'PENDING') {
             const expiresMs = new Date(sig.expiry_time).getTime();
             if (now >= expiresMs && !settlingIdsRef.current.has(sig.id)) {
               settlingIdsRef.current.add(sig.id);
@@ -689,13 +693,11 @@ export default function SignalsPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [manualAudits, subTab]);
+  }, [timelineSignals, subTab]);
 
   useEffect(() => {
-    if (subTab === 'live_market') {
-      void loadManualAudits();
-    }
-  }, [subTab]);
+    void refreshStats();
+  }, [subTab, refreshStats]);
 
   const handleScanLiveMarket = async (pairToScan = selectedLivePair) => {
     if (scanLoading) return;
@@ -728,7 +730,7 @@ export default function SignalsPage() {
           provider: res.result.dataSource
         }).then((saved) => {
           if (saved.success) {
-            void loadManualAudits();
+            void refreshStats();
           }
         });
 
@@ -1459,139 +1461,6 @@ export default function SignalsPage() {
                     </div>
                   </div>
                 )}
-
-                {/* Personal Signal Audit Timeline Panel */}
-                <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4 font-mono text-xs text-left">
-                  <div className="flex items-center justify-between border-b border-glass-border/30 pb-3">
-                    <span className="text-[10px] text-slate-200 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                      <Signal className="h-4 w-4 text-purple-400" />
-                      Personal Signal Audit Timeline
-                    </span>
-                    <span className="text-[8px] text-slate-500 font-sans uppercase font-bold text-right">Newest First</span>
-                  </div>
-
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1 scrollbar-thin">
-                    {manualAudits.map((sig) => {
-                      const isCall = sig.direction === 'CALL';
-                      const isPut = sig.direction === 'PUT';
-                      const isWait = sig.direction === 'WAIT';
-
-                      const entryLocalStr = (() => {
-                        try {
-                          return new Intl.DateTimeFormat("en-IN", {
-                            timeZone: "Asia/Kolkata",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                            hour12: true,
-                          }).format(new Date(sig.entry_time));
-                        } catch {
-                          return 'N/A';
-                        }
-                      })();
-
-                      const expiryLocalStr = (() => {
-                        try {
-                          return new Intl.DateTimeFormat("en-IN", {
-                            timeZone: "Asia/Kolkata",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                            hour12: true,
-                          }).format(new Date(sig.expiry_time));
-                        } catch {
-                          return 'N/A';
-                        }
-                      })();
-
-                      // Calculate remaining countdown
-                      const expiresMs = new Date(sig.expiry_time).getTime();
-                      const diffSec = Math.max(0, Math.ceil((expiresMs - clockTime) / 1000));
-                      const min = Math.floor(diffSec / 60);
-                      const sec = diffSec % 60;
-                      const countdownStr = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')} remaining`;
-
-                      return (
-                        <div
-                          key={sig.id}
-                          className={`p-3.5 rounded-lg border flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-[#02050b]/60 ${
-                            isCall
-                              ? 'border-neon-green/20 hover:border-neon-green/30'
-                              : isPut
-                              ? 'border-rose-500/20 hover:border-rose-500/30'
-                              : 'border-glass-border/30 hover:border-slate-800'
-                          } transition-all`}
-                        >
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-slate-100 text-[11px]">{sig.pair}</span>
-                              <span className={`px-1.5 py-0.5 rounded text-[8px] uppercase font-bold tracking-wider ${
-                                isCall
-                                  ? 'bg-neon-green/10 text-neon-green border border-neon-green/10'
-                                  : isPut
-                                  ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10'
-                                  : 'bg-slate-900 text-slate-500 border border-slate-800'
-                              }`}>
-                                {sig.direction}
-                              </span>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[9px] text-slate-500">
-                              <div>ENTRY: <span className="text-slate-300">{entryLocalStr}</span></div>
-                              <div>EXPIRY: <span className="text-slate-300">{expiryLocalStr}</span></div>
-                              <div>ENTRY PRICE: <span className="text-slate-300">{sig.entry_price}</span></div>
-                              <div>
-                                EXIT PRICE:{" "}
-                                <span className="text-slate-300">
-                                  {sig.status === 'PENDING' ? 'Pending' : sig.expiry_price ?? 'N/A'}
-                                </span>
-                              </div>
-                            </div>
-
-                            {sig.status === 'PENDING' && (
-                              <div className="text-[9px] text-amber-400 font-bold flex items-center gap-1 mt-1 animate-pulse">
-                                <Clock className="h-3 w-3" />
-                                Waiting for candle close... {countdownStr}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex sm:flex-col items-start sm:items-end justify-between sm:justify-center gap-2 border-t sm:border-t-0 border-slate-900/60 pt-2 sm:pt-0">
-                            <div className="space-y-0.5 text-[8px] text-slate-600 text-left sm:text-right font-medium">
-                              <div>CONFIDENCE: <span className="text-slate-400">{isWait ? 'N/A' : `${sig.confidence}%`}</span></div>
-                              <div>PROVIDER: <span className="text-slate-400">{sig.provider}</span></div>
-                            </div>
-
-                            <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-widest border uppercase inline-flex items-center gap-1 ${
-                              sig.status === 'WIN'
-                                ? 'text-neon-green border-neon-green/20 bg-neon-green/5'
-                                : sig.status === 'LOSS'
-                                ? 'text-rose-400 border-rose-500/20 bg-rose-500/5'
-                                : sig.status === 'REFUND'
-                                ? 'text-slate-400 border-slate-800 bg-slate-900/40'
-                                : sig.status === 'NO TRADE'
-                                ? 'text-slate-500 border-slate-800 bg-slate-900/20'
-                                : 'text-amber-400 border-amber-500/20 bg-amber-500/5 animate-pulse'
-                            }`}>
-                              {sig.status === 'WIN' && 'WIN'}
-                              {sig.status === 'LOSS' && 'LOSS'}
-                              {sig.status === 'REFUND' && 'REFUND'}
-                              {sig.status === 'NO TRADE' && 'NO TRADE'}
-                              {sig.status === 'PENDING' && 'PENDING'}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {manualAudits.length === 0 && (
-                      <div className="p-8 text-center text-slate-600 font-mono text-[9px] uppercase leading-relaxed border border-dashed border-glass-border/40 rounded-xl">
-                        No manually verified signals yet.<br />
-                        <span className="text-slate-700 text-[8px]">Run your first Live Market Analysis to begin your personal audit history.</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             )}
 
@@ -1639,27 +1508,73 @@ export default function SignalsPage() {
                 <div className={!hasAccess ? 'blur-[4.5px] select-none pointer-events-none space-y-3.5' : 'space-y-3.5'}>
                   {timelineSignals.map((sig) => {
                     const isCall = sig.direction === 'CALL';
-                    const timestampStr = new Date(sig.entry_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const isPut = sig.direction === 'PUT';
                     
+                    // Display Local Time in Asia/Kolkata timezone
+                    const timestampStr = (() => {
+                      try {
+                        return new Intl.DateTimeFormat("en-IN", {
+                          timeZone: "Asia/Kolkata",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          hour12: true,
+                        }).format(new Date(sig.entry_time));
+                      } catch {
+                        return 'N/A';
+                      }
+                    })();
+
+                    // Calculate remaining countdown
+                    const expiresMs = new Date(sig.expiry_time).getTime();
+                    const diffSec = Math.max(0, Math.ceil((expiresMs - clockTime) / 1000));
+                    const min = Math.floor(diffSec / 60);
+                    const sec = diffSec % 60;
+                    const countdownStr = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')} remaining`;
+
                     return (
                       <div key={sig.id} className="p-3 rounded-lg bg-[#02050b]/80 border border-glass-border/40 flex items-center justify-between gap-3 text-left">
                         <div className="flex items-center gap-2">
-                          <div className={`p-1.5 rounded-full ${isCall ? 'bg-neon-green/10 text-neon-green' : 'bg-rose-500/10 text-rose-400'}`}>
-                            {isCall ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          <div className={`p-1.5 rounded-full ${
+                            isCall 
+                              ? 'bg-neon-green/10 text-neon-green' 
+                              : isPut 
+                              ? 'bg-rose-500/10 text-rose-400' 
+                              : 'bg-slate-900 text-slate-500'
+                          }`}>
+                            {isCall ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : isPut ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <Activity className="h-4 w-4 text-slate-500" />
+                            )}
                           </div>
                           <div className="font-mono text-xs">
                             <div className="font-bold text-slate-200">{sig.pair}</div>
-                            <div className="text-[9px] text-slate-500 mt-0.5">{timestampStr} · {sig.source.toUpperCase()}</div>
+                            <div className="text-[9px] text-slate-500 mt-0.5">
+                              {timestampStr} · {sig.source.toUpperCase()}
+                            </div>
+                            {sig.result === 'PENDING' && (
+                              <div className="text-[8px] text-amber-400 font-bold mt-1 animate-pulse flex items-center gap-0.5">
+                                <Clock className="h-2.5 w-2.5" />
+                                {countdownStr}
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        <div className="text-right font-mono text-[10px]">
+                        <div className="text-right font-mono text-[10px] flex flex-col items-end gap-1">
                           <span className={`px-2 py-0.5 rounded border font-bold uppercase ${
                             sig.result === 'WIN' 
                               ? 'text-neon-green border-neon-green/30 bg-neon-green/5' 
                               : sig.result === 'LOSS'
                               ? 'text-rose-400 border-rose-500/30 bg-rose-500/5'
-                              : 'text-slate-500 border-slate-700 bg-slate-900/30'
+                              : sig.result === 'REFUND'
+                              ? 'text-slate-400 border-slate-800 bg-slate-900/40'
+                              : sig.result === 'NO TRADE'
+                              ? 'text-slate-500 border-slate-800 bg-slate-900/20'
+                              : 'text-amber-400 border-amber-500/20 bg-amber-500/5 animate-pulse'
                           }`}>
                             {sig.result}
                           </span>
