@@ -737,6 +737,8 @@ export interface ScanResult {
       lowerWick: number;
     };
     lastCandleTime: string;
+    providerTimestamp?: string;
+    providerTimezone?: string;
     analysisGeneratedTime: string;
     cacheExpiresTime: string;
     marketBias: string;
@@ -749,6 +751,7 @@ export interface ScanResult {
     dataSource: string;
     cacheStatus: "Fresh" | "Cached";
     cacheAgeSeconds: number;
+    serverTime: string;
   };
 }
 
@@ -888,14 +891,15 @@ export async function scanLiveMarketAsset(pair: string): Promise<ScanResult> {
     // Preload history into CandleCache for SignalEngine consumption
     CandleCache.preloadHistory(pair, candles);
 
+    const lastCandle = candles[candles.length - 1];
+    const lastCandleTime = lastCandle?.timestamp ? new Date(lastCandle.timestamp) : new Date();
+    
+    // Aligned with the market provider's latest completed candle
+    const entryTime = new Date(lastCandleTime.getTime() + 60 * 1000);
+    const expiryTime = new Date(entryTime.getTime() + 60 * 1000);
+
     // Evaluate signal using the SignalEngine (which reads from CandleCache)
     const engineRes = evaluateSignal(pair);
-    const entryTime = new Date();
-    const expiryTime = new Date(entryTime.getTime() + 60 * 1000); // 1-minute expiration
-
-    const lastCandle = candles[candles.length - 1];
-    const nextCandleTime = Math.ceil(now / 60000) * 60000 + 5000;
-    const expiresAt = nextCandleTime > now ? nextCandleTime : now + 60000;
 
     // Compile Rich AI Descriptive Analysis
     let marketBias = "Neutral / Range";
@@ -909,6 +913,65 @@ export async function scanLiveMarketAsset(pair: string): Promise<ScanResult> {
       recommendationText = "Wait for current candle to close. Enter next candle (PUT).";
     }
 
+    const formatUTC = (d: Date) => {
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: "UTC",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).format(d) + " UTC";
+    };
+
+    const formatKolkata = (d: Date) => {
+      return new Intl.DateTimeFormat("en-IN", {
+        timeZone: "Asia/Kolkata",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).format(d);
+    };
+
+    const formatCountdown = (diffSec: number) => {
+      const min = Math.floor(diffSec / 60);
+      const sec = diffSec % 60;
+      return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    };
+
+    const providerTimestamp = lastCandle?.providerTimestamp || lastCandleTime.toISOString().replace("T", " ").substring(0, 19);
+    const providerTimezone = lastCandle?.providerTimezone || "UTC";
+
+    const diffSecServer = Math.max(0, Math.ceil((expiryTime.getTime() - Date.now()) / 1000));
+
+    console.log(`
+============================================================
+[MANUAL SCAN LOG]
+Latest Closed Candle:
+${formatUTC(lastCandleTime)}
+↓
+${formatKolkata(lastCandleTime)} Asia/Kolkata
+Entry Candle:
+${formatKolkata(entryTime)}
+Expiry:
+${formatKolkata(expiryTime)}
+Current Server Time:
+${formatUTC(new Date())}
+Countdown:
+${formatCountdown(diffSecServer)}
+
+[PROVIDER TIME ALIGNMENT CHECK]
+Provider Timestamp:
+${providerTimestamp}
+Provider Timezone:
+${providerTimezone}
+Normalized UTC:
+${lastCandleTime.toISOString().replace(".000", "")}
+Displayed Asia/Kolkata:
+${formatKolkata(lastCandleTime)}
+============================================================
+`);
+
     const scanResultData = {
       direction: engineRes.direction,
       confidence: engineRes.confidence,
@@ -921,9 +984,11 @@ export async function scanLiveMarketAsset(pair: string): Promise<ScanResult> {
       recommendation: engineRes.recommendation,
       reasons: engineRes.reasons,
       indicators: engineRes.indicators,
-      lastCandleTime: lastCandle?.timestamp ? new Date(lastCandle.timestamp).toISOString() : entryTime.toISOString(),
-      analysisGeneratedTime: entryTime.toISOString(),
-      cacheExpiresTime: new Date(expiresAt).toISOString(),
+      lastCandleTime: lastCandleTime.toISOString(),
+      providerTimestamp,
+      providerTimezone,
+      analysisGeneratedTime: new Date().toISOString(),
+      cacheExpiresTime: expiryTime.toISOString(),
       marketBias,
       recommendationText,
       analysisEngine: "v1.3",
@@ -933,14 +998,15 @@ export async function scanLiveMarketAsset(pair: string): Promise<ScanResult> {
       trendStrength: engineRes.qualityScore,
       dataSource: "Twelve Data",
       cacheStatus: "Fresh" as const,
-      cacheAgeSeconds: 0
+      cacheAgeSeconds: 0,
+      serverTime: new Date().toISOString()
     };
 
     // Cache the full indicators analysis
     globalScanCache.set(pair, {
       pair,
       result: scanResultData,
-      expiresAt
+      expiresAt: expiryTime.getTime()
     });
 
     globalPairLastScan.set(pair, now);
@@ -1025,9 +1091,10 @@ export async function saveManualSignal(input: SaveManualSignalInput) {
 
     if (error) throw error;
     return { success: true, id: data?.id };
-  } catch (err: any) {
-    console.error('[saveManualSignal] Error saving signal:', err.message);
-    return { success: false, error: err.message };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[saveManualSignal] Error saving signal:', msg);
+    return { success: false, error: msg };
   }
 }
 
@@ -1047,9 +1114,10 @@ export async function getManualSignalAudits() {
 
     if (error) throw error;
     return { success: true, audits: data || [] };
-  } catch (err: any) {
-    console.error('[getManualSignalAudits] Error fetching signal audits:', err.message);
-    return { success: false, error: err.message, audits: [] };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[getManualSignalAudits] Error fetching signal audits:', msg);
+    return { success: false, error: msg, audits: [] };
   }
 }
 
@@ -1092,8 +1160,9 @@ export async function settleManualSignal(signalId: string) {
       try {
         const yahooProvider = new YahooProvider();
         candles = await yahooProvider.fetchHistoricCandles(audit.pair, 2);
-      } catch (e: any) {
-        console.error(`[settleManualSignal] Yahoo fallback fetch failed:`, e.message);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`[settleManualSignal] Yahoo fallback fetch failed:`, msg);
       }
     }
 
@@ -1131,9 +1200,10 @@ export async function settleManualSignal(signalId: string) {
     if (updateErr) throw updateErr;
 
     return { success: true, status, exitPrice };
-  } catch (err: any) {
-    console.error('[settleManualSignal] Error settling manual signal:', err.message);
-    return { success: false, error: err.message };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[settleManualSignal] Error settling manual signal:', msg);
+    return { success: false, error: msg };
   }
 }
 

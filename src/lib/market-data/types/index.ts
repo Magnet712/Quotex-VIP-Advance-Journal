@@ -14,6 +14,8 @@ export interface NormalizedCandle {
   close: number;
   volume: number;
   cvd: number;       // Cumulative Volume Delta calculated by accumulator
+  providerTimestamp?: string;
+  providerTimezone?: string;
 }
 
 export interface ProviderMetrics {

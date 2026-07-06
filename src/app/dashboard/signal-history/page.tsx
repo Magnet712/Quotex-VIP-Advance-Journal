@@ -57,6 +57,7 @@ export default function SignalHistoryPage() {
   const [total,      setTotal]      = useState(0);
   const [pairs,      setPairs]      = useState<string[]>([]);
   const [loading,    setLoading]    = useState(true);
+  const [accessLoading, setAccessLoading] = useState(true);
   const [signalMode, setSignalMode] = useState<string>('SIMULATION');
   const [userAccess, setUserAccess] = useState<any>({
     vipAccess: false,
@@ -65,7 +66,7 @@ export default function SignalHistoryPage() {
   });
   const [optSettings, setOptSettings] = useState<Record<string, string>>({});
 
-  // Load user access and settings on mount
+  // Load user access and settings on mount — resolved before paywall is shown
   useEffect(() => {
     Promise.all([
       getUserAccessState(),
@@ -77,6 +78,8 @@ export default function SignalHistoryPage() {
       if (settingsRes.success && settingsRes.settings) {
         setOptSettings(settingsRes.settings);
       }
+    }).finally(() => {
+      setAccessLoading(false);
     });
   }, []);
 
@@ -198,8 +201,13 @@ export default function SignalHistoryPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
         
-        {/* Dynamic Gating Overlay */}
-        {!userAccess.isAdmin && !canAccess('signal-history', { vip_access: userAccess.vipAccess, premium_access: userAccess.premiumAccess, status: userAccess.status }, optSettings.signal_visibility) ? (
+        {/* Dynamic Gating Overlay — accessLoading prevents premium flash */}
+        {accessLoading ? (
+          <div className="flex flex-col items-center justify-center min-h-[300px] space-y-4">
+            <div className="h-6 w-6 border-2 border-purple-500/40 border-t-purple-400 rounded-full animate-spin" />
+            <span className="text-[10px] font-mono text-slate-600 uppercase tracking-widest">VERIFYING ACCESS...</span>
+          </div>
+        ) : !userAccess.isAdmin && !canAccess('signal-history', { vip_access: userAccess.vipAccess, premium_access: userAccess.premiumAccess, status: userAccess.status }, optSettings.signal_visibility) ? (
           <LockedFeature feature="signal-history" />
         ) : (
           <>

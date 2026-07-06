@@ -171,15 +171,28 @@ Reason: API Key not set inside environment variables.`);
           try {
             const json = JSON.parse(data);
             if (json.values && Array.isArray(json.values)) {
-              const candles = json.values.map((v: any) => ({
-                timestamp: new Date(v.datetime + " UTC").toISOString(),
-                open: parseFloat(v.open),
-                high: parseFloat(v.high),
-                low: parseFloat(v.low),
-                close: parseFloat(v.close),
-                volume: parseInt(v.volume || "0"),
-                cvd: 0
-              }));
+              const exchangeTimezone = json.meta?.exchange_timezone || "UTC";
+              const isConfirmedUTC = exchangeTimezone.toUpperCase() === "UTC";
+              const candles = json.values.map((v: { datetime: string; open: string; high: string; low: string; close: string; volume?: string }) => {
+                let timestamp = "";
+                if (isConfirmedUTC) {
+                  const dtStr = v.datetime.includes("T") ? v.datetime : v.datetime.replace(" ", "T");
+                  timestamp = new Date(dtStr.endsWith("Z") ? dtStr : (dtStr + "Z")).toISOString();
+                } else {
+                  timestamp = new Date(v.datetime + " " + exchangeTimezone).toISOString();
+                }
+                return {
+                  timestamp,
+                  open: parseFloat(v.open),
+                  high: parseFloat(v.high),
+                  low: parseFloat(v.low),
+                  close: parseFloat(v.close),
+                  volume: parseInt(v.volume || "0"),
+                  cvd: 0,
+                  providerTimestamp: v.datetime,
+                  providerTimezone: exchangeTimezone
+                };
+              });
               resolve(candles.reverse());
               return;
             } else {
@@ -249,31 +262,57 @@ Error: ${err.message}`);
         res.on("end", () => {
           try {
             const json = JSON.parse(data);
-            pairs.forEach(pair => {
+             pairs.forEach(pair => {
               const item = json[pair];
               if (item && item.values && Array.isArray(item.values)) {
-                const candles = item.values.map((v: any) => ({
-                  timestamp: new Date(v.datetime + " UTC").toISOString(),
-                  open: parseFloat(v.open),
-                  high: parseFloat(v.high),
-                  low: parseFloat(v.low),
-                  close: parseFloat(v.close),
-                  volume: parseInt(v.volume || "0"),
-                  cvd: 0
-                }));
-                results.set(pair, candles.reverse());
-              } else {
-                // Check if symbol matches single pair format without the symbol key (in case API returns single-object representation)
-                if (pairs.length === 1 && json.values && Array.isArray(json.values)) {
-                  const candles = json.values.map((v: any) => ({
-                    timestamp: new Date(v.datetime + " UTC").toISOString(),
+                const exchangeTimezone = item.meta?.exchange_timezone || "UTC";
+                const isConfirmedUTC = exchangeTimezone.toUpperCase() === "UTC";
+                const candles = item.values.map((v: { datetime: string; open: string; high: string; low: string; close: string; volume?: string }) => {
+                  let timestamp = "";
+                  if (isConfirmedUTC) {
+                    const dtStr = v.datetime.includes("T") ? v.datetime : v.datetime.replace(" ", "T");
+                    timestamp = new Date(dtStr.endsWith("Z") ? dtStr : (dtStr + "Z")).toISOString();
+                  } else {
+                    timestamp = new Date(v.datetime + " " + exchangeTimezone).toISOString();
+                  }
+                  return {
+                    timestamp,
                     open: parseFloat(v.open),
                     high: parseFloat(v.high),
                     low: parseFloat(v.low),
                     close: parseFloat(v.close),
                     volume: parseInt(v.volume || "0"),
-                    cvd: 0
-                  }));
+                    cvd: 0,
+                    providerTimestamp: v.datetime,
+                    providerTimezone: exchangeTimezone
+                  };
+                });
+                results.set(pair, candles.reverse());
+              } else {
+                // Check if symbol matches single pair format without the symbol key (in case API returns single-object representation)
+                if (pairs.length === 1 && json.values && Array.isArray(json.values)) {
+                  const exchangeTimezone = json.meta?.exchange_timezone || "UTC";
+                  const isConfirmedUTC = exchangeTimezone.toUpperCase() === "UTC";
+                  const candles = json.values.map((v: { datetime: string; open: string; high: string; low: string; close: string; volume?: string }) => {
+                    let timestamp = "";
+                    if (isConfirmedUTC) {
+                      const dtStr = v.datetime.includes("T") ? v.datetime : v.datetime.replace(" ", "T");
+                      timestamp = new Date(dtStr.endsWith("Z") ? dtStr : (dtStr + "Z")).toISOString();
+                    } else {
+                      timestamp = new Date(v.datetime + " " + exchangeTimezone).toISOString();
+                    }
+                    return {
+                      timestamp,
+                      open: parseFloat(v.open),
+                      high: parseFloat(v.high),
+                      low: parseFloat(v.low),
+                      close: parseFloat(v.close),
+                      volume: parseInt(v.volume || "0"),
+                      cvd: 0,
+                      providerTimestamp: v.datetime,
+                      providerTimezone: exchangeTimezone
+                    };
+                  });
                   results.set(pair, candles.reverse());
                 } else {
                   results.set(pair, []);
