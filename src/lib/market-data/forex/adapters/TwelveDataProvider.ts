@@ -160,7 +160,7 @@ Reason: API Key not set inside environment variables.`);
     return new Promise((resolve) => {
       const options = {
         hostname: "api.twelvedata.com",
-        path: `/time_series?symbol=${pair}&interval=1min&outputsize=${limit}&apikey=${this.apiKey}`,
+        path: `/time_series?symbol=${pair}&interval=1min&outputsize=${limit}&timezone=UTC&apikey=${this.apiKey}`,
         method: "GET"
       };
 
@@ -239,7 +239,7 @@ Error: ${err.message}`);
       const symbols = pairs.join(",");
       const options = {
         hostname: "api.twelvedata.com",
-        path: `/time_series?symbol=${symbols}&interval=1min&outputsize=${limit}&apikey=${this.apiKey}`,
+        path: `/time_series?symbol=${symbols}&interval=1min&outputsize=${limit}&timezone=UTC&apikey=${this.apiKey}`,
         method: "GET"
       };
 
@@ -464,7 +464,7 @@ Error: ${err.message}`);
     // Optimization: query time_series for the single latest completed 1-minute closed candle
     const options = {
       hostname: "api.twelvedata.com",
-      path: `/time_series?symbol=${symbols}&interval=1min&outputsize=1&apikey=${this.apiKey}`,
+      path: `/time_series?symbol=${symbols}&interval=1min&outputsize=1&timezone=UTC&apikey=${this.apiKey}`,
       method: "GET"
     };
 
