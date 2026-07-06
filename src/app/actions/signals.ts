@@ -972,3 +972,147 @@ export async function getScannerStats(): Promise<{ success: boolean; stats?: Rec
   }
 }
 
+export interface SaveManualSignalInput {
+  pair:            string;
+  direction:       'CALL' | 'PUT' | 'WAIT';
+  entry_price:     number;
+  entry_time:      string;
+  expiry_time:     string;
+  confidence:      number;
+  market_bias:     string;
+  signal_strength: number;
+  provider:        string;
+}
+
+export async function saveManualSignal(input: SaveManualSignalInput) {
+  const { ok, userId } = await checkApproved();
+  if (!ok || !userId) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    const supabase = await createClient();
+    const isWait = input.direction === 'WAIT';
+    
+    const { data, error } = await supabase
+      .from('manual_signal_audits')
+      .insert({
+        user_id:         userId,
+        pair:            input.pair,
+        direction:       input.direction,
+        entry_price:     input.entry_price,
+        entry_time:      input.entry_time,
+        expiry_time:     input.expiry_time,
+        confidence:      input.confidence,
+        market_bias:     input.market_bias,
+        signal_strength: Math.round(input.signal_strength),
+        provider:        input.provider,
+        status:          isWait ? 'NO TRADE' : 'PENDING'
+      })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    return { success: true, id: data?.id };
+  } catch (err: any) {
+    console.error('[saveManualSignal] Error saving signal:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getManualSignalAudits() {
+  const { ok, userId } = await checkApproved();
+  if (!ok || !userId) {
+    return { success: false, error: 'Unauthorized', audits: [] };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('manual_signal_audits')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return { success: true, audits: data || [] };
+  } catch (err: any) {
+    console.error('[getManualSignalAudits] Error fetching signal audits:', err.message);
+    return { success: false, error: err.message, audits: [] };
+  }
+}
+
+export async function settleManualSignal(signalId: string) {
+  const { ok, userId } = await checkApproved();
+  if (!ok || !userId) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  try {
+    const supabase = await createClient();
+
+    // 1. Fetch manual signal audit
+    const { data: audit, error: fetchErr } = await supabase
+      .from('manual_signal_audits')
+      .select('*')
+      .eq('id', signalId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchErr || !audit) {
+      return { success: false, error: 'Manual signal record not found' };
+    }
+
+    if (audit.status !== 'PENDING') {
+      return { success: true, status: audit.status, skipped: true };
+    }
+
+    // Check if it's already expired
+    const expiryMs = new Date(audit.expiry_time).getTime();
+    if (Date.now() < expiryMs) {
+      return { success: false, error: 'Signal has not expired yet' };
+    }
+
+    // 2. Fetch fresh price
+    const manager = await getProviderManager();
+    const candles = await manager.fetchHistoricCandles(audit.pair, 2);
+    if (!candles || candles.length === 0) {
+      return { success: false, error: 'Failed to fetch outcome candle' };
+    }
+
+    const lastCandle = candles[candles.length - 1];
+    const exitPrice = lastCandle.close;
+
+    // 3. Compute win/loss outcome
+    let status: 'WIN' | 'LOSS' | 'REFUND' = 'REFUND';
+    const entry = Number(audit.entry_price);
+    const exit = Number(exitPrice);
+
+    if (audit.direction === 'CALL') {
+      if (exit > entry) status = 'WIN';
+      else if (exit < entry) status = 'LOSS';
+      else status = 'REFUND';
+    } else if (audit.direction === 'PUT') {
+      if (exit < entry) status = 'WIN';
+      else if (exit > entry) status = 'LOSS';
+      else status = 'REFUND';
+    }
+
+    // 4. Update row
+    const { error: updateErr } = await supabase
+      .from('manual_signal_audits')
+      .update({
+        expiry_price: exitPrice,
+        status: status
+      })
+      .eq('id', signalId);
+
+    if (updateErr) throw updateErr;
+
+    return { success: true, status, exitPrice };
+  } catch (err: any) {
+    console.error('[settleManualSignal] Error settling manual signal:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
