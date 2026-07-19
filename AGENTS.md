@@ -96,6 +96,29 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Latency reduced from ~1.5-6.5s to ~1-2s per scan
 - TwelveData free plan quota (800/day) respected
 
+## Session History (19 Jul 2026)
+
+### Migration: Render → Vercel
+- Deployed to `https://quotex-intelligence-journal.vercel.app`
+- Added `vercel.json` with daily cron job (`0 0 * * *`) — Hobby plan limit
+- Fixed `tsconfig.json` to exclude `scripts/` (build was failing on `phase10-frequency-audit.mts` scoping bug)
+- Updated `baseUrl` fallback in `layout.tsx` from old Render URL to new Vercel URL
+- Added all env vars: Supabase keys, TwelveData key, CRON_SECRET, SENTRY_AUTH_TOKEN, Clarity ID, Google verification
+
+### Features Added
+- **TOTP 2FA for admin login** (`/admin/2fa`): Enrollment (QR scan + verify) + challenge/verify on login
+  - Modified: `auth.ts` (adminLogin), `admin/login/page.tsx` (TOTP step), `admin/2fa/page.tsx` (new), `admin/page.tsx` (2FA button)
+  - MFA detection and verification happen on client side (browser Supabase client) to avoid SSR cookie handoff issues
+- Google Search Console verification via `NEXT_PUBLIC_GOOGLE_VERIFICATION` env var
+- Microsoft Clarity via `NEXT_PUBLIC_CLARITY_ID` env var (already built into layout.tsx)
+
+### Key Notes for Future
+- **Zero trading logic modified**: SignalEngine, evaluateSignal, providers, thresholds all frozen
+- 2FA is admin-only, regular users unaffected
+- WebSocket in TwelveDataProvider has REST fallback — works on serverless
+- Build-time type error in `scripts/phase10-frequency-audit.mts` (gaps scoping) — excluded from tsconfig
+- Sentry configured with DSN + auth token from `.env.sentry-build-plugin`
+
 ### Next
 - Begin localhost testing: verify 1-2s latency, correct state transitions, no FAILED overwrite
 - Continue daily Phase 12 collection toward 50k-100k windows for statistical certainty
