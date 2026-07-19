@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://quotex-vip-advance-journal.onrender.com";
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://quotex-intelligence-journal.vercel.app";
 
 export const metadata: Metadata = {
   title: "Quotex VIP Advance Journal | Professional Binary Options & Market Journal",
@@ -32,6 +32,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Quotex VIP Advance Journal",
     description: "Professional binary options trading journal with advanced analytics, risk management, and signal scanning.",
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION || "",
   },
 };
 
