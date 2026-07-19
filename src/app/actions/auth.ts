@@ -189,6 +189,7 @@ export async function logoutUser() {
 
 /**
  * Logs in an administrator and checks if their ID exists in public.admins.
+ * If the admin has MFA enrolled, returns mfaRequired instead of full success.
  */
 export async function adminLogin(email: string, password: string) {
   try {
@@ -225,9 +226,60 @@ export async function adminLogin(email: string, password: string) {
       return { success: false, error: 'Access denied: Admin privileges required.' };
     }
 
+    // 3. Check if MFA is enrolled and verified
+    const { data: mfaData } = await supabase.auth.mfa.listFactors();
+    const verifiedFactors = mfaData?.all?.filter(f => f.status === 'verified') || [];
+
+    if (verifiedFactors.length > 0) {
+      // Create a challenge for the first verified factor
+      const factor = verifiedFactors[0];
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId: factor.id,
+      });
+
+      if (challengeError) {
+        await supabase.auth.signOut();
+        return { success: false, error: 'Authentication failed. Please try again.' };
+      }
+
+      return {
+        mfaRequired: true,
+        factorId: factor.id,
+        challengeId: challengeData.id,
+      };
+    }
+
     return { success: true, role: adminRecord.role };
   } catch (err: any) {
     console.error('Admin login error:', err);
+    return { success: false, error: 'An unexpected error occurred.' };
+  }
+}
+
+/**
+ * Verifies an admin's TOTP code during login (second factor).
+ */
+export async function verifyAdminMfa(factorId: string, challengeId: string, code: string) {
+  try {
+    if (!factorId || !challengeId || !code) {
+      return { success: false, error: 'Verification code is required.' };
+    }
+
+    const supabase = await createClient();
+
+    const { data, error } = await supabase.auth.mfa.verify({
+      factorId,
+      challengeId,
+      code,
+    });
+
+    if (error) {
+      return { success: false, error: 'Invalid verification code.' };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('MFA verify error:', err);
     return { success: false, error: 'An unexpected error occurred.' };
   }
 }

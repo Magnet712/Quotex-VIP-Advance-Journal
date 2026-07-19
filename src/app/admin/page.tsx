@@ -25,7 +25,7 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { 
-  ShieldAlert, Check, X, Award, Key, Trash, RefreshCw, 
+  ShieldAlert, ShieldCheck, Check, X, Award, Key, Trash, RefreshCw, 
   Users, UserCheck, UserPlus, Star, BarChart2, Loader,
   Radio, Database, Cpu, Zap, CreditCard, Wallet, FileText,
   DollarSign, TrendingUp, HelpCircle, Clock, ChevronUp, ChevronDown, AlertCircle,
@@ -482,6 +482,12 @@ export default function AdminDashboardPage() {
               className="flex items-center gap-1.5 px-3 py-2 rounded border border-glass-border hover:border-rose-500/30 bg-slate-900/40 text-slate-400 hover:text-rose-400 text-xs transition-colors"
             >
               <Activity className="h-3.5 w-3.5 text-rose-500" /> API MONITOR
+            </button>
+            <button
+              onClick={() => router.push('/admin/2fa')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded border border-glass-border hover:border-rose-500/30 bg-slate-900/40 text-slate-400 hover:text-rose-400 text-xs transition-colors"
+            >
+              <ShieldCheck className="h-3.5 w-3.5 text-rose-500" /> 2FA SETTINGS
             </button>
             <button
               onClick={loadData}
