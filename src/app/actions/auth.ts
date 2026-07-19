@@ -256,30 +256,4 @@ export async function adminLogin(email: string, password: string) {
   }
 }
 
-/**
- * Verifies an admin's TOTP code during login (second factor).
- */
-export async function verifyAdminMfa(factorId: string, challengeId: string, code: string) {
-  try {
-    if (!factorId || !challengeId || !code) {
-      return { success: false, error: 'Verification code is required.' };
-    }
 
-    const supabase = await createClient();
-
-    const { data, error } = await supabase.auth.mfa.verify({
-      factorId,
-      challengeId,
-      code,
-    });
-
-    if (error) {
-      return { success: false, error: 'Invalid verification code.' };
-    }
-
-    return { success: true };
-  } catch (err: any) {
-    console.error('MFA verify error:', err);
-    return { success: false, error: 'An unexpected error occurred.' };
-  }
-}

@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { adminLogin, verifyAdminMfa } from '@/app/actions/auth';
+import { adminLogin } from '@/app/actions/auth';
+import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ShieldCheck, AlertCircle, ArrowRight, Loader, KeyRound } from 'lucide-react';
@@ -77,14 +78,15 @@ export default function AdminLoginPage() {
     }
 
     try {
-      const res = await verifyAdminMfa(
-        mfaState!.factorId,
-        mfaState!.challengeId,
-        totpCode
-      );
+      const supabase = createClient();
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaState!.factorId,
+        challengeId: mfaState!.challengeId,
+        code: totpCode,
+      });
 
-      if (!res.success) {
-        setError(res.error || 'Invalid verification code.');
+      if (verifyError) {
+        setError('Invalid verification code.');
         setLoading(false);
         return;
       }
