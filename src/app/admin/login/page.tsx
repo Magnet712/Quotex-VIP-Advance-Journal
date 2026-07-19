@@ -42,20 +42,32 @@ export default function AdminLoginPage() {
     try {
       const res = await adminLogin(email, password);
 
-      if ('mfaRequired' in res && res.mfaRequired) {
-        setMfaState({
-          factorId: res.factorId,
-          challengeId: res.challengeId,
-        });
-        setPassword('');
-        setLoading(false);
-        return;
-      }
-
       if (!res.success) {
         setError(res.error || 'Admin login failed.');
         setLoading(false);
         return;
+      }
+
+      // Check MFA on client side (browser has session cookies)
+      const supabase = createClient();
+      const { data: mfaData } = await supabase.auth.mfa.listFactors();
+      const verifiedFactors = mfaData?.all?.filter(f => f.status === 'verified') || [];
+
+      if (verifiedFactors.length > 0) {
+        const factor = verifiedFactors[0];
+        const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+          factorId: factor.id,
+        });
+
+        if (!challengeError && challengeData) {
+          setMfaState({
+            factorId: factor.id,
+            challengeId: challengeData.id,
+          });
+          setPassword('');
+          setLoading(false);
+          return;
+        }
       }
 
       router.push('/admin');
