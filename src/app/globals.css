@@ -6,8 +6,10 @@
   
   --color-neon-green: #00E676;
   --color-neon-green-hover: #00C853;
+  --color-neon-green-dim: rgba(0, 230, 118, 0.08);
   --color-gold-vip: #FFD700;
   --color-gold-vip-hover: #FFC107;
+  --color-gold-vip-dim: rgba(255, 215, 0, 0.08);
   
   --color-slate-950: #020617;
   --color-slate-900: #0f172a;
@@ -26,13 +28,15 @@
   --color-chart-blue: #3B82F6;
   --color-chart-yellow: #FFD700;
   --color-chart-purple: #8B5CF6;
-  
+  --color-chart-rose: #F43F5E;
+
   --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
 }
 
 :root {
   color-scheme: dark;
+  --focus-ring: 0 0 0 2px rgba(0, 230, 118, 0.35);
 }
 
 body {
@@ -40,15 +44,18 @@ body {
   color: #f8fafc;
   font-family: var(--font-sans);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glassmorphism Styles */
+/* ─── Glassmorphism Styles ────────────────────────────────────────────── */
 .glass-panel {
   background: rgba(6, 11, 23, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .glass-panel-hover {
@@ -66,26 +73,67 @@ body {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 215, 0, 0.12);
   box-shadow: 0 10px 40px 0 rgba(255, 215, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card-gold:hover {
   border-color: rgba(255, 215, 0, 0.35);
   box-shadow: 0 10px 40px 0 rgba(255, 215, 0, 0.08);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ─── Glass Panel Sub-variants ────────────────────────────────────────── */
+.glass-panel-green {
+  background: rgba(0, 230, 118, 0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 230, 118, 0.1);
+}
+
+.glass-panel-red {
+  background: rgba(239, 68, 68, 0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(239, 68, 68, 0.1);
+}
+
+.glass-panel-blue {
+  background: rgba(59, 130, 246, 0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.glass-panel-purple {
+  background: rgba(139, 92, 246, 0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+/* ─── Glow Text ────────────────────────────────────────────────────────── */
 .glow-text-green {
   text-shadow: 0 0 12px rgba(0, 230, 118, 0.45);
 }
-
 .glow-text-gold {
   text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
 }
+.glow-text-red {
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+.glow-text-blue {
+  text-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+.glow-text-purple {
+  text-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+}
 
-/* Custom Scrollbar */
+/* ─── Focus & Accessibility ───────────────────────────────────────────── */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: 4px;
+}
+
+/* ─── Custom Scrollbar ────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: #020617;
@@ -98,7 +146,13 @@ body {
   background: #00E676;
 }
 
-/* Bloomberg Terminal Overlay Grid */
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1e293b #020617;
+}
+
+/* ─── Bloomberg Terminal Overlay Grid ─────────────────────────────────── */
 .grid-overlay {
   background-size: 50px 50px;
   background-image: 
@@ -106,25 +160,117 @@ body {
     linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
 }
 
-/* Custom Animations */
+/* ─── Keyframe Animations ─────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 @keyframes pulse-slow {
-  0%, 100% {
-    opacity: 0.15;
-  }
-  50% {
-    opacity: 0.35;
-  }
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.35; }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes countdown-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
+/* ─── Animation Utility Classes ───────────────────────────────────────── */
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+.animate-fadeInUp {
+  animation: fadeInUp 0.3s ease-out;
+}
+.animate-fadeInDown {
+  animation: fadeInDown 0.3s ease-out;
+}
+.animate-scaleIn {
+  animation: scaleIn 0.2s ease-out;
+}
+.animate-slideInRight {
+  animation: slideInRight 0.3s ease-out;
+}
+.animate-slideInLeft {
+  animation: slideInLeft 0.3s ease-out;
+}
 .animate-pulse-slow {
   animation: pulse-slow 8s infinite ease-in-out;
 }
+.animate-pulse-soft {
+  animation: pulse-soft 2s infinite ease-in-out;
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+}
+.animate-breathe {
+  animation: breathe 2s infinite ease-in-out;
+}
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+.animate-countdown-pulse {
+  animation: countdown-pulse 1s infinite ease-in-out;
+}
 
+/* ─── Skeleton Loading ──────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, 
+    rgba(30, 41, 59, 0.3) 0%, 
+    rgba(51, 65, 85, 0.3) 50%, 
+    rgba(30, 41, 59, 0.3) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+  border-radius: 4px;
+}
+
+/* ─── Glow Buttons ──────────────────────────────────────────────────────── */
 .glow-button {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .glow-button:hover {
   box-shadow: 0 0 15px rgba(0, 230, 118, 0.4);
+}
+.glow-button:active {
+  transform: scale(0.97);
 }
 
 .glow-button-gold {
@@ -132,4 +278,57 @@ body {
 }
 .glow-button-gold:hover {
   box-shadow: 0 0 15px rgba(255, 215, 0, 0.45);
+}
+.glow-button-gold:active {
+  transform: scale(0.97);
+}
+
+/* ─── Status Badge Variants ──────────────────────────────────────────────── */
+.badge-win {
+  background: rgba(0, 230, 118, 0.12);
+  color: #00E676;
+  border: 1px solid rgba(0, 230, 118, 0.2);
+}
+.badge-loss {
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.badge-refund {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.badge-pending {
+  background: rgba(59, 130, 246, 0.08);
+  color: #3B82F6;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+.badge-wait {
+  background: rgba(255, 215, 0, 0.08);
+  color: #FFD700;
+  border: 1px solid rgba(255, 215, 0, 0.15);
+}
+.badge-call {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.badge-put {
+  background: rgba(239, 68, 68, 0.12);
+  color: #F43F5E;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* ─── Truncation Helpers ─────────────────────────────────────────────────── */
+.truncate-1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

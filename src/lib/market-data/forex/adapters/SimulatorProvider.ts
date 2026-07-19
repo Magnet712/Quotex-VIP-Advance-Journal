@@ -60,7 +60,7 @@ export class SimulatorProvider extends BaseProvider {
     return this.active;
   }
 
-  public async fetchHistoricCandles(pair: string, limit: number): Promise<NormalizedCandle[]> {
+  public async fetchHistoricCandles(pair: string, limit: number, interval?: string): Promise<NormalizedCandle[]> {
     const candles: NormalizedCandle[] = [];
     const base = this.basePrices.get(pair) || 1.0000;
     const now = Date.now();

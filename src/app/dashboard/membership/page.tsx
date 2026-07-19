@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { getMembershipRole, getFeatureRequiredRoleLabel } from '@/lib/permissions';
-import { Award, Zap, User, Calendar, ShieldCheck, Activity, Send, Check } from 'lucide-react';
+import { Award, Zap, User, Calendar, ShieldCheck, Activity, Check } from 'lucide-react';
 import Link from 'next/link';
 
 export default function MembershipPage() {
@@ -64,7 +64,7 @@ export default function MembershipPage() {
       </div>
 
       {/* Current plan box */}
-      <div className="glass-panel p-6 rounded-2xl border border-glass-border bg-slate-900/10 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+      <div className="glass-panel p-6 rounded-2xl border border-glass-border bg-slate-900/10 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:border-glass-border/50 animate-fadeInUp">
         <div className="space-y-4">
           <div className="space-y-1">
             <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Active Plan</span>
@@ -133,7 +133,7 @@ export default function MembershipPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* Tier 1: Free */}
-        <div className="glass-panel p-5 rounded-xl border border-glass-border bg-slate-900/10 space-y-4">
+        <div className="glass-panel p-5 rounded-xl border border-glass-border bg-slate-900/10 space-y-4 transition-all duration-300 hover:scale-[1.02] hover:border-glass-border/50 animate-fadeInUp">
           <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Free Tier Benefits</span>
           <ul className="space-y-2.5 text-xs text-slate-400">
             <li className="flex items-start gap-2">
@@ -148,7 +148,7 @@ export default function MembershipPage() {
         </div>
 
         {/* Tier 2: VIP */}
-        <div className="glass-panel p-5 rounded-xl border border-glass-border/60 bg-slate-900/10 space-y-4">
+        <div className="glass-panel p-5 rounded-xl border border-glass-border/60 bg-slate-900/10 space-y-4 transition-all duration-300 hover:scale-[1.02] hover:border-blue-500/30 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
           <span className="text-[9px] font-mono text-blue-400 uppercase tracking-widest block">VIP Journal Benefits</span>
           <ul className="space-y-2.5 text-xs text-slate-400">
             <li className="flex items-start gap-2">
@@ -171,7 +171,7 @@ export default function MembershipPage() {
         </div>
 
         {/* Tier 3: Premium */}
-        <div className="glass-panel p-5 rounded-xl border border-purple-500/20 bg-purple-950/5 space-y-4">
+        <div className="glass-panel p-5 rounded-xl border border-purple-500/20 bg-purple-950/5 space-y-4 transition-all duration-300 hover:scale-[1.02] hover:border-purple-500/40 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
           <span className="text-[9px] font-mono text-purple-400 uppercase tracking-widest block">Premium Pro Benefits</span>
           <ul className="space-y-2.5 text-xs text-slate-400">
             <li className="flex items-start gap-2">

@@ -74,17 +74,18 @@ export class OandaProvider extends BaseProvider {
     });
   }
 
-  public async fetchHistoricCandles(pair: string, limit: number): Promise<NormalizedCandle[]> {
+  public async fetchHistoricCandles(pair: string, limit: number, interval?: string): Promise<NormalizedCandle[]> {
     if (!this.apiKey) {
       console.warn("[OANDA] API credentials missing, returning empty historic backfill.");
       return [];
     }
 
     const oandaInstrument = pair.replace("/", "_");
+    const oandaInterval = (interval === "5min" || interval === "5m") ? "M5" : "M1";
     return new Promise((resolve) => {
       const options = {
         hostname: this.baseUrl,
-        path: `/v3/instruments/${oandaInstrument}/candles?count=${limit}&granularity=M1`,
+        path: `/v3/instruments/${oandaInstrument}/candles?count=${limit}&granularity=${oandaInterval}`,
         method: "GET",
         headers: {
           "Authorization": `Bearer ${this.apiKey}`,

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 /**
  * Maps a Trader ID to a virtual email address for Supabase Auth.
@@ -27,8 +28,13 @@ export async function registerTrader(traderId: string, username: string, passwor
       return { success: false, error: 'Trader ID must be at least 4 characters.' };
     }
 
-    if (password.length < 6) {
-      return { success: false, error: 'Password must be at least 6 characters.' };
+    if (password.length < 8) {
+      return { success: false, error: 'Password must be at least 8 characters.' };
+    }
+
+    const rl = checkRateLimit(`register:${traderId}`, 3, 60000);
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many registration attempts. Please try again later.' };
     }
 
     const email = getVirtualEmail(traderId);
@@ -68,7 +74,7 @@ export async function registerTrader(traderId: string, username: string, passwor
       ) {
         return { success: false, error: 'This Trader ID is already registered.' };
       }
-      return { success: false, error: authError.message };
+      return { success: false, error: 'Registration failed. Please try again.' };
     }
 
     const user = authData.user;
@@ -108,7 +114,7 @@ export async function registerTrader(traderId: string, username: string, passwor
     return { success: true };
   } catch (err: any) {
     console.error('Register error:', err);
-    return { success: false, error: err.message || 'An unexpected error occurred.' };
+    return { success: false, error: 'An unexpected error occurred.' };
   }
 }
 
@@ -119,6 +125,11 @@ export async function loginTrader(traderId: string, password: string) {
   try {
     if (!traderId || !password) {
       return { success: false, error: 'Trader ID and Password are required.' };
+    }
+
+    const rl = checkRateLimit(`login:${traderId}`, 5, 60000);
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many login attempts. Please try again later.' };
     }
 
     const email = getVirtualEmail(traderId);
@@ -150,7 +161,7 @@ export async function loginTrader(traderId: string, password: string) {
       console.error('Profile fetch error for user ID:', data.user.id, profileError);
       return { 
         success: false, 
-        error: `User profile not found. (Debug: ${profileError?.message || 'No profile record matches auth ID'})` 
+        error: 'User profile not found. Please contact support.' 
       };
     }
 
@@ -162,7 +173,7 @@ export async function loginTrader(traderId: string, password: string) {
     };
   } catch (err: any) {
     console.error('Login error:', err);
-    return { success: false, error: err.message || 'An unexpected error occurred.' };
+    return { success: false, error: 'An unexpected error occurred.' };
   }
 }
 
@@ -217,6 +228,6 @@ export async function adminLogin(email: string, password: string) {
     return { success: true, role: adminRecord.role };
   } catch (err: any) {
     console.error('Admin login error:', err);
-    return { success: false, error: err.message || 'An unexpected error occurred.' };
+    return { success: false, error: 'An unexpected error occurred.' };
   }
 }

@@ -1,40 +1,55 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import os from "os";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
 export async function GET() {
-  const supabase = createClient(supabaseUrl, supabaseServiceRole);
-  
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ status: "UP" });
+  }
+
+  const { data: adminRecord } = await supabase
+    .from('admins')
+    .select('id')
+    .eq('id', user.id)
+    .single();
+
+  if (!adminRecord) {
+    return NextResponse.json({ status: "UP" });
+  }
+
+  const adminSupabase = createAdminClient();
+
   let dbStatus = "CONNECTED";
   let telemetry: any[] = [];
   let flags: any[] = [];
 
   try {
-    // 1. Check Database connection & pull feature flags
-    const { data: dbCheck, error: dbError } = await supabase
-      .from("feature_flags")
-      .select("*");
-    
+    const { data: dbCheck, error: dbError } = await adminSupabase
+      .from("system_settings")
+      .select("key, value")
+      .like("key", "feature_flag_%");
+
     if (dbError) {
       dbStatus = "DISCONNECTED";
     } else {
-      flags = dbCheck || [];
+      flags = (dbCheck || []).map(item => ({
+        key: item.key.replace("feature_flag_", ""),
+        value: item.value
+      }));
     }
 
-    // 2. Fetch telemetry stats
-    const { data: telemetryCheck } = await supabase
+    const { data: telemetryCheck } = await adminSupabase
       .from("provider_telemetry")
       .select("*");
-    
+
     telemetry = telemetryCheck || [];
   } catch (e) {
     dbStatus = "DISCONNECTED";
   }
 
-  // Worker is evaluated as active if any telemetry row has updated in the last 45s
   let workerStatus = "INACTIVE";
   if (telemetry.length > 0) {
     const lastUpdate = Math.max(...telemetry.map(t => new Date(t.last_update).getTime()));
@@ -47,7 +62,7 @@ export async function GET() {
   const totalMem = os.totalmem() / (1024 * 1024);
 
   return NextResponse.json({
-    status: dbStatus === "CONNECTED" && workerStatus === "ACTIVE" ? "UP" : "DEGRADED",
+    status: dbStatus === "CONNECTED" ? "UP" : "DEGRADED",
     version: {
       marketDataLayer: "1.2.0",
       worker: "2.0.0",

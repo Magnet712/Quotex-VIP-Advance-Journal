@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import https from 'https';
 
 function fetchYahooPrice(symbol: string): Promise<number | string | null> {
@@ -32,6 +33,22 @@ function fetchYahooPrice(symbol: string): Promise<number | string | null> {
 }
 
 export async function GET() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { data: adminRecord } = await supabase
+    .from('admins')
+    .select('id')
+    .eq('id', user.id)
+    .single();
+
+  if (!adminRecord) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const eurUsd = await fetchYahooPrice('EURUSD=X');
   const usdJpy = await fetchYahooPrice('USDJPY=X');
   return NextResponse.json({

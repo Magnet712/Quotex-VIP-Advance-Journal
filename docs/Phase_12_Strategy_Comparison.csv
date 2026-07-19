@@ -1,0 +1,3 @@
+strategy,signals,calls,puts,wins,losses,winRate,averageConfidence
+Trend Corridor Breakout,220,104,116,109,111,49.55,56.56
+Range Extreme Reversion,67,31,36,33,34,49.25,54.76

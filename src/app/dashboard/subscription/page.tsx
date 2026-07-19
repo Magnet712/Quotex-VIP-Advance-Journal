@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  Award, Shield, Calendar, Clock, RefreshCw, Zap, CheckCircle2,
-  Lock, Copy, Check, Radio, Database, AlertCircle, Loader, DollarSign, X
+  Award, RefreshCw, Zap, CheckCircle2,
+  Copy, Check, AlertCircle, Loader, X
 } from 'lucide-react';
 import { 
   getUserSubscriptionState, getBillingPlans, getWalletSettings,
@@ -172,7 +172,7 @@ export default function SubscriptionPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* Plan card summary */}
-        <div className="glass-panel p-5 rounded-xl border border-glass-border flex flex-col justify-between space-y-4 md:col-span-2">
+        <div className="glass-panel p-5 rounded-xl border border-glass-border flex flex-col justify-between space-y-4 md:col-span-2 transition-all duration-300 hover:scale-[1.01] hover:border-glass-border/50 animate-fadeInUp">
           <div className="flex justify-between items-start">
             <div className="space-y-1">
               <span className="text-[8px] text-slate-500 uppercase tracking-widest">Active Plan</span>
@@ -219,7 +219,7 @@ export default function SubscriptionPage() {
         </div>
 
         {/* Days remaining progress widget */}
-        <div className="glass-panel p-5 rounded-xl border border-glass-border flex flex-col justify-between">
+        <div className="glass-panel p-5 rounded-xl border border-glass-border flex flex-col justify-between transition-all duration-300 hover:scale-[1.01] hover:border-glass-border/50 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
           <div>
             <span className="text-[8px] text-slate-500 uppercase tracking-widest">Days Remaining</span>
             <div className="text-4xl font-extrabold text-slate-200 mt-3 font-mono">
@@ -264,8 +264,8 @@ export default function SubscriptionPage() {
                 key={p.id} 
                 className={`glass-panel p-5 rounded-xl border flex flex-col justify-between transition-all duration-300 ${
                   isCurrentPlan 
-                    ? 'border-neon-green/30 bg-neon-green/[0.01]' 
-                    : 'border-glass-border hover:border-slate-700'
+                    ? 'border-neon-green/30 bg-neon-green/[0.01] scale-[1.02]' 
+                    : 'border-glass-border hover:border-slate-700 hover:scale-[1.02] hover:shadow-lg'
                 }`}
               >
                 <div className="space-y-4">

@@ -58,6 +58,9 @@ async function checkAdmin() {
 export async function getBillingPlans() {
   try {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+
     const { data, error } = await supabase
       .from('pricing_settings')
       .select('*')
@@ -65,8 +68,8 @@ export async function getBillingPlans() {
 
     if (error) throw error;
     return { success: true, plans: data as PlanSetting[] };
-  } catch (err: any) {
-    return { success: false, error: err.message || 'Failed to fetch pricing plans' };
+  } catch {
+    return { success: false, error: 'Failed to fetch pricing plans' };
   }
 }
 
@@ -76,6 +79,9 @@ export async function getBillingPlans() {
 export async function getWalletSettings() {
   try {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Authentication required' };
+
     const { data, error } = await supabase
       .from('wallet_settings')
       .select('*')
@@ -83,8 +89,8 @@ export async function getWalletSettings() {
 
     if (error) throw error;
     return { success: true, wallets: data as WalletSetting[] };
-  } catch (err: any) {
-    return { success: false, error: err.message || 'Failed to fetch wallets' };
+  } catch {
+    return { success: false, error: 'Failed to fetch wallets' };
   }
 }
 
@@ -105,8 +111,8 @@ export async function updateBillingPlan(id: string, price: number, enabled: bool
     if (error) throw error;
     revalidatePath('/dashboard/subscription');
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch {
+    return { success: false, error: 'Failed to update billing plan' };
   }
 }
 
@@ -126,8 +132,8 @@ export async function updateWalletAddress(network: string, address: string, enab
 
     if (error) throw error;
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch {
+    return { success: false, error: 'Failed to update wallet address' };
   }
 }
 
@@ -182,8 +188,8 @@ export async function createPaymentRequest(planId: string, network: string) {
 
     if (error) throw error;
     return { success: true, payment: data };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch {
+    return { success: false, error: 'Failed to create payment request' };
   }
 }
 
@@ -360,8 +366,8 @@ export async function submitPaymentTxnHash(paymentRequestId: string, txnHash: st
       error: verification.error || 'Blockchain transaction verification checks failed.'
     };
 
-  } catch (err: any) {
-    return { success: false, error: err.message || 'Verification pipeline error' };
+  } catch {
+    return { success: false, error: 'Verification pipeline error' };
   }
 }
 
@@ -479,8 +485,8 @@ export async function retryAdminPaymentVerification(paymentRequestId: string) {
       error: verification.error || 'Transaction still not confirmed on-chain.' 
     };
 
-  } catch (err: any) {
-    return { success: false, error: err.message || 'Retry execution failed' };
+  } catch {
+    return { success: false, error: 'Retry execution failed' };
   }
 }
 
@@ -540,8 +546,8 @@ async function activateSubscription(userId: string, planId: string) {
       });
 
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch {
+    return { success: false, error: 'Failed to activate subscription' };
   }
 }
 
@@ -579,8 +585,8 @@ export async function getUserSubscriptionState() {
       remainingDays,
       traderProfile: profile
     };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch {
+    return { success: false, error: 'Failed to fetch subscription state' };
   }
 }
 
@@ -634,7 +640,7 @@ export async function checkAndExpireSubscriptions(userId: string) {
     return { success: true };
   } catch (err: any) {
     console.error('[Subscription Expire Hook Error]:', err);
-    return { success: false, error: err.message };
+    return { success: false };
   }
 }
 
@@ -659,8 +665,8 @@ export async function getUserPayments(page = 1, pageSize = 20) {
 
     if (error) throw error;
     return { success: true, payments: data, total: count || 0 };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch {
+    return { success: false, error: 'Failed to fetch payments' };
   }
 }
 
@@ -682,7 +688,7 @@ export async function getUserNotifications() {
 
     if (error) throw error;
     return { success: true, notifications: data };
-  } catch (err: any) {
+  } catch {
     return { success: false, notifications: [] };
   }
 }
@@ -700,7 +706,7 @@ export async function markNotificationsRead() {
       .eq('is_read', false);
 
     return { success: true };
-  } catch (err: any) {
+  } catch {
     return { success: false };
   }
 }
@@ -760,7 +766,7 @@ export async function getSaaSStatistics() {
       }
     };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    return { success: false, error: 'Failed to fetch statistics' };
   }
 }
 
@@ -797,7 +803,7 @@ export async function getAdminPaymentsLedger(filters: { status?: string; searchQ
 
     if (error) throw error;
     return { success: true, payments: data || [], total: count || 0 };
-  } catch (err: any) {
-    return { success: false, error: err.message, payments: [], total: 0 };
+  } catch {
+    return { success: false, error: 'Failed to fetch payment ledger', payments: [], total: 0 };
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { getUserAccessState } from '@/app/actions/admin_optimization';
 import { canAccess } from '@/lib/permissions';
@@ -26,7 +26,8 @@ export default function RiskCalculatorPage() {
   const [dailyMaxRisk, setDailyMaxRisk] = useState<number>(5);
   const [plannedTrades, setPlannedTrades] = useState<number>(10);
 
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   useEffect(() => {
     async function loadData() {
@@ -160,7 +161,7 @@ export default function RiskCalculatorPage() {
       </div>
 
       {/* Preset Risk Profiles Card */}
-      <div className="glass-panel p-4 rounded-xl border border-glass-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/5">
+      <div className="glass-panel p-4 rounded-xl border border-glass-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/5 transition-all duration-200 hover:border-glass-border/50 animate-fadeInUp">
         <div className="space-y-1">
           <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest block">quick configurations</span>
           <span className="text-xs font-bold font-mono text-slate-300">Preset Risk Profiles</span>
@@ -191,7 +192,7 @@ export default function RiskCalculatorPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         
         {/* Left Column: Input Parameter Panel */}
-        <div className="glass-panel p-6 rounded-xl border border-glass-border bg-slate-900/10 space-y-5">
+        <div className="glass-panel p-6 rounded-xl border border-glass-border bg-slate-900/10 space-y-5 transition-all duration-200 hover:border-glass-border/50 animate-fadeInUp">
           <div className="flex items-center gap-2 border-b border-glass-border/40 pb-3">
             <Calculator className="h-4.5 w-4.5 text-neon-green" />
             <span className="text-xs font-mono text-slate-300 font-bold uppercase">Binary Risk Parameters</span>
@@ -207,7 +208,7 @@ export default function RiskCalculatorPage() {
                   type="number"
                   value={balance}
                   onChange={(e) => setBalance(Math.max(0, Number(e.target.value)))}
-                  className="w-full bg-[#02050b] border border-glass-border pl-8 pr-4 py-2.5 rounded text-xs text-slate-200 focus:outline-none focus:border-neon-green/30"
+                  className="w-full bg-[#02050b] border border-glass-border pl-8 pr-4 py-2.5 rounded text-xs text-slate-200 focus:outline-none focus:border-neon-green/30 focus:shadow-[0_0_12px_rgba(0,230,118,0.08)] transition-all duration-200"
                 />
               </div>
             </div>
@@ -226,7 +227,7 @@ export default function RiskCalculatorPage() {
                   step="0.5"
                   value={riskPercent}
                   onChange={(e) => setRiskPercent(Number(e.target.value))}
-                  className="flex-1 accent-neon-green bg-slate-950 h-1.5 rounded-lg appearance-none cursor-pointer"
+                  className="flex-1 accent-neon-green bg-slate-950 h-2 rounded-lg appearance-none cursor-pointer transition-all duration-150"
                 />
                 <input
                   type="number"
@@ -254,7 +255,7 @@ export default function RiskCalculatorPage() {
                   step="1"
                   value={payout}
                   onChange={(e) => setPayout(Number(e.target.value))}
-                  className="flex-1 accent-neon-green bg-slate-950 h-1.5 rounded-lg appearance-none cursor-pointer"
+                  className="flex-1 accent-neon-green bg-slate-950 h-2 rounded-lg appearance-none cursor-pointer transition-all duration-150"
                 />
                 <input
                   type="number"
@@ -317,7 +318,7 @@ export default function RiskCalculatorPage() {
         <div className="space-y-6">
           
           {/* Sizing Results Details */}
-          <div className="glass-panel p-6 rounded-xl border border-glass-border bg-slate-900/10 space-y-6">
+          <div className="glass-panel p-6 rounded-xl border border-glass-border bg-slate-900/10 space-y-6 transition-all duration-200 hover:border-glass-border/50 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
             <div className="flex items-center gap-2 border-b border-glass-border/40 pb-3">
               <Activity className="h-4.5 w-4.5 text-neon-green" />
               <span className="text-xs font-mono text-slate-300 font-bold uppercase">Risk Management Summary</span>
@@ -326,7 +327,7 @@ export default function RiskCalculatorPage() {
             <div className="grid grid-cols-2 gap-4 font-mono">
               
               {/* Investment amount */}
-              <div className="bg-[#020617]/50 border border-glass-border/40 p-4 rounded text-left">
+              <div className="bg-[#020617]/50 border border-glass-border/40 p-4 rounded text-left transition-all duration-200 hover:border-neon-green/20 hover:shadow-lg">
                 <div className="text-[8px] text-slate-500 uppercase">Investment Per Trade</div>
                 <div className="text-lg font-bold text-slate-200 mt-1.5">${investment.toFixed(2)}</div>
               </div>

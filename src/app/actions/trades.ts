@@ -43,7 +43,7 @@ export async function getTrades() {
     .order('trade_date', { ascending: false });
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: 'Failed to fetch trades' };
   }
 
   return { success: true, trades: data || [] };
@@ -104,7 +104,7 @@ export async function addTrade(trade: TradeInput) {
     .single();
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: 'Failed to add trade' };
   }
 
   revalidatePath('/dashboard');
@@ -148,7 +148,7 @@ export async function addMultipleTrades(tradesList: TradeInput[]) {
     .select();
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: 'Failed to add trades' };
   }
 
   revalidatePath('/dashboard');
@@ -195,7 +195,7 @@ export async function updateTrade(tradeId: string, trade: Partial<TradeInput>) {
     .single();
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: 'Failed to update trade' };
   }
 
   revalidatePath('/dashboard');
@@ -220,7 +220,7 @@ export async function deleteTrade(tradeId: string) {
     .eq('user_id', userId);
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: 'Failed to delete trade' };
   }
 
   revalidatePath('/dashboard');
@@ -244,7 +244,7 @@ export async function eraseTrades() {
     .eq('user_id', userId);
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: 'Failed to erase trades' };
   }
 
   revalidatePath('/dashboard');

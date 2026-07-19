@@ -85,6 +85,10 @@ export async function setFeatureFlag(key: string, value: boolean): Promise<{ suc
  * Fetches all feature flags from system_settings for display/admin listing.
  */
 export async function getAllFeatureFlags(): Promise<{ success: boolean; flags: Record<string, boolean>; error?: string }> {
+  if (!(await verifyAdmin())) {
+    return { success: false, flags: {}, error: 'Unauthorized. Admin access required.' };
+  }
+
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase

@@ -1,27 +1,33 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Clock, AlertTriangle, Zap,
   Target, Activity, RefreshCw, Radio, BarChart2,
   ChevronUp, ChevronDown, Eye, Filter, Signal, Database, Lock,
-  Bell, X
+  Bell, X, Loader
 } from 'lucide-react';
 
 import {
   getSignalPerformance,
   getPairPerformanceMap,
-  getServerTime, getSignalHistory, scanLiveMarketAsset, getMarketStatus, ScanResult,
-  saveManualSignal, getManualSignalAudits, settleManualSignal
+  getServerTime, getMarketStatus,
+  getManualSignalAudits
 } from '@/app/actions/signals';
 import { getSignalMode } from '@/app/actions/signal_mode';
 import { getPublicOptimizationSettings, getUserAccessState } from '@/app/actions/admin_optimization';
-import { canAccess } from '@/lib/permissions';
+import { canAccess, getMembershipRole, ROLE_HIERARCHY, FEATURE_MIN_ROLES } from '@/lib/permissions';
 
-// Module-level helper: wraps getPerfNow() so it can be called from
-// React effects and async handlers without triggering the react-hooks/purity
-// lint rule (which only guards against impure calls *during* render).
-const getPerfNow = (): number => getPerfNow();
+import { sr, OTC_PAIRS, generateSignal } from './generateSignal';
+import { useISTClock } from './useISTClock';
+import { SignalCard } from './SignalCard';
+import { ManualScanResultCard } from './ManualScanResultCard';
+import { useForexExecution } from './useForexExecution';
+import { useOTCExecution } from './useOTCExecution';
+import OTCScanResultCard from './OTCScanResultCard';
+import type { ExecutionRecord } from '@/lib/forex-execution/types';
+import { OTC_TERMINAL_STATUSES } from '@/lib/otc/otc-execution-types';
+import type { OTCExecutionRecord } from '@/lib/otc/otc-execution-types';
 
 // ─── Live Market Forex Pairs ─────────────────────────────────────────
 const LIVE_MARKET_PAIRS = [
@@ -48,261 +54,7 @@ const LIVE_MARKET_PAIRS = [
   { symbol: 'EUR/CHF', short: 'EURCHF', vol: 'LOW' }
 ];
 
-// ─── All Quotex OTC Pairs ────────────────────────────────────────────────────
-const OTC_PAIRS = [
-  { symbol: 'EUR/USD', short: 'EURUSD', base: 1.08450, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'GBP/USD', short: 'GBPUSD', base: 1.26500, pip: 5, vol: 'HIGH' },
-  { symbol: 'USD/JPY', short: 'USDJPY', base: 149.500, pip: 2, vol: 'MEDIUM' },
-  { symbol: 'AUD/USD', short: 'AUDUSD', base: 0.65200, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'USD/CAD', short: 'USDCAD', base: 1.35800, pip: 5, vol: 'LOW' },
-  { symbol: 'EUR/JPY', short: 'EURJPY', base: 162.100, pip: 2, vol: 'HIGH' },
-  { symbol: 'GBP/JPY', short: 'GBPJPY', base: 189.200, pip: 2, vol: 'HIGH' },
-  { symbol: 'EUR/GBP', short: 'EURGBP', base: 0.85700, pip: 5, vol: 'LOW' },
-  { symbol: 'NZD/USD', short: 'NZDUSD', base: 0.59800, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'USD/CHF', short: 'USDCHF', base: 0.90400, pip: 5, vol: 'LOW' },
-  { symbol: 'EUR/AUD', short: 'EURAUD', base: 1.66200, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'GBP/AUD', short: 'GBPAUD', base: 1.93600, pip: 5, vol: 'HIGH' },
-  { symbol: 'AUD/JPY', short: 'AUDJPY', base: 97.500, pip: 2, vol: 'HIGH' },
-  { symbol: 'CAD/JPY', short: 'CADJPY', base: 110.200, pip: 2, vol: 'MEDIUM' },
-  { symbol: 'CHF/JPY', short: 'CHFJPY', base: 165.400, pip: 2, vol: 'MEDIUM' },
-  { symbol: 'EUR/CAD', short: 'EURCAD', base: 1.47300, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'GBP/CAD', short: 'GBPCAD', base: 1.71500, pip: 5, vol: 'HIGH' },
-  { symbol: 'USD/SGD', short: 'USDSGD', base: 1.34200, pip: 5, vol: 'LOW' },
-  { symbol: 'USD/INR', short: 'USDINR', base: 83.650, pip: 2, vol: 'LOW' },
-  { symbol: 'USD/BRL', short: 'USDBRL', base: 4.98500, pip: 3, vol: 'HIGH' },
-  { symbol: 'USD/MXN', short: 'USDMXN', base: 17.1500, pip: 3, vol: 'HIGH' },
-  { symbol: 'EUR/CHF', short: 'EURCHF', base: 0.97800, pip: 5, vol: 'LOW' },
-  { symbol: 'GBP/CHF', short: 'GBPCHF', base: 1.13200, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'AUD/CAD', short: 'AUDCAD', base: 0.89600, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'AUD/NZD', short: 'AUDNZD', base: 1.09100, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'NZD/JPY', short: 'NZDJPY', base: 89.700, pip: 2, vol: 'HIGH' },
-  { symbol: 'GBP/NZD', short: 'GBPNZD', base: 2.11500, pip: 5, vol: 'HIGH' },
-  { symbol: 'EUR/NZD', short: 'EURNZD', base: 1.81200, pip: 5, vol: 'MEDIUM' },
-  { symbol: 'CAD/CHF', short: 'CADCHF', base: 0.66600, pip: 5, vol: 'LOW' },
-  { symbol: 'USD/ZAR', short: 'USDZAR', base: 18.6500, pip: 3, vol: 'HIGH' },
-  { symbol: 'USD/TRY', short: 'USDTRY', base: 32.4500, pip: 3, vol: 'HIGH' },
-  { symbol: 'USD/ARS', short: 'USDARS', base: 920.00, pip: 1, vol: 'HIGH' },
-  { symbol: 'USD/PKR', short: 'USDPKR', base: 278.50, pip: 1, vol: 'HIGH' },
-  { symbol: 'USD/BDT', short: 'USDBDT', base: 109.80, pip: 1, vol: 'MEDIUM' },
-];
 
-const OF_CALL = [
-  { pattern: 'Seller Absorbed by Buyer', icon: '⬆', desc: 'Sellers overwhelmed — Bulls dominating close' },
-  { pattern: "Buyer's Aggression", icon: '⚡', desc: 'Strong buying momentum at candle close' },
-  { pattern: 'Rejection by Buyer', icon: '↩', desc: 'Lower wick speed rejection — bullish intent' },
-];
-const OF_PUT = [
-  { pattern: 'Buyer Absorbed by Seller', icon: '⬇', desc: 'Buyers overwhelmed — Bears dominating close' },
-  { pattern: "Seller's Aggression", icon: '⚡', desc: 'Strong selling momentum at candle close' },
-  { pattern: 'Rejection by Seller', icon: '↪', desc: 'Upper wick speed rejection — bearish intent' },
-];
-
-const STRATEGY_TAGS = [
-  'RSI Reversal + EMA50',
-  'SMA21/EMA50 Cross',
-  'Wick Rejection + RSI',
-  'Orderflow + EMA Trend',
-  'RSI Extreme + Confluence',
-  'Multi-Indicator Signal',
-  'SuperTrend + ATR Filter',
-  'SuperTrend + Stoch Cross',
-  'ATR Breakout + Orderflow',
-  'Order Delta + RSI Confirm',
-  'SuperTrend + Delta Volume',
-];
-
-// ─── Seeded deterministic random ────────────────────────────────────────────
-function sr(seed: number): number {
-  const x = Math.sin(seed * 9301 + 49297) * 233280;
-  return x - Math.floor(x);
-}
-
-// ─── Signal Generator ────────────────────────────────────────────────────────
-interface GeneratedSignal {
-  direction: 'CALL' | 'PUT';
-  confidence: number;
-  ofPattern: { pattern: string; icon: string; desc: string };
-  strategy: string;
-  trend: string;
-  risk: 'LOW' | 'MEDIUM' | 'HIGH';
-  entryPrice: string;
-  rsi: number;
-  stochK: number;
-  stochD: number;
-  stochBias: string;
-  smaStatus: string;
-  wickBias: string;
-  confirmations: number;
-  cvd: number;
-  cvdBias: string;
-  atr: number;
-  atrLevel: string;
-  superTrend: string;
-  superTrendStrength: string;
-  orderDelta: number;
-  orderDeltaBias: string;
-}
-
-function generateSignal(pairIdx: number, windowSeed: number): GeneratedSignal | null {
-  const s = pairIdx * 7919 + windowSeed;
-
-  const rsi = sr(s + 0.1) * 100;
-  const smaVsEma = (sr(s + 0.2) - 0.5) * 0.004;
-  const upperWick = sr(s + 0.3);
-  const lowerWick = sr(s + 0.4);
-  const ofRoll = sr(s + 0.5);
-  const noiseRoll = sr(s + 0.6);
-
-  const stochK = Math.round((sr(s + 12.5) * 100) * 10) / 10;
-  const stochD = Math.round(Math.max(0, Math.min(100, stochK + (sr(s + 13.5) - 0.5) * 15)) * 10) / 10;
-
-  let stochBias = 'NEUTRAL';
-  const stochOversold = stochK < 20 && stochD < 20;
-  const stochOverbought = stochK > 80 && stochD > 80;
-  const isKAboveD = stochK > stochD;
-  const crossRoll = sr(s + 14.5);
-
-  let stochBull = false;
-  let stochBear = false;
-
-  if (stochOversold) {
-    if (isKAboveD && crossRoll > 0.4) {
-      stochBias = 'BULL CROSS';
-      stochBull = true;
-    } else {
-      stochBias = 'OVERSOLD';
-      stochBull = true;
-    }
-  } else if (stochOverbought) {
-    if (!isKAboveD && crossRoll > 0.4) {
-      stochBias = 'BEAR CROSS';
-      stochBear = true;
-    } else {
-      stochBias = 'OVERBOUGHT';
-      stochBear = true;
-    }
-  } else {
-    if (isKAboveD && stochK < 50 && crossRoll > 0.7) {
-      stochBias = 'BULL CROSS';
-      stochBull = true;
-    } else if (!isKAboveD && stochK > 50 && crossRoll > 0.7) {
-      stochBias = 'BEAR CROSS';
-      stochBear = true;
-    } else {
-      stochBias = isKAboveD ? 'BULL BIAS' : 'BEAR BIAS';
-    }
-  }
-
-  const rsiBull = rsi < 32;
-  const rsiBear = rsi > 68;
-  const smaBull = smaVsEma > 0.0004;
-  const smaBear = smaVsEma < -0.0004;
-  const wickBull = lowerWick > upperWick * 1.6;
-  const wickBear = upperWick > lowerWick * 1.6;
-  const ofBull = ofRoll > 0.48;
-
-  const atrRaw = 0.05 + sr(s + 20.5) * 0.40;
-  const atr = Math.round(atrRaw * 1000) / 1000;
-  const atrLevel = atrRaw > 0.30 ? 'HIGH VOLATILITY' : atrRaw < 0.12 ? 'LOW VOLATILITY' : 'NORMAL';
-  const atrDirRoll = sr(s + 20.9);
-  const atrBull = atrRaw > 0.18 && atrDirRoll > 0.50;
-  const atrBear = atrRaw > 0.18 && atrDirRoll <= 0.50;
-
-  const stRoll = sr(s + 21.5);
-  const stBullBias = stRoll > 0.45;
-  const stStrRoll = sr(s + 22.5);
-  const superTrend = stBullBias ? 'BULLISH' : 'BEARISH';
-  const superTrendStrength = stStrRoll > 0.5 ? 'STRONG' : 'MODERATE';
-  const stBull = superTrend === 'BULLISH';
-  const stBear = superTrend === 'BEARISH';
-
-  const odRaw = (sr(s + 23.5) - 0.5) * 200;
-  const orderDelta = Math.round(odRaw);
-  const orderDeltaBull = orderDelta > 15;
-  const orderDeltaBear = orderDelta < -15;
-  const orderDeltaBias = orderDelta > 15 ? 'BUY DOMINANT' : orderDelta < -15 ? 'SELL DOMINANT' : 'BALANCED';
-
-  let bullPts = 0;
-  let bearPts = 0;
-
-  if (rsiBull) bullPts += 3; if (rsiBear) bearPts += 3;
-  if (stochBull) bullPts += 2; if (stochBear) bearPts += 2;
-  if (smaBull) bullPts += 2; if (smaBear) bearPts += 2;
-  if (wickBull) bullPts += 2; if (wickBear) bearPts += 2;
-  if (ofBull) bullPts += 3; else bearPts += 3;
-  if (atrBull) bullPts += 1; if (atrBear) bearPts += 1;
-  if (stBull) bullPts += 3; if (stBear) bearPts += 3;
-  if (orderDeltaBull) bullPts += 2; if (orderDeltaBear) bearPts += 2;
-
-  const topScore = Math.max(bullPts, bearPts);
-  const confirmations = Math.min(8, Math.floor(topScore / 2.2) + 1);
-  if (topScore < 7 || noiseRoll < 0.28) return null;
-
-  const direction: 'CALL' | 'PUT' = bullPts >= bearPts ? 'CALL' : 'PUT';
-
-  const rawConf = topScore / 16;
-  const confidence = Math.min(95, Math.max(80, Math.round(80 + rawConf * 15)));
-
-  const ofList = direction === 'CALL' ? OF_CALL : OF_PUT;
-  const ofPick = Math.floor(sr(s + 0.7) * ofList.length);
-  const ofPattern = ofList[ofPick];
-
-  const stgPick = Math.floor(sr(s + 0.8) * STRATEGY_TAGS.length);
-  const strategy = STRATEGY_TAGS[stgPick];
-  const trend = direction === 'CALL' ? '📈 Bullish' : '📉 Bearish';
-
-  const risk: 'LOW' | 'MEDIUM' | 'HIGH' =
-    confidence >= 91 ? 'LOW' : confidence >= 86 ? 'MEDIUM' : 'HIGH';
-
-  const pair = OTC_PAIRS[pairIdx];
-  const priceJitter = (sr(s + 0.9) - 0.5) * pair.base * 0.003;
-  const rawPrice = pair.base + priceJitter;
-  const entryPrice = rawPrice.toFixed(pair.pip);
-
-  const rsiDisplay = Math.round(rsi * 10) / 10;
-  const smaStatus =
-    smaBull ? 'SMA21 > EMA50 ↑' :
-      smaBear ? 'SMA21 < EMA50 ↓' : 'SMA21 ≈ EMA50';
-  const wickBias =
-    wickBull ? 'Lower Wick Strong (Buy Pressure)' :
-      wickBear ? 'Upper Wick Strong (Sell Pressure)' : 'Balanced Wicks';
-
-  const cvdBase = direction === 'CALL' ? 1 : -1;
-  const cvdMag = 200 + Math.round(sr(s + 10.5) * 750);
-  const cvdNoise = Math.round((sr(s + 11.5) - 0.5) * 120);
-  const cvd = Math.round(cvdBase * cvdMag + cvdNoise);
-  const cvdBias = cvd > 80 ? 'BULLISH' : cvd < -80 ? 'BEARISH' : 'NEUTRAL';
-
-  return {
-    direction, confidence, ofPattern, strategy,
-    trend, risk, entryPrice, rsi: rsiDisplay,
-    stochK, stochD, stochBias,
-    smaStatus, wickBias, confirmations,
-    cvd, cvdBias,
-    atr, atrLevel,
-    superTrend, superTrendStrength,
-    orderDelta, orderDeltaBias,
-  };
-}
-
-// ─── IST Clock ───────────────────────────────────────────────────────────────
-function useISTClock(timeOffset: number) {
-  const [time, setTime] = useState('');
-  useEffect(() => {
-    const update = () => {
-      const now = new Date(Date.now() + timeOffset);
-      const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
-      const h = ist.getUTCHours().toString().padStart(2, '0');
-      const m = ist.getUTCMinutes().toString().padStart(2, '0');
-      const s = ist.getUTCSeconds().toString().padStart(2, '0');
-      setTime(`${h}:${m}:${s} IST`);
-    };
-    update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
-  }, [timeOffset]);
-  return time;
-}
 
 interface SignalRecord {
   id: string;
@@ -316,6 +68,7 @@ interface SignalRecord {
   timeframe?: string;
   strategy_name?: string;
   risk_level?: string;
+  noTradeReason?: string;
 }
 
 type SignalStatus = 'ACTIVE' | 'SCANNING' | 'NO_SIGNAL' | 'LOADING_NEXT';
@@ -353,8 +106,10 @@ interface UserAccessState {
 
 interface ToastMessage {
   id: string;
-  symbol: string;
-  direction: string;
+  type: 'signal' | 'error';
+  symbol?: string;
+  direction?: string;
+  message?: string;
   timestamp: Date;
 }
 
@@ -380,9 +135,6 @@ export default function SignalsPage() {
   const [loading, setLoading] = useState(true);
   const [timeOffset, setTimeOffset] = useState(0);
   const timeOffsetRef = useRef(0);
-  // Initialized to 0; populated in loadMeta once the first server time is received
-  const syncedServerTimeRef = useRef<number>(0);
-  const syncPerfTimeRef = useRef<number>(0);
   const istTime = useISTClock(timeOffset);
   const [subTab, setSubTab] = useState<'live_otc' | 'simulation' | 'live_market'>('live_otc');
   const [liveMarketSignals, setLiveMarketSignals] = useState<SignalRecord[]>([]);
@@ -408,33 +160,65 @@ export default function SignalsPage() {
   const [timelineSignals, setTimelineSignals] = useState<SignalRecord[]>([]);
 
   const [winRate, setWinRate] = useState<number | null>(null);
-  const [otcStats, setOtcStats] = useState<{ winRate: number | null; totalToday: number }>({ winRate: null, totalToday: 0 });
-  const [liveMarketStats, setLiveMarketStats] = useState<{ winRate: number | null; totalToday: number }>({ winRate: null, totalToday: 0 });
+  const [activeStats, setActiveStats] = useState<{ winRate: number | null; totalToday: number }>({ winRate: null, totalToday: 0 });
 
   const [signalMode, setSignalModeState] = useState<string>('SIMULATION');
   const [dataSourceOnline, setDataSourceOnline] = useState(true);
 
-  // ─── Manual Scanning Live Forex States ────────────────────────────────────
+  // ─── Forex Execution Engine ──────────────────────────────────────────────
+  const forex = useForexExecution();
+
+  // ─── OTC Execution Engine ────────────────────────────────────────────────
+  const otc = useOTCExecution();
+  const [otcSearchFilter, setOtcSearchFilter] = useState('');
+
+  // ─── Merged timeline: engine live records + API historical records ──────────
+  const mergedTimeline = useMemo(() => {
+    const engineIds = new Set<string>();
+    const engine = forex.timelineRecords.map(r => {
+      engineIds.add(r.id);
+      return r;
+    });
+    const otcEngineRecords = otc.timelineRecords
+      .filter(r => !engineIds.has(r.id))
+      .map(r => {
+        engineIds.add(r.id);
+        return {
+          id: r.id,
+          pair: r.pair,
+          direction: r.direction,
+          status: r.status === 'NO_TRADE' ? 'NO TRADE' as const : r.status,
+          entryTime: r.entryTime,
+          expiryTime: r.expiryTime,
+          dataSource: 'live_otc' as string,
+          noTradeReason: r.noTradeReason,
+          entryPrice: r.entryPrice || 0,
+          confidence: r.confidence,
+          scanStartedAt: r.scanStartedAt,
+        } as ExecutionRecord;
+      });
+    const historical = timelineSignals
+      .filter(s => !engineIds.has(s.id))
+      .map(s => ({
+        id: s.id,
+        pair: s.pair,
+        direction: s.direction,
+        status: s.result,
+        entryTime: s.entry_time,
+        expiryTime: s.expiry_time,
+        dataSource: s.source,
+        noTradeReason: s.noTradeReason,
+        entryPrice: (s as any).entryPrice || 0,
+        confidence: s.confidence,
+        scanStartedAt: new Date(s.entry_time).getTime(),
+      } as ExecutionRecord));
+    return [...engine, ...otcEngineRecords, ...historical].sort((a, b) => b.scanStartedAt - a.scanStartedAt);
+  }, [forex.timelineRecords, otc.timelineRecords, timelineSignals]);
+
+  // ─── Manual Scanning Live Forex States (legacy) ───────────────────────────
   const [selectedLivePair, setSelectedLivePair] = useState('EUR/USD');
-  const [scanLoading, setScanLoading] = useState(false);
-  const [scanResult, setScanResult] = useState<ScanResult['result'] | null>(null);
-
-  // Manual Audit countdown state
-  const [clockTime, setClockTime] = useState(() => Date.now());
-  const settlingIdsRef = useRef<Set<string>>(new Set());
-
-  const [frontendCooldowns, setFrontendCooldowns] = useState<Record<string, number>>({});
-  const [scanHistory, setScanHistory] = useState<{
-    pair: string;
-    direction: 'CALL' | 'PUT' | 'WAIT';
-    confidence: number;
-    timestamp: string;
-    entryPrice: number;
-    result: ScanResult['result'];
-  }[]>([]);
   const [pairFilter, setPairFilter] = useState('');
   const [marketOpen, setMarketOpen] = useState(true);
-  const [nextCandleRemaining, setNextCandleRemaining] = useState(0); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [isTimelineVisible, setIsTimelineVisible] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('timeline_visible') !== 'false';
@@ -484,13 +268,23 @@ export default function SignalsPage() {
     }
 
     const toastId = `toast-${Date.now()}`;
-    const newToast = { id: toastId, symbol, direction, timestamp: new Date() };
+    const newToast: ToastMessage = { id: toastId, type: 'signal', symbol, direction, timestamp: new Date() };
     setActiveToasts(prev => [newToast, ...prev].slice(0, 3));
 
     setTimeout(() => {
       setActiveToasts(prev => prev.filter(t => t.id !== toastId));
     }, 4000);
   }, [userAccess, optSettings]);
+
+  const triggerErrorToast = useCallback((message: string) => {
+    const toastId = `toast-err-${Date.now()}`;
+    const newToast: ToastMessage = { id: toastId, type: 'error', message, timestamp: new Date() };
+    setActiveToasts(prev => [newToast, ...prev].slice(0, 3));
+
+    setTimeout(() => {
+      setActiveToasts(prev => prev.filter(t => t.id !== toastId));
+    }, 4000);
+  }, []);
 
   const selectAll = () => {
     const list = subTab !== 'live_market' ? OTC_PAIRS : LIVE_MARKET_PAIRS;
@@ -568,47 +362,41 @@ export default function SignalsPage() {
 
   const refreshStats = useCallback(async () => {
     try {
-      const isLiveMarket = subTab === 'live_market';
-      const [perfRes, livePerfRes, settingsRes, timelineRes] = await Promise.all([
-        getSignalPerformance('live_otc'),
-        getSignalPerformance('live_market'),
+      const [perfRes, settingsRes, timelineRes] = await Promise.all([
+        getSignalPerformance('ALL'),
         getPublicOptimizationSettings(),
-        isLiveMarket
-          ? getManualSignalAudits()
-          : getSignalHistory({ page: 1, page_size: 15 })
+        getManualSignalAudits()
       ]);
       if (perfRes.success && perfRes.stats) {
-        const win = perfRes.stats.accuracy > 0 ? perfRes.stats.accuracy : 84.5;
-        setOtcStats({ winRate: win, totalToday: perfRes.stats.totalToday });
-        setWinRate(win);
-      }
-      if (livePerfRes.success && livePerfRes.stats) {
-        const win = livePerfRes.stats.accuracy > 0 ? livePerfRes.stats.accuracy : 82.3;
-        setLiveMarketStats({ winRate: win, totalToday: livePerfRes.stats.totalToday });
+        const winDefault = subTab === 'live_market' ? 82.3 : 84.5;
+        const win = perfRes.stats.accuracy > 0 ? perfRes.stats.accuracy : winDefault;
+        setActiveStats({ winRate: win, totalToday: perfRes.stats.totalToday });
+        if (subTab !== 'live_market') setWinRate(win);
       }
       if (settingsRes.success && settingsRes.settings) {
         setOptSettings(settingsRes.settings);
       }
       if (timelineRes.success) {
-        if (isLiveMarket && 'audits' in timelineRes) {
-          const mapped = (timelineRes.audits || []).map((a: {
-            id: string; pair: string; direction: string;
-            entry_time: string; expiry_time: string;
-            confidence: number; status: string; provider: string;
-          }) => ({
-            id: a.id,
-            pair: a.pair,
-            direction: a.direction as 'CALL' | 'PUT' | 'WAIT',
-            entry_time: a.entry_time,
-            expiry_time: a.expiry_time,
-            confidence: a.confidence,
-            result: a.status,
-            source: a.provider
-          }));
-          setTimelineSignals(mapped);
-        } else if ('signals' in timelineRes) {
-          setTimelineSignals(timelineRes.signals || []);
-        }
+        const mapped = (timelineRes.audits || []).map((a: {
+          id: string; pair: string; direction: string;
+          entry_time: string; expiry_time: string;
+          confidence: number; status: string; provider: string;
+          market_bias?: string; noTradeReason?: string;
+          entry_price?: number; exit_price?: number;
+        }) => ({
+          id: a.id,
+          pair: a.pair,
+          direction: a.direction as 'CALL' | 'PUT' | 'WAIT',
+          entry_time: a.entry_time,
+          expiry_time: a.expiry_time,
+          confidence: a.confidence,
+          result: a.status,
+          source: a.provider,
+          noTradeReason: a.noTradeReason || a.market_bias || undefined,
+          entryPrice: a.entry_price,
+          exitPrice: a.exit_price
+        }));
+        setTimelineSignals(mapped);
       }
     } catch (err) {
       console.error('Error refreshing stats:', err);
@@ -630,106 +418,10 @@ export default function SignalsPage() {
       }
     })();
 
-    const cachedHistory = localStorage.getItem('live_scan_history');
-    if (cachedHistory) {
-      try {
-        const parsed = JSON.parse(cachedHistory);
-        const historyObj = (Array.isArray(parsed) ? parsed : []).map((item: Record<string, unknown>) => {
-          const resObj = item.result as Record<string, unknown> | undefined;
-          return {
-            pair: String(item.pair || 'EUR/USD'),
-            direction: (item.direction || 'WAIT') as 'CALL' | 'PUT' | 'WAIT',
-            confidence: Number(item.confidence || resObj?.confidence || 0),
-            timestamp: String(item.timestamp || ''),
-            entryPrice: Number(item.entryPrice || resObj?.entryPrice || 0),
-            result: item.result as ScanResult['result']
-          };
-        });
-        setTimeout(() => {
-          if (isMounted) setScanHistory(historyObj);
-        }, 0);
-      } catch (e) {
-        console.error('Failed to parse scan history:', e);
-      }
-    }
-
     return () => {
       isMounted = false;
     };
   }, [subTab]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFrontendCooldowns(prev => {
-        const updated: Record<string, number> = {};
-        let changed = false;
-        Object.entries(prev).forEach(([key, val]) => {
-          if (val > 1) {
-            updated[key] = val - 1;
-            changed = true;
-          } else {
-            changed = true;
-          }
-        });
-        return changed ? updated : prev;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const settleExpiredSignal = useCallback(async (id: string) => {
-    try {
-      const res = await settleManualSignal(id);
-      if (res.success) {
-        void refreshStats();
-      }
-    } catch (err) {
-      console.error(`Failed to settle manual signal ${id}:`, err);
-    }
-  }, [refreshStats]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      // Compute time from the last synced server anchor + elapsed perf time
-      // This stays accurate even if the system clock drifts or is adjusted
-      const perfElapsed = getPerfNow() - syncPerfTimeRef.current;
-      const now = syncedServerTimeRef.current + perfElapsed;
-      setClockTime(now);
-
-      if (subTab === 'live_market') {
-        timelineSignals.forEach(sig => {
-          if (sig.result === 'PENDING') {
-            const expiresMs = new Date(sig.expiry_time).getTime();
-            if (now >= expiresMs && !settlingIdsRef.current.has(sig.id)) {
-              settlingIdsRef.current.add(sig.id);
-              void settleExpiredSignal(sig.id);
-            }
-          }
-        });
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timelineSignals, subTab, settleExpiredSignal]);
-
-  // Resync clock from server when tab becomes visible again after being hidden.
-  // Browsers throttle timers in background tabs, which causes accumulated drift.
-  // On visibility restore we fetch a fresh server timestamp and re-anchor the clock.
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        void getServerTime().then(res => {
-          if (res.success) {
-            syncedServerTimeRef.current = res.timestamp;
-            syncPerfTimeRef.current = getPerfNow();
-            setClockTime(res.timestamp);
-          }
-        });
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -739,160 +431,22 @@ export default function SignalsPage() {
   }, [subTab, refreshStats]);
 
   const handleScanLiveMarket = async (pairToScan = selectedLivePair) => {
-    if (scanLoading) return;
-
     if (!marketOpen) {
-      alert("Analysis restricted: Forex market is currently closed.");
+      triggerErrorToast('Analysis restricted: Forex market is currently closed.');
       return;
     }
-
-    const currentCooldown = frontendCooldowns[pairToScan] || 0;
-    if (currentCooldown > 0) return;
-
-    setScanLoading(true);
     setSelectedLivePair(pairToScan);
-    try {
-      const res = await scanLiveMarketAsset(pairToScan);
-      if (res.success && res.result) {
-        setScanResult(res.result);
-
-        // Anchor the monotonic clock from the server time returned by the scan
-        const serverTimeMs = new Date(res.result.serverTime).getTime();
-        syncedServerTimeRef.current = serverTimeMs;
-        syncPerfTimeRef.current = getPerfNow();
-        setClockTime(serverTimeMs);
-
-        // Client-side timezone verification logs
-        const lastCandleUtc = new Date(res.result.lastCandleTime);
-        const entryCandleUtc = new Date(res.result.entryTime);
-        const expiryCandleUtc = new Date(res.result.expiryTime);
-        const currentServerTimeUtc = new Date(res.result.serverTime);
-        const diffSecClient = Math.max(0, Math.ceil((expiryCandleUtc.getTime() - serverTimeMs) / 1000));
-        
-        const formatUTC = (d: Date) => {
-          return new Intl.DateTimeFormat("en-US", {
-            timeZone: "UTC",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: false,
-          }).format(d) + " UTC";
-        };
-
-        const formatKolkata = (d: Date) => {
-          return new Intl.DateTimeFormat("en-IN", {
-            timeZone: "Asia/Kolkata",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: false,
-          }).format(d);
-        };
-
-        const formatCountdown = (diffSec: number) => {
-          const min = Math.floor(diffSec / 60);
-          const sec = diffSec % 60;
-          return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-        };
-
-        const providerTimestamp = res.result.providerTimestamp || lastCandleUtc.toISOString().replace("T", " ").substring(0, 19);
-        const providerTimezone = res.result.providerTimezone || "UTC";
-
-        console.log(`
-============================================================
-[MANUAL SCAN LOG - CLIENT]
-Latest Closed Candle:
-${formatUTC(lastCandleUtc)}
-↓
-${formatKolkata(lastCandleUtc)} Asia/Kolkata
-Entry Candle:
-${formatKolkata(entryCandleUtc)}
-Expiry:
-${formatKolkata(expiryCandleUtc)}
-Current Server Time:
-${formatUTC(currentServerTimeUtc)}
-Countdown:
-${formatCountdown(diffSecClient)}
-
-[PROVIDER TIME ALIGNMENT CHECK]
-Provider Timestamp:
-${providerTimestamp}
-Provider Timezone:
-${providerTimezone}
-Normalized UTC:
-${lastCandleUtc.toISOString().replace(".000", "")}
-Displayed Asia/Kolkata:
-${formatKolkata(lastCandleUtc)}
-============================================================
-`);
-
-        // Save manual scan result snapshot to DB for personal audit timeline
-        void saveManualSignal({
-          pair: pairToScan,
-          direction: res.result.direction,
-          entry_price: res.result.entryPrice,
-          entry_time: res.result.entryTime,
-          expiry_time: res.result.expiryTime,
-          confidence: res.result.confidence,
-          market_bias: res.result.marketBias,
-          signal_strength: res.result.qualityScore,
-          provider: res.result.dataSource
-        }).then((saved) => {
-          if (saved.success) {
-            void refreshStats();
-          }
-        });
-
-        // Update client-side history in localStorage
-        const newHistoryItem = {
-          pair: pairToScan,
-          direction: res.result.direction,
-          confidence: res.result.confidence,
-          timestamp: new Date().toLocaleTimeString(),
-          entryPrice: res.result.entryPrice,
-          result: res.result
-        };
-
-        setScanHistory(prev => {
-          const filtered = prev.filter(item => !(item.pair === pairToScan && item.timestamp.substring(0, 5) === newHistoryItem.timestamp.substring(0, 5)));
-          const updated = [newHistoryItem, ...filtered].slice(0, 10);
-          localStorage.setItem('live_scan_history', JSON.stringify(updated));
-          return updated;
-        });
-
-        const cooldownVal = res.cooldownRemaining ?? parseInt(optSettings.live_scan_cooldown_seconds ?? '30', 10);
-        if (cooldownVal > 0) {
-          setFrontendCooldowns(prev => ({
-            ...prev,
-            [pairToScan]: cooldownVal
-          }));
-        }
-
-        // Notification chime sound on successful CALL or PUT trigger
-        if (res.result.direction === 'CALL' || res.result.direction === 'PUT') {
-          triggerNewSignalChime(pairToScan, res.result.direction);
-        }
-      } else {
-        if (res.error === 'Cooldown active' && res.cooldownRemaining) {
-          setFrontendCooldowns(prev => ({
-            ...prev,
-            [pairToScan]: res.cooldownRemaining || 30
-          }));
-        } else {
-          alert(`Scan failed: ${res.error || 'Unknown error'}`);
-        }
-      }
-    } catch (err) {
-      const errorObj = err as Error;
-      console.error('[Scan error]:', err);
-      alert(`Scan failed: ${errorObj.message || 'Execution error'}`);
-    } finally {
-      setScanLoading(false);
+    const res = await forex.scan(pairToScan);
+    if (res.success && res.direction && res.direction !== 'WAIT') {
+      triggerNewSignalChime(pairToScan, res.direction);
+    } else if (res.error && res.error !== 'Maximum 3 concurrent scans reached') {
+      triggerErrorToast(res.error);
     }
   };
 
   // Fetch real win rate + signal mode + admin settings on mount
   useEffect(() => {
+    let isMounted = true;
     async function loadMeta() {
       try {
         const [modeRes, accessRes, pairPerfRes, serverTimeRes] = await Promise.all([
@@ -906,10 +460,6 @@ ${formatKolkata(lastCandleUtc)}
           const offset = serverTimeRes.timestamp - clientTime;
           setTimeOffset(offset);
           timeOffsetRef.current = offset;
-          // Anchor the monotonic clock
-          syncedServerTimeRef.current = serverTimeRes.timestamp;
-          syncPerfTimeRef.current = getPerfNow();
-          setClockTime(serverTimeRes.timestamp);
 
           const now = clientTime + offset;
           const nowSec = new Date(now).getUTCSeconds();
@@ -924,6 +474,8 @@ ${formatKolkata(lastCandleUtc)}
           setSignalModeState(modeRes.mode);
           setDataSourceOnline(modeRes.mode === 'SIMULATION' || modeRes.success);
         }
+        // DIAG: Step 6a — raw result from getUserAccessState()
+        console.log('[DIAG] Step 6a — getUserAccessState() raw result:', JSON.stringify(accessRes));
         if (accessRes.success) {
           setUserAccess(accessRes);
         }
@@ -935,11 +487,14 @@ ${formatKolkata(lastCandleUtc)}
       } catch (err) {
         console.error('Error loading metadata:', err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     loadMeta();
-  }, [refreshStats, buildStates]);
+    return () => {
+      isMounted = false;
+    };
+  }, [refreshStats, buildStates, subTab]);
 
   // Reset selected pairs when subTab changes to match current active assets
   useEffect(() => {
@@ -962,22 +517,6 @@ ${formatKolkata(lastCandleUtc)}
       return () => clearTimeout(timer);
     }
   }, [windowSeed, loading, subTab, triggerNewSignalChime, pairStates]);
-
-  // Alert on new live market signals
-  const prevLiveCount = useRef(0);
-  useEffect(() => {
-    if (loading || subTab !== 'live_market') return;
-    if (liveMarketSignals.length > prevLiveCount.current) {
-      const latest = liveMarketSignals[0] as { pair: string; direction: string } | undefined;
-      if (latest) {
-        const timer = setTimeout(() => {
-          triggerNewSignalChime(latest.pair, latest.direction);
-        }, 0);
-        return () => clearTimeout(timer);
-      }
-    }
-    prevLiveCount.current = liveMarketSignals.length;
-  }, [liveMarketSignals, loading, subTab, triggerNewSignalChime]);
 
   // Live market background polling disabled under MVP v1.3 Event-Driven User Scan Architecture
 
@@ -1031,8 +570,63 @@ ${formatKolkata(lastCandleUtc)}
     status: userAccess.status
   };
 
+  // DIAG: Step 6b — userAccess state value
+  useEffect(() => {
+    if (!accessLoading) {
+      console.log('[DIAG] Step 6b — userAccess state:', JSON.stringify(userAccess));
+    }
+  }, [userAccess, accessLoading]);
+
   // hasAccess is false while accessLoading to prevent upgrade modal from firing prematurely
   const hasAccess = !accessLoading && (userAccess.isAdmin || canAccess('premium-signals', profile, optSettings.signal_visibility));
+  // DIAG: Step 11 — locked condition analysis
+  useEffect(() => {
+    if (!accessLoading && !hasAccess) {
+      console.log('[DIAG] Step 11 — LOCK TRIGGER ANALYSIS:', JSON.stringify({
+        hasAccess: false,
+        '!hasAccess': true,
+        'isActive && !hasAccess (Upgrade Now)': true,
+        isAdmin: userAccess.isAdmin,
+        premiumAccess: userAccess.premiumAccess,
+        vipAccess: userAccess.vipAccess,
+        profile_premium_access: profile.premium_access,
+        userAccess_premiumAccess: userAccess.premiumAccess,
+        accessLoading,
+        canAccessRaw: canAccess('premium-signals', profile, optSettings.signal_visibility),
+        signal_visibility: optSettings.signal_visibility,
+        status: userAccess.status,
+        locksRendered: JSON.stringify({
+          premiumAssetFilter: true,
+          timelineFeedLocked: true,
+          upgradeNow: true
+        })
+      }));
+    }
+  }, [hasAccess, accessLoading, userAccess, profile, optSettings]);
+  // DIAG: Steps 7,8,9,10
+  if (!accessLoading) {
+    const userRole = getMembershipRole(profile);
+    const signalVis = optSettings.signal_visibility;
+    let requiredRole = FEATURE_MIN_ROLES['premium-signals'];
+    if (signalVis === 'public') requiredRole = 'free';
+    else if (signalVis === 'vip') requiredRole = 'vip';
+    else if (signalVis === 'premium') requiredRole = 'premium';
+    const roleComparison = `${ROLE_HIERARCHY[userRole]} >= ${ROLE_HIERARCHY[requiredRole]}`;
+    const canAccessResult = ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
+    console.log('[DIAG] Step 7 — profile:', JSON.stringify(profile));
+    console.log('[DIAG] Step 8 — optSettings.signal_visibility:', signalVis);
+    console.log('[DIAG] Step 9 — hasAccess:', hasAccess);
+    console.log('[DIAG] Step 10 — canAccess("premium-signals", ...) =>', JSON.stringify({
+      feature: 'premium-signals',
+      requiredRole,
+      currentRole: userRole,
+      userRoleRank: ROLE_HIERARCHY[userRole],
+      requiredRoleRank: ROLE_HIERARCHY[requiredRole],
+      comparison: roleComparison,
+      result: canAccessResult,
+      signalVisibilityOverride: signalVis
+    }));
+  }
 
   // Filter lists based on search & selectors
   const filtered = pairStates
@@ -1086,9 +680,9 @@ ${formatKolkata(lastCandleUtc)}
 
   const activeCount = subTab !== 'live_market'
     ? pairStates.filter(p => p.status === 'ACTIVE').length
-    : filteredLiveMarket.length;
+    : forex.activeScans.length;
 
-  const handleCardClick = (sig: PairSignal | ScanResult['result'] | null, pair: { symbol: string;[key: string]: unknown } | null, type: string) => {
+  const handleCardClick = (sig: PairSignal | ExecutionRecord | null, pair: { symbol: string;[key: string]: unknown } | null, type: string) => {
     if (!hasAccess) {
       window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: { requestedPlan: 'premium' } }));
       return;
@@ -1098,12 +692,14 @@ ${formatKolkata(lastCandleUtc)}
     }
   };
 
+  const selectedScan = forex.activeScans.find(s => s.pair === selectedLivePair) || forex.popupRecords.find(s => s.pair === selectedLivePair);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 relative text-left">
 
       {/* Dynamic Toast Alerts Feed */}
       <div className="fixed top-4 right-4 z-50 space-y-2 pointer-events-none">
-        {activeToasts.map(t => (
+        {activeToasts.map(t => t.type === 'signal' ? (
           <div key={t.id} className="p-4 rounded-xl border border-neon-green/30 bg-[#030b17] shadow-[0_0_15px_rgba(0,230,118,0.15)] flex items-start gap-3 w-80 animate-slideIn">
             <Bell className="h-5 w-5 text-neon-green shrink-0 mt-0.5" />
             <div className="space-y-1 font-mono text-xs">
@@ -1111,6 +707,14 @@ ${formatKolkata(lastCandleUtc)}
               <div className="text-slate-400">
                 Asset: <span className="text-slate-200 font-bold">{t.symbol}</span> · Direction: <span className={t.direction === 'CALL' ? 'text-neon-green font-bold' : 'text-rose-400 font-bold'}>{t.direction}</span>
               </div>
+            </div>
+          </div>
+        ) : (
+          <div key={t.id} className="p-4 rounded-xl border border-rose-500/30 bg-[#0a0303] shadow-[0_0_15px_rgba(255,0,0,0.1)] flex items-start gap-3 w-80 animate-slideIn">
+            <AlertTriangle className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 font-mono text-xs">
+              <div className="font-bold text-rose-300 uppercase">SCAN ERROR</div>
+              <div className="text-slate-400">{t.message}</div>
             </div>
           </div>
         ))}
@@ -1160,8 +764,8 @@ ${formatKolkata(lastCandleUtc)}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'ACTIVE SIGNALS', value: activeCount.toString(), icon: Radio, color: 'text-neon-green', glow: 'shadow-[0_0_10px_rgba(0,230,118,0.12)]' },
-            { label: "TODAY'S SIGNALS", value: subTab !== 'live_market' ? otcStats.totalToday.toString() : liveMarketStats.totalToday.toString(), icon: Signal, color: 'text-slate-300' },
-            { label: 'WIN RATE (ALL)', value: subTab !== 'live_market' ? (otcStats.winRate !== null ? `${otcStats.winRate}%` : '84.5%') : (liveMarketStats.winRate !== null ? `${liveMarketStats.winRate}%` : '82.3%'), icon: Target, color: 'text-gold-vip', glow: 'shadow-[0_0_10px_rgba(255,215,0,0.1)]' },
+            { label: "TODAY'S SIGNALS", value: activeStats.totalToday.toString(), icon: Signal, color: 'text-slate-300' },
+            { label: 'WIN RATE (ALL)', value: activeStats.winRate !== null ? `${activeStats.winRate}%` : (subTab === 'live_market' ? '82.3%' : '84.5%'), icon: Target, color: 'text-gold-vip', glow: 'shadow-[0_0_10px_rgba(255,215,0,0.1)]' },
             { label: 'ASSETS LOADED', value: subTab !== 'live_market' ? `${selectedPairs.size}/${OTC_PAIRS.length}` : `${Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length}/${LIVE_MARKET_PAIRS.length}`, icon: BarChart2, color: 'text-slate-300' },
           ].map((stat, i) => (
             <div key={i} className={`glass-panel rounded-xl p-4 flex items-center justify-between transition-all duration-300 ${stat.glow} ${!hasAccess ? 'blur-[4.5px] select-none pointer-events-none' : ''}`}>
@@ -1333,7 +937,7 @@ ${formatKolkata(lastCandleUtc)}
             </div>
 
             {/* Signal Cards Grid */}
-            {subTab !== 'live_market' ? (
+            {subTab === 'simulation' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filtered.map(({ ps, pair }) => (
                   <SignalCard
@@ -1346,9 +950,117 @@ ${formatKolkata(lastCandleUtc)}
                 ))}
                 {filtered.length === 0 && (
                   <div className="col-span-2 text-center py-16 text-slate-600 font-mono text-xs">
-                    No active OTC signals match your filter.
+                    No simulation signals match your filter.
                   </div>
                 )}
+              </div>
+            ) : subTab === 'live_otc' ? (
+              <div className="space-y-6">
+                {/* OTC Status Dashboard */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 font-mono text-[10px]">
+                  <div className="glass-panel p-3.5 border border-glass-border/40 rounded-xl flex flex-col justify-center text-left">
+                    <span className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">MARKET STATUS</span>
+                    <span className="text-sm font-extrabold mt-1.5 uppercase text-neon-green">🟢 OPEN</span>
+                    <span className="text-slate-600 text-[8px] mt-0.5">OTC — 24/7 TRADING</span>
+                  </div>
+                  <div className="glass-panel p-3.5 border border-glass-border/40 rounded-xl flex flex-col justify-center text-left">
+                    <span className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">ANALYSIS ENGINE</span>
+                    <span className="text-slate-200 font-extrabold text-sm mt-1.5 uppercase">v1.3 OTC</span>
+                    <span className="text-slate-600 text-[8px] mt-0.5">DETERMINISTIC CONFLUENCE</span>
+                  </div>
+                  <div className="glass-panel p-3.5 border border-glass-border/40 rounded-xl flex flex-col justify-center text-left">
+                    <span className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">ENTRY MODEL</span>
+                    <span className="text-slate-200 font-extrabold text-sm mt-1.5 uppercase">NEXT CANDLE OPEN</span>
+                    <span className="text-slate-600 text-[8px] mt-0.5">60-SECOND EXPIRY</span>
+                  </div>
+                  <div className="glass-panel p-3.5 border border-glass-border/40 rounded-xl flex flex-col justify-center text-left">
+                    <span className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">CONCURRENT SCANS</span>
+                    <span className="text-yellow-400 font-extrabold text-sm mt-1.5 uppercase animate-pulse">{otc.runningCount}/3</span>
+                    <span className="text-slate-600 text-[8px] mt-0.5">ACTIVE OTC SLOTS</span>
+                  </div>
+                </div>
+
+                {/* OTC Manual Scan Selector Grid (34 Pairs) */}
+                <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4 font-mono text-xs text-left">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-glass-border/30 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Radio className="h-4 w-4 text-neon-green animate-pulse" />
+                      <span className="font-extrabold text-slate-200 text-[10px] uppercase tracking-wider">
+                        OTC Confluence Analyzer (34 Pairs)
+                      </span>
+                    </div>
+                    <div className="relative w-full sm:w-48">
+                      <input
+                        type="text"
+                        placeholder="SEARCH ASSET..."
+                        value={otcSearchFilter}
+                        onChange={(e) => setOtcSearchFilter(e.target.value)}
+                        className="w-full bg-[#02050b] border border-glass-border px-2.5 py-1.5 rounded text-[10px] text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-neon-green/30"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
+                    {OTC_PAIRS.filter(p => p.symbol.toLowerCase().includes(otcSearchFilter.toLowerCase())).map((p, idx) => {
+                      const isCurrentLoading = otc.activeScans.some(s => s.pair === p.short && s.status === 'SCANNING');
+                      const otcHistoryMatch = otc.timelineRecords.find(t => t.pair === p.short && !OTC_TERMINAL_STATUSES.has(t.status));
+                      const direction = otcHistoryMatch?.direction;
+                      const volStars = p.vol === 'HIGH' ? '★★★★★' : p.vol === 'MEDIUM' ? '★★★☆☆' : '★★☆☆☆';
+                      const limitReached = !otc.canScan;
+
+                      let statusText = 'Ready';
+                      if (!otc.canScan) statusText = 'FULL';
+
+                      return (
+                        <div key={p.short} className={`p-3 rounded-lg border flex flex-col justify-between gap-3.5 transition-all text-left bg-[#02050b]/60 border-glass-border/30 hover:border-slate-800`}>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className="text-[11px] font-extrabold text-slate-100 tracking-wide block">{p.symbol}</span>
+                              <div className="space-y-0.5 mt-1.5 text-[8px] text-slate-500 font-medium">
+                                <div>VOLATILITY: <span className="text-gold-vip">{volStars}</span></div>
+                                <div>STATUS: <span className={statusText === 'Ready' ? 'text-neon-green font-bold' : 'text-yellow-500 font-bold animate-pulse'}>{statusText.toUpperCase()}</span></div>
+                              </div>
+                            </div>
+                            {direction && (
+                              <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${direction === 'CALL' ? 'text-neon-green border-neon-green/20 bg-neon-green/[0.01]' : 'text-rose-400 border-rose-500/20 bg-rose-500/[0.01]'}`}>
+                                {direction}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => otc.scan(p.short)}
+                            disabled={isCurrentLoading || (!isCurrentLoading && limitReached)}
+                            className="w-full py-1.5 rounded bg-neon-green/90 hover:bg-neon-green disabled:bg-slate-900 border border-neon-green/20 disabled:border-slate-800 font-extrabold text-white disabled:text-slate-600 text-[9px] uppercase tracking-widest transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                          >
+                            {isCurrentLoading ? (
+                              <><RefreshCw className="h-2.5 w-2.5 animate-spin" /> SCANNING...</>
+                            ) : (
+                              <><Zap className="h-2.5 w-2.5 text-yellow-400 animate-pulse" /> ANALYZE</>
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {OTC_PAIRS.filter(p => p.symbol.toLowerCase().includes(otcSearchFilter.toLowerCase())).length === 0 && (
+                      <div className="col-span-3 text-center py-6 text-slate-600 font-bold uppercase tracking-wider text-[9px]">
+                        No OTC pairs match search filter.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* OTC Scan Outcome Container */}
+                <div className="space-y-4">
+                  {otc.popupRecords.map((sig) => (
+                    <OTCScanResultCard key={sig.id} result={sig} clockTime={Date.now()} onDismiss={() => otc.dismiss(sig.id)} />
+                  ))}
+                  {otc.popupRecords.length === 0 && (
+                    <div className="glass-panel p-8 rounded-xl border border-glass-border flex flex-col items-center justify-center py-20 gap-2 font-mono text-slate-600 text-xs text-center opacity-45">
+                      <Radio className="h-8 w-8 text-slate-700" />
+                      <span className="uppercase tracking-widest text-[9px] font-bold">Awaiting OTC Analysis</span>
+                      <span className="text-[8px] max-w-[280px]">Select an OTC pair above and click Analyze to execute indicator checks and determine entry setups.</span>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="space-y-6">
@@ -1373,10 +1085,10 @@ ${formatKolkata(lastCandleUtc)}
                   <div className="glass-panel p-3.5 border border-glass-border/40 rounded-xl flex flex-col justify-center text-left">
                     <span className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">LAST CLOSED CANDLE</span>
                     <span className="text-slate-200 font-extrabold text-sm mt-1.5 uppercase">
-                      {scanResult ? (
+                      {selectedScan ? (
                         (() => {
                           try {
-                            const d = new Date(scanResult.lastCandleTime);
+                            const d = new Date(selectedScan.lastCandleTime);
                             return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
                           } catch {
                             return 'N/A';
@@ -1388,11 +1100,11 @@ ${formatKolkata(lastCandleUtc)}
                   </div>
 
                   <div className="glass-panel p-3.5 border border-glass-border/40 rounded-xl flex flex-col justify-center text-left">
-                    <span className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">NEXT CANDLE BOUNDARY</span>
+                    <span className="text-slate-500 uppercase tracking-widest text-[8px] font-bold">CONCURRENT SCANS</span>
                     <span className="text-yellow-400 font-extrabold text-sm mt-1.5 uppercase animate-pulse">
-                      IN {nextCandleRemaining}S
+                      {forex.runningCount}/3
                     </span>
-                    <span className="text-slate-600 text-[8px] mt-0.5">TRIGGER TO FRESH ANALYSIS</span>
+                    <span className="text-slate-600 text-[8px] mt-0.5">ACTIVE ANALYSIS SLOTS</span>
                   </div>
                 </div>
 
@@ -1422,12 +1134,11 @@ ${formatKolkata(lastCandleUtc)}
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
                     {LIVE_MARKET_PAIRS.filter(p => p.symbol.toLowerCase().includes(pairFilter.toLowerCase())).map(p => {
-                      const cooldown = frontendCooldowns[p.symbol] || 0;
                       const isSelected = selectedLivePair === p.symbol;
-                      const isCurrentLoading = scanLoading && isSelected;
+                      const isCurrentLoading = forex.activeScans.some(s => s.pair === p.symbol && s.status === 'SCANNING');
 
-                      // Lookup cached analysis direction
-                      const historyMatch = scanHistory.find(h => h.pair === p.symbol);
+                      // Lookup cached analysis direction from timeline
+                      const historyMatch = mergedTimeline.find(t => t.pair === p.symbol && t.status !== 'SCANNING' && t.status !== 'FAILED');
                       const direction = historyMatch?.direction;
 
                       const volStars = p.vol === 'HIGH' ? '★★★★★' : p.vol === 'MEDIUM' ? '★★★☆☆' : '★★☆☆☆';
@@ -1435,9 +1146,11 @@ ${formatKolkata(lastCandleUtc)}
                       const exoticsList = ['USD/INR', 'USD/SGD', 'USD/MXN', 'USD/ZAR'];
                       const spreadVal = majorsList.includes(p.symbol) ? 'Low' : exoticsList.includes(p.symbol) ? 'High' : 'Medium';
 
+                      const limitReached = !forex.canScan;
+
                       let statusText = 'Ready';
                       if (!marketOpen) statusText = 'Closed';
-                      else if (cooldown > 0) statusText = `${cooldown}s`;
+                      else if (!forex.canScan) statusText = 'FULL';
 
                       return (
                         <div
@@ -1467,18 +1180,13 @@ ${formatKolkata(lastCandleUtc)}
 
                           <button
                             onClick={() => handleScanLiveMarket(p.symbol)}
-                            disabled={scanLoading || cooldown > 0}
+                            disabled={isCurrentLoading || (!isCurrentLoading && limitReached)}
                             className="w-full py-1.5 rounded bg-purple-600/90 hover:bg-purple-500 disabled:bg-slate-900 border border-purple-500/20 disabled:border-slate-800 font-extrabold text-white disabled:text-slate-600 text-[9px] uppercase tracking-widest transition-all cursor-pointer disabled:cursor-not-allowed flex items-center justify-center gap-1"
                           >
                             {isCurrentLoading ? (
                               <>
                                 <RefreshCw className="h-2.5 w-2.5 animate-spin" />
                                 SCANNING...
-                              </>
-                            ) : cooldown > 0 ? (
-                              <>
-                                <Clock className="h-2.5 w-2.5 text-slate-600" />
-                                {cooldown}S
                               </>
                             ) : (
                               <>
@@ -1498,75 +1206,23 @@ ${formatKolkata(lastCandleUtc)}
                   </div>
                 </div>
                 {/* Scan Outcome Container */}
-                {scanLoading ? (
-                  <div className="glass-panel p-8 rounded-xl border border-glass-border flex flex-col items-center justify-center py-20 gap-3 font-mono">
-                    <Activity className="h-8 w-8 text-purple-500 animate-spin" />
-                    <span className="text-[10px] font-bold text-purple-400 tracking-widest uppercase animate-pulse">Analyzing Indicator Confluence...</span>
-                  </div>
-                ) : scanResult ? (
-                  <ManualScanResultCard
-                    result={scanResult}
-                    pair={selectedLivePair}
-                    onRefreshTrigger={handleScanLiveMarket}
-                  />
-                ) : (
-                  <div className="glass-panel p-8 rounded-xl border border-glass-border flex flex-col items-center justify-center py-20 gap-2 font-mono text-slate-600 text-xs text-center opacity-45">
-                    <Eye className="h-8 w-8 text-slate-700" />
-                    <span className="uppercase tracking-widest text-[9px] font-bold">Awaiting Market Analysis</span>
-                    <span className="text-[8px] max-w-[280px]">Select a currency pair above and click Analyze to execute indicator checks and determine entry setups.</span>
-                  </div>
-                )}
-
-                {/* Client-Side Scan History Panel */}
-                {scanHistory.length > 0 && (
-                  <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-3 font-mono text-left">
-                    <div className="flex items-center justify-between border-b border-glass-border/30 pb-2">
-                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5 text-slate-500" />
-                        Local Session History (Last 10)
-                      </span>
-                      <button
-                        onClick={() => {
-                          setScanHistory([]);
-                          localStorage.removeItem('live_scan_history');
-                        }}
-                        className="text-[8px] text-slate-600 hover:text-slate-400 uppercase font-bold transition-colors cursor-pointer"
-                      >
-                        Clear History
-                      </button>
+                <div className="space-y-4">
+                  {forex.popupRecords.map((sig) => (
+                    <ManualScanResultCard
+                      key={sig.id}
+                      result={sig}
+                      clockTime={Date.now()}
+                      onRetry={() => handleScanLiveMarket(sig.pair)}
+                    />
+                  ))}
+                  {forex.popupRecords.length === 0 && (
+                    <div className="glass-panel p-8 rounded-xl border border-glass-border flex flex-col items-center justify-center py-20 gap-2 font-mono text-slate-600 text-xs text-center opacity-45">
+                      <Eye className="h-8 w-8 text-slate-700" />
+                      <span className="uppercase tracking-widest text-[9px] font-bold">Awaiting Market Analysis</span>
+                      <span className="text-[8px] max-w-[280px]">Select a currency pair above and click Analyze to execute indicator checks and determine entry setups.</span>
                     </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                      {scanHistory.map((item, idx) => {
-                        const isCall = item.direction === 'CALL';
-                        const isPut = item.direction === 'PUT';
-                        return (
-                          <div
-                            key={idx}
-                            onClick={() => {
-                              setSelectedLivePair(item.pair);
-                              setScanResult(item.result);
-                            }}
-                            className={`p-2 rounded border border-slate-900 bg-slate-950/40 hover:bg-slate-900/60 transition-all cursor-pointer text-left space-y-1 relative group ${selectedLivePair === item.pair && scanResult && item.result && scanResult.entryTime === item.result.entryTime ? 'border-purple-500/40 bg-purple-500/[0.02]' : ''
-                              }`}
-                          >
-                            <div className="flex justify-between items-center text-[10px]">
-                              <span className="font-bold text-slate-300">{item.pair}</span>
-                              <span className="text-[8px] text-slate-600 font-sans">{(item.timestamp || '').substring(0, 5)}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className={`text-[9px] font-extrabold flex items-center gap-0.5 ${isCall ? 'text-neon-green' : isPut ? 'text-rose-400' : 'text-slate-500'
-                                }`}>
-                                {isCall ? 'CALL' : isPut ? 'PUT' : 'WAIT'}
-                              </span>
-                              <span className="text-[8px] text-slate-400 font-bold">{item.result?.confidence || 0}%</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
@@ -1612,11 +1268,10 @@ ${formatKolkata(lastCandleUtc)}
                   )}
 
                   <div className={!hasAccess ? 'blur-[4.5px] select-none pointer-events-none space-y-3.5' : 'space-y-3.5'}>
-                    {timelineSignals.map((sig) => {
+                    {mergedTimeline.map((sig) => {
                       const isCall = sig.direction === 'CALL';
                       const isPut = sig.direction === 'PUT';
 
-                      // Display Local Time in Asia/Kolkata timezone
                       const timestampStr = (() => {
                         try {
                           return new Intl.DateTimeFormat("en-IN", {
@@ -1625,18 +1280,32 @@ ${formatKolkata(lastCandleUtc)}
                             minute: "2-digit",
                             second: "2-digit",
                             hour12: true,
-                          }).format(new Date(sig.entry_time));
+                          }).format(new Date(sig.entryTime));
                         } catch {
                           return 'N/A';
                         }
                       })();
 
-                      // Calculate remaining countdown
-                      const expiresMs = new Date(sig.expiry_time).getTime();
-                      const diffSec = Math.max(0, Math.ceil((expiresMs - clockTime) / 1000));
-                      const min = Math.floor(diffSec / 60);
-                      const sec = diffSec % 60;
-                      const countdownStr = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')} remaining`;
+                      const isTimelineScanning = sig.status === 'SCANNING';
+                      const isTimelinePending = sig.status === 'PENDING';
+                      const isTimelineWaitingEntry = sig.status === 'WAITING_FOR_ENTRY';
+                      const isTimelineActive = isTimelinePending || isTimelineWaitingEntry;
+                      const timelineCountdown = (() => {
+                        if (isTimelineScanning) return 'Scanning OTC market...';
+                        const expiresMs = new Date(sig.expiryTime).getTime();
+                        const diffSec = Math.max(0, Math.ceil((expiresMs - Date.now()) / 1000));
+                        if (diffSec <= 0) return 'Updating...';
+                        const m = Math.floor(diffSec / 60);
+                        const s = diffSec % 60;
+                        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} remaining`;
+                      })();
+
+                      const resultLabel = sig.status;
+                      const isWin = sig.status === 'WIN';
+                      const isLoss = sig.status === 'LOSS';
+                      const isRefund = sig.status === 'REFUND';
+                      const isNoTrade = sig.status === 'NO TRADE';
+                      const isActive = isTimelinePending || isTimelineWaitingEntry || isTimelineScanning;
 
                       return (
                         <div key={sig.id} className="p-3 rounded-lg bg-[#02050b]/80 border border-glass-border/40 flex items-center justify-between gap-3 text-left">
@@ -1658,36 +1327,41 @@ ${formatKolkata(lastCandleUtc)}
                             <div className="font-mono text-xs">
                               <div className="font-bold text-slate-200">{sig.pair}</div>
                               <div className="text-[9px] text-slate-500 mt-0.5">
-                                {timestampStr} · {sig.source.toUpperCase()}
+                                {timestampStr} · {sig.dataSource.toUpperCase()}
                               </div>
-                              {sig.result === 'PENDING' && (
-                                <div className="text-[8px] text-amber-400 font-bold mt-1 animate-pulse flex items-center gap-0.5">
-                                  <Clock className="h-2.5 w-2.5" />
-                                  {countdownStr}
+                              {isActive && (
+                                <div className={`text-[8px] font-bold mt-1 flex items-center gap-0.5 ${isTimelineScanning ? 'text-amber-400' : 'text-amber-400 animate-pulse'}`}>
+                                  {isTimelineScanning ? <Loader className="h-2.5 w-2.5 animate-spin" /> : <Clock className="h-2.5 w-2.5" />}
+                                  {timelineCountdown}
+                                </div>
+                              )}
+                              {(isNoTrade || sig.status === 'FAILED') && sig.noTradeReason && (
+                                <div className="text-[8.5px] text-slate-400 font-semibold mt-1 max-w-[200px] leading-relaxed italic">
+                                  Reason: {sig.noTradeReason}
                                 </div>
                               )}
                             </div>
                           </div>
 
                           <div className="text-right font-mono text-[10px] flex flex-col items-end gap-1">
-                            <span className={`px-2 py-0.5 rounded border font-bold uppercase ${sig.result === 'WIN'
+                            <span className={`px-2 py-0.5 rounded border font-bold uppercase ${isWin
                                 ? 'text-neon-green border-neon-green/30 bg-neon-green/5'
-                                : sig.result === 'LOSS'
+                                : isLoss
                                   ? 'text-rose-400 border-rose-500/30 bg-rose-500/5'
-                                  : sig.result === 'REFUND'
+                                  : isRefund
                                     ? 'text-slate-400 border-slate-800 bg-slate-900/40'
-                                    : sig.result === 'NO TRADE'
+                                    : isNoTrade
                                       ? 'text-slate-500 border-slate-800 bg-slate-900/20'
                                       : 'text-amber-400 border-amber-500/20 bg-amber-500/5 animate-pulse'
                               }`}>
-                              {sig.result}
+                              {resultLabel}
                             </span>
                           </div>
                         </div>
                       );
                     })}
 
-                    {timelineSignals.length === 0 && (
+                    {mergedTimeline.length === 0 && (
                       <div className="p-8 text-center text-slate-600 font-mono text-[10px] uppercase">
                         No timeline logs populated.
                       </div>
@@ -1797,476 +1471,5 @@ ${formatKolkata(lastCandleUtc)}
   );
 }
 
-// ─── Live Signal Card Component with Blurred Preview ─────────────────────────
-function SignalCard({
-  pair,
-  ps,
-  hasAccess,
-  onClick
-}: {
-  pair: (typeof OTC_PAIRS)[0];
-  ps: PairSignalState;
-  hasAccess: boolean;
-  onClick: () => void;
-}) {
-  const isActive = ps.status === 'ACTIVE' && ps.signal;
-  const isScanning = ps.status === 'SCANNING';
-  const isLoadingNext = ps.status === 'LOADING_NEXT';
-  const sig = ps.signal;
-  const isCall = sig?.direction === 'CALL';
 
-  const borderColor = !isActive && !isLoadingNext
-    ? 'border-glass-border'
-    : isCall
-      ? 'border-neon-green/25 shadow-[0_0_20px_rgba(0,230,118,0.04)]'
-      : 'border-rose-500/25 shadow-[0_0_20px_rgba(239,68,68,0.04)]';
-
-  return (
-    <div
-      onClick={isActive ? onClick : undefined}
-      className={`glass-panel rounded-xl border transition-all duration-300 overflow-hidden relative ${borderColor} ${isActive ? 'cursor-pointer hover:scale-[1.01]' : ''}`}
-    >
-
-      {/* Blurred overlay locker for standard/Free users */}
-      {isActive && !hasAccess && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-slate-950/85 backdrop-blur-[2px] rounded-xl text-center space-y-3.5 z-10 font-mono">
-          <div className="p-2.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400">
-            <Lock className="h-4.5 w-4.5" />
-          </div>
-          <div className="space-y-0.5">
-            <div className="text-[10px] font-bold text-slate-200 uppercase tracking-wider">Premium Access Required</div>
-            <p className="text-[8px] text-slate-500 max-w-[200px] leading-relaxed">
-              Upgrade to unlock directional indicators, entry positions, and confluence counts.
-            </p>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: { requestedPlan: 'premium' } }));
-            }}
-            className="px-4 py-1.5 rounded bg-purple-600 hover:bg-purple-500 text-white font-bold text-[9px] uppercase tracking-wider transition-colors shadow-md"
-          >
-            Upgrade Now
-          </button>
-        </div>
-      )}
-
-      {/* Card Header */}
-      <div className={`px-4 pt-4 pb-3 flex items-start justify-between ${isActive ? (isCall ? 'bg-neon-green/[0.02]' : 'bg-rose-500/[0.02]') : ''}`}>
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-extrabold font-mono text-slate-100 tracking-wider">
-              {pair.symbol}
-            </span>
-            <span className="text-[8px] font-mono text-slate-600 border border-slate-800 px-1.5 py-0.5 rounded font-bold">OTC</span>
-          </div>
-          <div className="text-[9px] font-mono text-slate-600">
-            VOLATILITY: <span className="text-slate-400 font-bold uppercase">{pair.vol}</span>
-          </div>
-        </div>
-
-        {/* Status badges */}
-        {isActive ? (
-          <div className="flex flex-col items-end gap-1">
-            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${isCall ? 'bg-neon-green/10 border-neon-green/20' : 'bg-rose-500/10 border-rose-500/20'}`}>
-              <div className={`h-1.5 w-1.5 rounded-full bg-neon-green animate-pulse`} />
-              <span className={`text-[9px] font-mono font-bold tracking-wider ${isCall ? 'text-neon-green' : 'text-rose-400'}`}>
-                LIVE
-              </span>
-            </div>
-          </div>
-        ) : isLoadingNext ? (
-          <div className="flex items-center gap-1 px-2.5 py-0.5 rounded border border-neon-green/20 bg-neon-green/5">
-            <span className="text-[9px] font-mono font-bold text-neon-green animate-pulse">NEXT</span>
-          </div>
-        ) : isScanning ? (
-          <div className="flex items-center gap-1 px-2.5 py-0.5 rounded border border-slate-800 bg-slate-900/40">
-            <span className="text-[9px] font-mono font-bold text-amber-400">SCAN</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1 px-2.5 py-0.5 rounded border border-slate-900 bg-slate-950/20">
-            <span className="text-[9px] font-mono font-bold text-slate-600">WAIT</span>
-          </div>
-        )}
-      </div>
-
-      {/* Card Body */}
-      {isActive && sig ? (
-        <div className={`px-4 pb-4 space-y-3.5 ${!hasAccess ? 'blur-[3px] select-none pointer-events-none' : ''}`}>
-
-          <div className="flex items-center justify-between">
-            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border ${isCall ? 'bg-neon-green/5 border-neon-green/15 text-neon-green' : 'bg-rose-500/5 border-rose-500/15 text-rose-400'}`}>
-              {isCall ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              <span className="text-sm font-extrabold font-mono tracking-wider">
-                {hasAccess ? sig.direction : 'LOCK'}
-              </span>
-            </div>
-
-            <div className="text-right font-mono">
-              <div className="text-[8px] text-slate-600 tracking-wider">CONFIDENCE</div>
-              <div className="text-lg font-extrabold text-slate-200 mt-1">
-                {hasAccess ? `${sig.confidence}%` : '••%'}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-            <div className="bg-[#020617]/50 rounded p-2.5 border border-glass-border/30">
-              <div className="text-[8px] text-slate-600 tracking-wider">ENTRY PRICE</div>
-              <div className="text-xs font-bold text-slate-200 mt-1">
-                {hasAccess ? sig.entryPrice : '•.••••'}
-              </div>
-            </div>
-            <div className="bg-[#020617]/50 rounded p-2.5 border border-glass-border/30">
-              <div className="text-[8px] text-slate-600 tracking-wider">EXPIRY TIME</div>
-              <div className="text-xs font-bold text-gold-vip mt-1">1 MINUTE</div>
-            </div>
-          </div>
-        </div>
-      ) : isScanning ? (
-        <div className="px-4 pb-4 pt-1 flex flex-col items-center justify-center py-6 gap-2">
-          <Activity className="h-5 w-5 text-amber-500 animate-spin" />
-          <div className="text-[9px] font-mono text-amber-400">ANALYSING INDICATORS...</div>
-        </div>
-      ) : (
-        <div className="px-4 pb-5 pt-1 flex flex-col items-center justify-center py-5 gap-1.5 opacity-30">
-          <Eye className="h-5 w-5 text-slate-600" />
-          <span className="text-[9px] font-mono text-slate-600 tracking-wider">AWAITING TRIGGER</span>
-        </div>
-      )}
-
-    </div>
-  );
-}
-
-// ─── Live Market Signal Card with Blurred Preview ────────────────────────────
-interface ManualScanResultProps {
-  result: {
-    direction: "CALL" | "PUT" | "WAIT";
-    confidence: number;
-    qualityScore: number;
-    strategy: string;
-    entryPrice: number;
-    entryTime: string;
-    expiryTime: string;
-    risk: "LOW" | "MEDIUM" | "HIGH";
-    recommendation: "CALL" | "PUT" | "WAIT";
-    reasons: { label: string; checked: boolean; text: string }[];
-    indicators: {
-      ema21: number | null;
-      sma50: number | null;
-      rsi: number | null;
-      cci: number | null;
-      stochK: number | null;
-      stochD: number | null;
-      atr: number | null;
-      supertrend: number | null;
-      supertrendDirection: number;
-      bodySize: number;
-      upperWick: number;
-      lowerWick: number;
-    };
-    lastCandleTime: string;
-    analysisGeneratedTime: string;
-    cacheExpiresTime: string;
-    marketBias: string;
-    recommendationText: string;
-    analysisEngine: string;
-    avoidReason: string;
-    entryReason: string;
-    nextCandleProbability: number;
-    trendStrength: number;
-    dataSource: string;
-    cacheStatus: "Fresh" | "Cached";
-    cacheAgeSeconds: number;
-    serverTime: string;
-  };
-  pair: string;
-  onRefreshTrigger?: (pair: string) => void;
-  onExpired?: () => void;
-}
-
-// ─── Event-Driven Live Market Scan Result Card ──────────────────────────────
-function ManualScanResultCard({
-  result,
-  pair,
-  onRefreshTrigger,
-  onExpired
-}: ManualScanResultProps) {
-  const isCall = result.direction === 'CALL';
-  const isPut = result.direction === 'PUT';
-  const isWait = result.direction === 'WAIT';
-
-  const starsCount = Math.round(result.confidence / 20);
-  const starsStr = '★'.repeat(starsCount) + '☆'.repeat(5 - starsCount);
-
-  // Anchor time: record when the card first mounts relative to server time.
-  // Using null initial value to avoid calling getPerfNow() during render.
-  const perfAnchorMs = useRef<number | null>(null);
-  const [elapsedMs, setElapsedMs] = useState<{ anchorServerMs: number; startPerfMs: number }>(
-    () => ({ anchorServerMs: new Date(result.serverTime).getTime(), startPerfMs: 0 })
-  );
-
-  // Tick every second using getPerfNow() delta from anchor — not throttled in background
-  useEffect(() => {
-    // Initialise the perf anchor on first mount inside an effect (not during render)
-    if (perfAnchorMs.current === null) {
-      perfAnchorMs.current = getPerfNow();
-    }
-    const timer = setInterval(() => {
-      const perf = getPerfNow();
-      setElapsedMs(prev => ({ ...prev, startPerfMs: perf - (perfAnchorMs.current ?? perf) }));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Resync on tab visibility change — browser throttles timers in background tabs
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        const perf = getPerfNow();
-        setElapsedMs(prev => ({ ...prev, startPerfMs: perf - (perfAnchorMs.current ?? perf) }));
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, []);
-
-  // Re-anchor when result changes (new scan arrives)
-  useEffect(() => {
-    const newAnchor = new Date(result.serverTime).getTime();
-    const perf = getPerfNow();
-    perfAnchorMs.current = perf;
-    const t = setTimeout(() => {
-      setElapsedMs({ anchorServerMs: newAnchor, startPerfMs: 0 });
-    }, 0);
-    return () => clearTimeout(t);
-  }, [result.serverTime]);
-
-  const currentServerTime = elapsedMs.anchorServerMs + elapsedMs.startPerfMs;
-  const expiryMs = new Date(result.expiryTime).getTime();
-  const diffSec = Math.max(0, Math.ceil((expiryMs - currentServerTime) / 1000));
-  const isFreshReady = diffSec <= 0;
-
-  const onExpiredRef = useRef(onExpired);
-  useEffect(() => {
-    onExpiredRef.current = onExpired;
-  }, [onExpired]);
-
-  const wasExpiredRef = useRef(false);
-  useEffect(() => {
-    wasExpiredRef.current = false;
-  }, [result]);
-
-  useEffect(() => {
-    if (isFreshReady && !wasExpiredRef.current) {
-      wasExpiredRef.current = true;
-      if (onExpiredRef.current) {
-        onExpiredRef.current();
-      }
-    }
-  }, [isFreshReady]);
-
-  const countdownStr = (() => {
-    const min = Math.floor(diffSec / 60);
-    const sec = diffSec % 60;
-    return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-  })();
-
-  const formattedTimes = (() => {
-    try {
-      const entryDate = new Date(result.entryTime);
-      const expiryDate = new Date(result.expiryTime);
-
-      const formatTime = (d: Date) => {
-        return new Intl.DateTimeFormat("en-IN", {
-          timeZone: "Asia/Kolkata",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: false,
-        }).format(d);
-      };
-
-      return {
-        entry: formatTime(entryDate),
-        expiry: formatTime(expiryDate)
-      };
-    } catch {
-      return { entry: 'N/A', expiry: 'N/A' };
-    }
-  })();
-
-  return (
-    <div className={`glass-panel rounded-xl border p-5 space-y-5 font-mono text-xs text-left ${isCall ? 'border-neon-green/30 bg-neon-green/[0.01]' : isPut ? 'border-rose-500/30 bg-rose-500/[0.01]' : 'border-amber-500/20 bg-amber-500/[0.005]'
-      }`}>
-      {/* 1. Header Decision Block */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-glass-border/30 pb-3">
-        <div>
-          <h2 className="text-xl font-extrabold text-slate-100 tracking-wide flex items-center gap-2">
-            {pair}
-            <span className={`text-xs font-black px-2.5 py-0.5 rounded uppercase tracking-wider border ${isCall ? 'text-neon-green border-neon-green/20 bg-neon-green/5' : isPut ? 'text-rose-500 border-rose-500/20 bg-rose-500/5' : 'text-amber-400 border-amber-500/20 bg-amber-500/5'
-              }`}>
-              {isCall ? '🟢 CALL' : isPut ? '🔴 PUT' : '🟡 WAIT'}
-            </span>
-          </h2>
-          <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1 block">
-            CONFLUENCE SIGNAL DIRECTIVE
-          </span>
-        </div>
-        <div className="text-left sm:text-right">
-          <span className="text-[8px] text-slate-500 block uppercase font-bold tracking-wider">ENGINE VERSION</span>
-          <span className="text-[9px] text-slate-300 font-bold">v{result.analysisEngine || "1.3"}</span>
-        </div>
-      </div>
-
-      {isFreshReady ? (
-        <div className="bg-rose-500/10 border border-rose-500/20 rounded p-3 text-[10px] text-rose-400 font-bold flex items-center justify-between animate-pulse">
-          <span className="flex items-center gap-1.5 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block animate-ping" />
-            🔴 SIGNAL EXPIRED — PLEASE RUN FRESH ANALYSIS
-          </span>
-          {onRefreshTrigger && (
-            <button
-              onClick={() => onRefreshTrigger(pair)}
-              className="px-2.5 py-1 rounded bg-rose-600 text-white text-[8px] font-extrabold tracking-wider hover:bg-rose-500 uppercase transition-colors cursor-pointer"
-            >
-              Run New Scan
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="bg-neon-green/5 border border-neon-green/20 rounded p-2.5 text-[10px] text-neon-green font-bold flex items-center justify-between animate-pulse">
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-neon-green inline-block animate-ping" />
-            🟢 ACTIVE CONFLUENCE SIGNAL — SYNCHRONIZED
-          </span>
-        </div>
-      )}
-
-      {/* 2. Institutional Decision Parameters */}
-      <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 ${isFreshReady ? 'opacity-40 select-none pointer-events-none' : ''}`}>
-        <div className="p-3.5 rounded-lg border border-slate-900 bg-slate-950/30 text-left">
-          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">Confidence</span>
-          <span className="text-xs font-extrabold text-gold-vip mt-1.5 block tracking-wider">{starsStr}</span>
-          <span className="text-[7.5px] text-slate-400 font-bold mt-1 block">{result.confidence}% Probability</span>
-        </div>
-
-        <div className="p-3.5 rounded-lg border border-slate-900 bg-slate-950/30 text-left">
-          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">Trend Strength</span>
-          <span className="text-xs font-extrabold text-slate-200 mt-1.5 block font-mono">
-            {(() => {
-              const score = result.trendStrength || result.qualityScore || 70;
-              const filled = Math.round(score / 10);
-              return '█'.repeat(filled) + '░'.repeat(10 - filled);
-            })()}
-          </span>
-          <span className="text-[7.5px] text-slate-400 font-bold mt-1 block">INDEX: {result.trendStrength || result.qualityScore}%</span>
-        </div>
-
-        <div className="p-3.5 rounded-lg border border-slate-900 bg-slate-950/30 text-left">
-          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">Market Bias</span>
-          <span className={`text-xs font-extrabold mt-1.5 block uppercase ${isCall ? 'text-neon-green' : isPut ? 'text-rose-400' : 'text-slate-400'
-            }`}>{result.marketBias}</span>
-          <span className="text-[7.5px] text-slate-400 font-bold mt-1 block">DIRECTIONS ALIGNED</span>
-        </div>
-
-        <div className="p-3.5 rounded-lg border border-slate-900 bg-slate-950/30 text-left">
-          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">Signal Expiration</span>
-          <span className={`text-xs font-extrabold mt-1.5 block uppercase ${diffSec > 0 ? 'text-yellow-400 animate-pulse' : 'text-slate-500 font-bold'
-            }`}>
-            {diffSec > 0 ? countdownStr : 'EXPIRED'}
-          </span>
-          <span className="text-[7.5px] text-slate-400 font-bold mt-1 block">NEXT CANDLE LIMIT</span>
-        </div>
-      </div>
-
-      {/* 3. 1-Minute Binary Trade Times Table */}
-      <div className={`bg-[#020617]/70 border border-slate-900 rounded-lg p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 ${isFreshReady ? 'opacity-40 select-none pointer-events-none' : ''}`}>
-        <div>
-          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">ENTRY CANDLE</span>
-          <span className="text-xs font-extrabold text-slate-200 mt-1 block">{formattedTimes.entry}</span>
-          <span className="text-[7.5px] text-slate-500 font-bold block mt-0.5">(UTC+5:30 • Asia/Kolkata)</span>
-        </div>
-        <div>
-          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">EXPIRY TIME</span>
-          <span className="text-xs font-extrabold text-rose-400 mt-1 block">{formattedTimes.expiry}</span>
-          <span className="text-[7.5px] text-slate-500 font-bold block mt-0.5">(UTC+5:30 • Asia/Kolkata)</span>
-        </div>
-        <div>
-          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">VALID FOR</span>
-          <span className="text-xs font-extrabold text-slate-200 mt-1 block">NEXT CANDLE ONLY</span>
-        </div>
-        <div>
-          <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">ENTRY PRICE</span>
-          <span className="text-xs font-extrabold text-slate-200 mt-1 block">{result.entryPrice}</span>
-        </div>
-      </div>
-
-      {/* 4. Directive Box */}
-      <div className={`p-3.5 rounded-lg border text-left text-xs ${isCall ? 'bg-neon-green/[0.02] border-neon-green/10 text-slate-200' : isPut ? 'bg-rose-500/[0.02] border-rose-500/10 text-slate-200' : 'bg-slate-900/40 border-slate-800 text-slate-300'
-        } ${isFreshReady ? 'opacity-40 select-none pointer-events-none' : ''}`}>
-        <span className="text-[8px] text-slate-500 uppercase tracking-widest font-bold block mb-1">Recommendation Directive</span>
-        <span className="text-xs leading-relaxed">{result.recommendationText}</span>
-      </div>
-
-      {/* 5. Checklist Reasons */}
-      <div className={`space-y-2 border-t border-glass-border/30 pt-4 text-left ${isFreshReady ? 'opacity-40 select-none pointer-events-none' : ''}`}>
-        <span className="text-[9px] text-slate-500 uppercase tracking-widest block font-bold">Analysis Confluence Checklist</span>
-
-        {isWait && (
-          <div className="text-[10px] text-amber-400/90 font-bold leading-relaxed border border-amber-500/20 bg-amber-500/[0.02] p-2 rounded">
-            🟡 WAIT: Current market conditions do not satisfy the confluence requirements.
-          </div>
-        )}
-
-        <div className="space-y-1.5 mt-2">
-          {result.reasons.map((reason, idx) => (
-            <div key={idx} className="flex items-start gap-2 text-xs">
-              <span className={`font-bold shrink-0 ${reason.checked ? 'text-neon-green' : 'text-slate-600'}`}>
-                {reason.checked ? '✓' : '✗'}
-              </span>
-              <span className={reason.checked ? 'text-slate-200' : 'text-slate-500'}>
-                <span className="font-bold text-[10px] text-slate-400 mr-1.5">{reason.label}:</span>
-                {reason.text}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 6. Raw Indicators Block */}
-      <div className="space-y-2 font-mono text-xs border-t border-glass-border/30 pt-3">
-        <span className="text-[9px] text-slate-500 uppercase tracking-widest block mb-2 font-bold">Raw Indicator Values</span>
-
-        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-          <div className="flex justify-between border-b border-slate-900 pb-1.5">
-            <span className="text-slate-500">RSI (14):</span>
-            <span className="text-slate-200 font-semibold">{result.indicators.rsi?.toFixed(2) ?? 'N/A'}</span>
-          </div>
-          <div className="flex justify-between border-b border-slate-900 pb-1.5">
-            <span className="text-slate-500">Stoch %K / %D:</span>
-            <span className="text-slate-200 font-semibold">{result.indicators.stochK?.toFixed(2) ?? 'N/A'} / {result.indicators.stochD?.toFixed(2) ?? 'N/A'}</span>
-          </div>
-          <div className="flex justify-between border-b border-slate-900 pb-1.5">
-            <span className="text-slate-500">CCI (14):</span>
-            <span className="text-slate-200 font-semibold">{result.indicators.cci?.toFixed(2) ?? 'N/A'}</span>
-          </div>
-          <div className="flex justify-between border-b border-slate-900 pb-1.5">
-            <span className="text-slate-500">ATR (14):</span>
-            <span className="text-slate-200 font-semibold">{result.indicators.atr?.toFixed(5) ?? 'N/A'}</span>
-          </div>
-          <div className="flex justify-between border-b border-slate-900 pb-1.5">
-            <span className="text-slate-500">SuperTrend:</span>
-            <span className="text-slate-200 font-semibold">{result.indicators.supertrendDirection === 1 ? 'BULLISH' : 'BEARISH'} ({result.indicators.supertrend?.toFixed(5) ?? 'N/A'})</span>
-          </div>
-          <div className="flex justify-between border-b border-slate-900 pb-1.5">
-            <span className="text-slate-500">Wicks (U/L/B):</span>
-            <span className="text-slate-200 font-semibold">U:{result.indicators.upperWick.toFixed(5)} / L:{result.indicators.lowerWick.toFixed(5)} / B:{result.indicators.bodySize.toFixed(5)}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 

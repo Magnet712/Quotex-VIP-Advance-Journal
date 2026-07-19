@@ -1,0 +1,1185 @@
+timestamp,pair,direction,confidence,qualityScore,strategy,entryPrice,expiryPrice,won,session,weekday,utcHour,noTradeReason,callWouldWin,putWouldWin
+2026-07-15T07:21:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14262,1.14247,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:22:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14259,1.14239,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:23:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14244,1.14237,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:24:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1424,1.1424,,Asian,Wed,7,"Insufficient indicator alignment",false,false
+2026-07-15T07:25:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1424,1.1423,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:26:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14238,1.14211,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:27:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14226,1.14207,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:28:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14211,1.14218,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:29:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14214,1.14225,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:30:00.000Z,EUR/USD,PUT,53,80,Trend Corridor Breakout,1.14219,1.1423,false,Asian,Wed,7,"",,
+2026-07-15T07:31:00.000Z,EUR/USD,PUT,53,80,Trend Corridor Breakout,1.14225,1.14238,false,Asian,Wed,7,"",,
+2026-07-15T07:32:00.000Z,EUR/USD,PUT,53,80,Trend Corridor Breakout,1.14232,1.14243,false,Asian,Wed,7,"",,
+2026-07-15T07:33:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14237,1.14246,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:34:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14242,1.14228,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:35:00.000Z,EUR/USD,PUT,64,90,Trend Corridor Breakout,1.14237,1.14222,true,Asian,Wed,7,"",,
+2026-07-15T07:36:00.000Z,EUR/USD,PUT,66,90,Trend Corridor Breakout,1.14226,1.14221,true,Asian,Wed,7,"",,
+2026-07-15T07:37:00.000Z,EUR/USD,PUT,52,90,Trend Corridor Breakout,1.14224,1.1423,false,Asian,Wed,7,"",,
+2026-07-15T07:38:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14228,1.14227,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:39:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14228,1.14232,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:40:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14229,1.14232,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:41:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14231,1.14224,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:42:00.000Z,EUR/USD,PUT,54,90,Trend Corridor Breakout,1.14228,1.14219,true,Asian,Wed,7,"",,
+2026-07-15T07:43:00.000Z,EUR/USD,PUT,63,90,Trend Corridor Breakout,1.14224,1.14232,false,Asian,Wed,7,"",,
+2026-07-15T07:44:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14229,1.14238,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:45:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14234,1.14237,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:46:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14236,1.14225,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:47:00.000Z,EUR/USD,PUT,61,90,Trend Corridor Breakout,1.14233,1.14225,true,Asian,Wed,7,"",,
+2026-07-15T07:48:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14228,1.1424,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:49:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14234,1.14244,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:50:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14241,1.14244,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:51:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14241,1.14231,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:52:00.000Z,EUR/USD,PUT,68,95,Trend Corridor Breakout,1.14238,1.14238,false,Asian,Wed,7,"",,
+2026-07-15T07:53:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14234,1.14247,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:54:00.000Z,EUR/USD,PUT,53,80,Trend Corridor Breakout,1.14242,1.14248,false,Asian,Wed,7,"",,
+2026-07-15T07:55:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14244,1.14251,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:56:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14249,1.14238,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:57:00.000Z,EUR/USD,PUT,68,95,Trend Corridor Breakout,1.14247,1.14238,true,Asian,Wed,7,"",,
+2026-07-15T07:58:00.000Z,EUR/USD,PUT,61,95,Trend Corridor Breakout,1.1424,1.14231,true,Asian,Wed,7,"",,
+2026-07-15T07:59:00.000Z,EUR/USD,PUT,63,90,Trend Corridor Breakout,1.14237,1.14232,true,London,Wed,8,"",,
+2026-07-15T08:00:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14232,1.14246,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:01:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14239,1.14257,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:02:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14244,1.1427,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:03:00.000Z,EUR/USD,CALL,63,90,Trend Corridor Breakout,1.14264,1.14273,true,London,Wed,8,"",,
+2026-07-15T08:04:00.000Z,EUR/USD,CALL,63,90,Trend Corridor Breakout,1.1427,1.14274,true,London,Wed,8,"",,
+2026-07-15T08:05:00.000Z,EUR/USD,CALL,54,90,Trend Corridor Breakout,1.14271,1.14273,true,London,Wed,8,"",,
+2026-07-15T08:06:00.000Z,EUR/USD,CALL,52,85,Trend Corridor Breakout,1.14271,1.14256,false,London,Wed,8,"",,
+2026-07-15T08:07:00.000Z,EUR/USD,CALL,56,80,Trend Corridor Breakout,1.14266,1.14247,false,London,Wed,8,"",,
+2026-07-15T08:08:00.000Z,EUR/USD,CALL,54,75,Trend Corridor Breakout,1.14254,1.14239,false,London,Wed,8,"",,
+2026-07-15T08:09:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14246,1.14231,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:10:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14237,1.14226,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:11:00.000Z,EUR/USD,CALL,53,80,Trend Corridor Breakout,1.14229,1.14235,true,London,Wed,8,"",,
+2026-07-15T08:12:00.000Z,EUR/USD,CALL,52,90,Trend Corridor Breakout,1.14232,1.14234,true,London,Wed,8,"",,
+2026-07-15T08:13:00.000Z,EUR/USD,CALL,51,80,Trend Corridor Breakout,1.14231,1.14234,true,London,Wed,8,"",,
+2026-07-15T08:14:00.000Z,EUR/USD,CALL,51,80,Trend Corridor Breakout,1.14233,1.14231,false,London,Wed,8,"",,
+2026-07-15T08:15:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1423,1.14235,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:16:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14232,1.14236,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:17:00.000Z,EUR/USD,CALL,53,85,Trend Corridor Breakout,1.14233,1.1424,true,London,Wed,8,"",,
+2026-07-15T08:18:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14235,1.14243,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:19:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1424,1.14245,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:20:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14242,1.14242,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:21:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14244,1.1425,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:22:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14248,1.14241,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:23:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14245,1.14246,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:24:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14243,1.14253,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:25:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14247,1.14253,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:26:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14251,1.14251,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:27:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1425,1.14238,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:28:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14241,1.14249,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:29:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14244,1.14259,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:30:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14251,1.14265,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:31:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14261,1.14263,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:32:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14262,1.14262,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:33:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1426,1.14258,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:34:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14259,1.14263,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:35:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14261,1.14261,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:36:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14261,1.14255,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:37:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14259,1.14255,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:38:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14256,1.14264,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:39:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14259,1.14268,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:40:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14265,1.14246,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:41:00.000Z,EUR/USD,PUT,53,75,Range Extreme Reversion,1.14251,1.14247,true,London,Wed,8,"",,
+2026-07-15T08:42:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14246,1.14255,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:43:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14252,1.14255,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:44:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14253,1.14248,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:45:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1425,1.14253,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:46:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14251,1.14254,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:47:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14251,1.14253,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:48:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14252,1.14237,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:49:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14243,1.14231,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:50:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14237,1.1423,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:51:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14234,1.14228,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:52:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1423,1.14235,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:53:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14232,1.14223,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:54:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14228,1.14223,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:55:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14224,1.14224,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:56:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14224,1.14234,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:57:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14224,1.14241,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:58:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14237,1.14243,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:59:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1424,1.14247,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:00:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14241,1.14249,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:01:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14246,1.14236,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:02:00.000Z,EUR/USD,PUT,62,80,Range Extreme Reversion,1.14242,1.14227,true,London,Wed,9,"",,
+2026-07-15T09:03:00.000Z,EUR/USD,PUT,64,85,Trend Corridor Breakout,1.14233,1.14219,true,London,Wed,9,"",,
+2026-07-15T09:04:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1422,1.14237,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:05:00.000Z,EUR/USD,PUT,52,75,Trend Corridor Breakout,1.14231,1.14237,false,London,Wed,9,"",,
+2026-07-15T09:06:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14235,1.14236,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:07:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14235,1.14233,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:08:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14233,1.14235,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:09:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14234,1.14229,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:10:00.000Z,EUR/USD,PUT,51,80,Trend Corridor Breakout,1.14233,1.14247,false,London,Wed,9,"",,
+2026-07-15T09:11:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14239,1.14252,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:12:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14249,1.14256,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:13:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14247,1.14262,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:14:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14259,1.14245,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:15:00.000Z,EUR/USD,PUT,64,90,Range Extreme Reversion,1.14256,1.14243,true,London,Wed,9,"",,
+2026-07-15T09:16:00.000Z,EUR/USD,PUT,58,90,Range Extreme Reversion,1.14248,1.1425,false,London,Wed,9,"",,
+2026-07-15T09:17:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14248,1.14235,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:18:00.000Z,EUR/USD,PUT,54,85,Range Extreme Reversion,1.14241,1.14234,true,London,Wed,9,"",,
+2026-07-15T09:19:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14238,1.14229,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:20:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14232,1.14246,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:21:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14239,1.14249,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:22:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14247,1.14247,,London,Wed,9,"Insufficient indicator alignment",false,false
+2026-07-15T09:23:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14247,1.14244,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:24:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14243,1.14252,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:25:00.000Z,EUR/USD,CALL,53,80,Range Extreme Reversion,1.14249,1.14252,true,London,Wed,9,"",,
+2026-07-15T09:26:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14249,1.1424,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:27:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14245,1.14238,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:28:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14242,1.1423,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:29:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14235,1.14223,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:30:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1423,1.14222,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:31:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14225,1.14211,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:32:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14218,1.14194,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:33:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14211,1.14184,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:34:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14189,1.14191,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:35:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14187,1.14194,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:36:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14191,1.14197,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:37:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14192,1.14204,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:38:00.000Z,EUR/USD,PUT,50,75,Trend Corridor Breakout,1.14199,1.14203,false,London,Wed,9,"",,
+2026-07-15T09:39:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14202,1.14203,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:40:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14201,1.14192,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:41:00.000Z,EUR/USD,PUT,58,85,Trend Corridor Breakout,1.14199,1.14214,false,London,Wed,9,"",,
+2026-07-15T09:42:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14208,1.14217,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:43:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14214,1.14214,,London,Wed,9,"Insufficient indicator alignment",false,false
+2026-07-15T09:44:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14212,1.14207,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:45:00.000Z,EUR/USD,PUT,50,80,Trend Corridor Breakout,1.14209,1.14215,false,London,Wed,9,"",,
+2026-07-15T09:46:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14208,1.14221,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:47:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.14216,1.14222,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:48:00.000Z,EUR/USD,WAIT,0,0,No Setup Detected,1.1422,1.14211,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T07:21:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34119,1.34131,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:22:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.3412,1.34091,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:23:00.000Z,GBP/USD,PUT,54,80,Trend Corridor Breakout,1.34096,1.34069,true,Asian,Wed,7,"",,
+2026-07-15T07:24:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34085,1.34055,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:25:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34061,1.34047,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:26:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.3405,1.34043,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:27:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34044,1.34034,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:28:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34046,1.34074,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:29:00.000Z,GBP/USD,PUT,53,80,Trend Corridor Breakout,1.34065,1.34078,false,Asian,Wed,7,"",,
+2026-07-15T07:30:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34072,1.34078,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:31:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34075,1.34093,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:32:00.000Z,GBP/USD,CALL,51,80,Trend Corridor Breakout,1.34081,1.34106,true,Asian,Wed,7,"",,
+2026-07-15T07:33:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34094,1.34117,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:34:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34111,1.34092,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:35:00.000Z,GBP/USD,PUT,54,85,Trend Corridor Breakout,1.34106,1.34077,true,Asian,Wed,7,"",,
+2026-07-15T07:36:00.000Z,GBP/USD,PUT,60,85,Trend Corridor Breakout,1.34084,1.34071,true,Asian,Wed,7,"",,
+2026-07-15T07:37:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34074,1.34076,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:38:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34074,1.34067,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:39:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34068,1.3407,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:40:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34065,1.34074,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:41:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34071,1.34062,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:42:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34069,1.34052,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:43:00.000Z,GBP/USD,PUT,55,80,Trend Corridor Breakout,1.34061,1.34076,false,Asian,Wed,7,"",,
+2026-07-15T07:44:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34071,1.34058,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:45:00.000Z,GBP/USD,PUT,50,80,Trend Corridor Breakout,1.34065,1.34044,true,Asian,Wed,7,"",,
+2026-07-15T07:46:00.000Z,GBP/USD,PUT,56,85,Trend Corridor Breakout,1.34049,1.34039,true,Asian,Wed,7,"",,
+2026-07-15T07:47:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34042,1.34033,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:48:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34038,1.34052,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:49:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34045,1.34057,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:50:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34055,1.34056,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:51:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34054,1.3405,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:52:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.3405,1.34041,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:53:00.000Z,GBP/USD,PUT,51,85,Trend Corridor Breakout,1.34044,1.3404,true,Asian,Wed,7,"",,
+2026-07-15T07:54:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34041,1.34044,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:55:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34042,1.34043,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:56:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34042,1.34029,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:57:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34032,1.34028,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:58:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34028,1.3403,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:59:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34029,1.34022,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:00:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34027,1.34013,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:01:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34022,1.34041,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:02:00.000Z,GBP/USD,PUT,53,80,Trend Corridor Breakout,1.34027,1.34056,false,London,Wed,8,"",,
+2026-07-15T08:03:00.000Z,GBP/USD,CALL,56,85,Trend Corridor Breakout,1.34048,1.34061,true,London,Wed,8,"",,
+2026-07-15T08:04:00.000Z,GBP/USD,CALL,53,85,Trend Corridor Breakout,1.34054,1.34067,true,London,Wed,8,"",,
+2026-07-15T08:05:00.000Z,GBP/USD,CALL,53,85,Trend Corridor Breakout,1.34064,1.34053,false,London,Wed,8,"",,
+2026-07-15T08:06:00.000Z,GBP/USD,PUT,55,95,Trend Corridor Breakout,1.3406,1.34038,true,London,Wed,8,"",,
+2026-07-15T08:07:00.000Z,GBP/USD,PUT,64,100,Trend Corridor Breakout,1.3405,1.34024,true,London,Wed,8,"",,
+2026-07-15T08:08:00.000Z,GBP/USD,PUT,64,95,Trend Corridor Breakout,1.34029,1.34012,true,London,Wed,8,"",,
+2026-07-15T08:09:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.3402,1.34001,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:10:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34004,1.33988,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:11:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.3399,1.34003,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:12:00.000Z,GBP/USD,PUT,57,90,Trend Corridor Breakout,1.33999,1.33991,true,London,Wed,8,"",,
+2026-07-15T08:13:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33994,1.33986,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:14:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.3399,1.33969,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:15:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33979,1.33959,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:16:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33963,1.33956,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:17:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33958,1.33968,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:18:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33961,1.3397,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:19:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33968,1.33968,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:20:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33966,1.33963,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:21:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33963,1.33964,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:22:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33961,1.33961,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:23:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33963,1.33975,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:24:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33969,1.33988,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:25:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33979,1.33992,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:26:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33988,1.33978,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:27:00.000Z,GBP/USD,PUT,56,90,Trend Corridor Breakout,1.33984,1.33969,true,London,Wed,8,"",,
+2026-07-15T08:28:00.000Z,GBP/USD,PUT,64,90,Trend Corridor Breakout,1.33973,1.33994,false,London,Wed,8,"",,
+2026-07-15T08:29:00.000Z,GBP/USD,PUT,51,80,Trend Corridor Breakout,1.33982,1.34004,false,London,Wed,8,"",,
+2026-07-15T08:30:00.000Z,GBP/USD,CALL,53,85,Trend Corridor Breakout,1.33998,1.34006,true,London,Wed,8,"",,
+2026-07-15T08:31:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34002,1.34011,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:32:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.34006,1.34016,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:33:00.000Z,GBP/USD,CALL,53,85,Trend Corridor Breakout,1.3401,1.33997,false,London,Wed,8,"",,
+2026-07-15T08:34:00.000Z,GBP/USD,PUT,61,90,Trend Corridor Breakout,1.33999,1.34001,false,London,Wed,8,"",,
+2026-07-15T08:35:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33999,1.33992,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:36:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33993,1.33986,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:37:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33991,1.33978,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:38:00.000Z,GBP/USD,PUT,57,80,Trend Corridor Breakout,1.33982,1.33976,true,London,Wed,8,"",,
+2026-07-15T08:39:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33979,1.33968,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:40:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33972,1.33963,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:41:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33965,1.3396,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:42:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33961,1.33961,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:43:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33961,1.33955,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:44:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33956,1.3396,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:45:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33957,1.33957,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:46:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33956,1.33952,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:47:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33953,1.33946,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:48:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33949,1.33937,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:49:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33942,1.33929,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:50:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33932,1.3392,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:51:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33922,1.33933,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:52:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33928,1.33934,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:53:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.3393,1.33939,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:54:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33936,1.33937,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:55:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33935,1.33938,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:56:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33936,1.33936,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:57:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33935,1.33952,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:58:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33944,1.3396,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:59:00.000Z,GBP/USD,CALL,53,85,Trend Corridor Breakout,1.33953,1.33967,true,London,Wed,9,"",,
+2026-07-15T09:00:00.000Z,GBP/USD,CALL,56,90,Trend Corridor Breakout,1.33959,1.33976,true,London,Wed,9,"",,
+2026-07-15T09:01:00.000Z,GBP/USD,CALL,56,90,Trend Corridor Breakout,1.33971,1.3398,true,London,Wed,9,"",,
+2026-07-15T09:02:00.000Z,GBP/USD,CALL,58,95,Trend Corridor Breakout,1.33976,1.33959,false,London,Wed,9,"",,
+2026-07-15T09:03:00.000Z,GBP/USD,PUT,66,100,Trend Corridor Breakout,1.33964,1.33944,true,London,Wed,9,"",,
+2026-07-15T09:04:00.000Z,GBP/USD,PUT,62,100,Trend Corridor Breakout,1.33948,1.33964,false,London,Wed,9,"",,
+2026-07-15T09:05:00.000Z,GBP/USD,CALL,53,85,Trend Corridor Breakout,1.33957,1.33966,true,London,Wed,9,"",,
+2026-07-15T09:06:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33964,1.33959,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:07:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.3396,1.33956,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:08:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33957,1.33965,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:09:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33959,1.33973,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:10:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33967,1.33976,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:11:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33974,1.33969,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:12:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33971,1.33977,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:13:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33967,1.33984,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:14:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33981,1.3399,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:15:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33982,1.33958,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:16:00.000Z,GBP/USD,PUT,56,80,Range Extreme Reversion,1.33963,1.33966,false,London,Wed,9,"",,
+2026-07-15T09:17:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33964,1.33955,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:18:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33957,1.33955,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:19:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33955,1.33956,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:20:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33953,1.33959,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:21:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33956,1.33958,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:22:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33955,1.33953,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:23:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33954,1.33957,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:24:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33954,1.33966,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:25:00.000Z,GBP/USD,CALL,61,85,Range Extreme Reversion,1.33959,1.33968,true,London,Wed,9,"",,
+2026-07-15T09:26:00.000Z,GBP/USD,CALL,60,85,Range Extreme Reversion,1.33966,1.33958,false,London,Wed,9,"",,
+2026-07-15T09:27:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.3396,1.33947,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:28:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33952,1.3394,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:29:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33943,1.33939,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:30:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33939,1.33942,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:31:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33939,1.33938,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:32:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33938,1.33938,,London,Wed,9,"Insufficient indicator alignment",false,false
+2026-07-15T09:33:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33941,1.33897,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:34:00.000Z,GBP/USD,CALL,58,90,Range Extreme Reversion,1.33904,1.33898,false,London,Wed,9,"",,
+2026-07-15T09:35:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33898,1.33904,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:36:00.000Z,GBP/USD,PUT,50,90,Trend Corridor Breakout,1.33902,1.33897,true,London,Wed,9,"",,
+2026-07-15T09:37:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33897,1.3391,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:38:00.000Z,GBP/USD,PUT,53,80,Trend Corridor Breakout,1.33905,1.33916,false,London,Wed,9,"",,
+2026-07-15T09:39:00.000Z,GBP/USD,PUT,53,80,Trend Corridor Breakout,1.33911,1.3392,false,London,Wed,9,"",,
+2026-07-15T09:40:00.000Z,GBP/USD,PUT,53,80,Trend Corridor Breakout,1.33917,1.33907,true,London,Wed,9,"",,
+2026-07-15T09:41:00.000Z,GBP/USD,PUT,66,90,Trend Corridor Breakout,1.33915,1.33928,false,London,Wed,9,"",,
+2026-07-15T09:42:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33923,1.33928,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:43:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33925,1.33927,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:44:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33924,1.33918,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:45:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33919,1.33919,,London,Wed,9,"Insufficient indicator alignment",false,false
+2026-07-15T09:46:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33917,1.33913,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:47:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.33914,1.33922,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:48:00.000Z,GBP/USD,WAIT,0,0,No Setup Detected,1.3392,1.33916,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T07:21:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.23683,162.25023,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:22:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.23903,162.25808,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:23:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.25096,162.27117,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:24:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.25978,162.28319,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:25:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.27455,162.29066,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:26:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.28371,162.30005,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:27:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29351,162.30721,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:28:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.3007,162.28349,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:29:00.000Z,USD/JPY,CALL,61,90,Trend Corridor Breakout,162.28718,162.29324,true,Asian,Wed,7,"",,
+2026-07-15T07:30:00.000Z,USD/JPY,CALL,56,95,Trend Corridor Breakout,162.28751,162.27459,false,Asian,Wed,7,"",,
+2026-07-15T07:31:00.000Z,USD/JPY,CALL,61,90,Trend Corridor Breakout,162.27725,162.27946,true,Asian,Wed,7,"",,
+2026-07-15T07:32:00.000Z,USD/JPY,CALL,59,90,Trend Corridor Breakout,162.27736,162.27786,true,Asian,Wed,7,"",,
+2026-07-15T07:33:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.27673,162.26825,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:34:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.27056,162.28866,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:35:00.000Z,USD/JPY,CALL,72,95,Trend Corridor Breakout,162.27827,162.29438,true,Asian,Wed,7,"",,
+2026-07-15T07:36:00.000Z,USD/JPY,CALL,69,90,Trend Corridor Breakout,162.2909,162.29884,true,Asian,Wed,7,"",,
+2026-07-15T07:37:00.000Z,USD/JPY,CALL,64,95,Trend Corridor Breakout,162.29301,162.27335,false,Asian,Wed,7,"",,
+2026-07-15T07:38:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.27862,162.28876,,Asian,Wed,7,"Directional confidence too balanced",true,false
+2026-07-15T07:39:00.000Z,USD/JPY,CALL,62,95,Trend Corridor Breakout,162.27938,162.29639,true,Asian,Wed,7,"",,
+2026-07-15T07:40:00.000Z,USD/JPY,CALL,69,95,Trend Corridor Breakout,162.29257,162.29294,true,Asian,Wed,7,"",,
+2026-07-15T07:41:00.000Z,USD/JPY,CALL,52,80,Trend Corridor Breakout,162.29045,162.28687,false,Asian,Wed,7,"",,
+2026-07-15T07:42:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.28738,162.29242,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:43:00.000Z,USD/JPY,CALL,59,85,Trend Corridor Breakout,162.28655,162.26027,false,Asian,Wed,7,"",,
+2026-07-15T07:44:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.26635,162.25426,,Asian,Wed,7,"Directional confidence too balanced",false,true
+2026-07-15T07:45:00.000Z,USD/JPY,CALL,52,80,Trend Corridor Breakout,162.25753,162.27868,true,Asian,Wed,7,"",,
+2026-07-15T07:46:00.000Z,USD/JPY,CALL,66,95,Trend Corridor Breakout,162.25789,162.2928,true,Asian,Wed,7,"",,
+2026-07-15T07:47:00.000Z,USD/JPY,CALL,72,95,Trend Corridor Breakout,162.28555,162.29099,true,Asian,Wed,7,"",,
+2026-07-15T07:48:00.000Z,USD/JPY,CALL,56,90,Trend Corridor Breakout,162.28495,162.26855,false,Asian,Wed,7,"",,
+2026-07-15T07:49:00.000Z,USD/JPY,CALL,57,85,Trend Corridor Breakout,162.2722,162.27857,true,Asian,Wed,7,"",,
+2026-07-15T07:50:00.000Z,USD/JPY,CALL,60,95,Trend Corridor Breakout,162.27371,162.26308,false,Asian,Wed,7,"",,
+2026-07-15T07:51:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.26404,162.25335,,Asian,Wed,7,"Directional confidence too balanced",false,true
+2026-07-15T07:52:00.000Z,USD/JPY,CALL,52,80,Trend Corridor Breakout,162.25525,162.26184,true,Asian,Wed,7,"",,
+2026-07-15T07:53:00.000Z,USD/JPY,CALL,59,95,Trend Corridor Breakout,162.25877,162.26002,true,Asian,Wed,7,"",,
+2026-07-15T07:54:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.25835,162.26154,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:55:00.000Z,USD/JPY,CALL,55,90,Trend Corridor Breakout,162.25882,162.26492,true,Asian,Wed,7,"",,
+2026-07-15T07:56:00.000Z,USD/JPY,CALL,53,85,Trend Corridor Breakout,162.26039,162.26869,true,Asian,Wed,7,"",,
+2026-07-15T07:57:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.26209,162.27513,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:58:00.000Z,USD/JPY,CALL,60,85,Trend Corridor Breakout,162.27081,162.27511,true,Asian,Wed,7,"",,
+2026-07-15T07:59:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.27092,162.28042,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:00:00.000Z,USD/JPY,CALL,60,85,Trend Corridor Breakout,162.27479,162.28,true,London,Wed,8,"",,
+2026-07-15T08:01:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.27656,162.28082,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:02:00.000Z,USD/JPY,CALL,51,85,Trend Corridor Breakout,162.27928,162.27079,false,London,Wed,8,"",,
+2026-07-15T08:03:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.27395,162.26507,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:04:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.26842,162.25648,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:05:00.000Z,USD/JPY,PUT,51,80,Trend Corridor Breakout,162.25964,162.27033,false,London,Wed,8,"",,
+2026-07-15T08:06:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.26575,162.2818,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:07:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.27256,162.29106,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:08:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.28032,162.30151,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:09:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29592,162.30528,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:10:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29623,162.32886,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:11:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.31296,162.3395,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:12:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.33242,162.34097,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:13:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.33514,162.34523,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:14:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.33918,162.34976,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:15:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.34744,162.33305,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:16:00.000Z,USD/JPY,CALL,58,85,Trend Corridor Breakout,162.336,162.34069,true,London,Wed,8,"",,
+2026-07-15T08:17:00.000Z,USD/JPY,CALL,54,90,Trend Corridor Breakout,162.33176,162.34602,true,London,Wed,8,"",,
+2026-07-15T08:18:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.34117,162.32838,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:19:00.000Z,USD/JPY,CALL,58,85,Trend Corridor Breakout,162.33203,162.3256,false,London,Wed,8,"",,
+2026-07-15T08:20:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32585,162.31609,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:21:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32083,162.31273,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:22:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.31381,162.30785,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:23:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30896,162.30985,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:24:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30859,162.29964,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:25:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30173,162.30561,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:26:00.000Z,USD/JPY,CALL,51,90,Trend Corridor Breakout,162.30206,162.3157,true,London,Wed,8,"",,
+2026-07-15T08:27:00.000Z,USD/JPY,CALL,58,90,Trend Corridor Breakout,162.30698,162.32408,true,London,Wed,8,"",,
+2026-07-15T08:28:00.000Z,USD/JPY,CALL,61,90,Trend Corridor Breakout,162.3185,162.30047,false,London,Wed,8,"",,
+2026-07-15T08:29:00.000Z,USD/JPY,CALL,52,75,Trend Corridor Breakout,162.30274,162.28528,false,London,Wed,8,"",,
+2026-07-15T08:30:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29291,162.28031,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:31:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.28245,162.28691,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:32:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.28077,162.29255,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:33:00.000Z,USD/JPY,CALL,64,85,Range Extreme Reversion,162.28956,162.28574,false,London,Wed,8,"",,
+2026-07-15T08:34:00.000Z,USD/JPY,CALL,50,80,Range Extreme Reversion,162.2862,162.30025,true,London,Wed,8,"",,
+2026-07-15T08:35:00.000Z,USD/JPY,CALL,58,85,Range Extreme Reversion,162.28973,162.30648,true,London,Wed,8,"",,
+2026-07-15T08:36:00.000Z,USD/JPY,CALL,53,80,Range Extreme Reversion,162.30233,162.30984,true,London,Wed,8,"",,
+2026-07-15T08:37:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30418,162.31414,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:38:00.000Z,USD/JPY,CALL,53,80,Range Extreme Reversion,162.31085,162.31371,true,London,Wed,8,"",,
+2026-07-15T08:39:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30979,162.3129,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:40:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.31056,162.30658,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:41:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30704,162.30656,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:42:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30677,162.31028,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:43:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30677,162.29674,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:44:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29874,162.29745,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:45:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.2976,162.30391,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:46:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29694,162.31278,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:47:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30588,162.31618,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:48:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.31188,162.32005,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:49:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.31564,162.31975,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:50:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.31588,162.32204,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:51:00.000Z,USD/JPY,PUT,52,80,Range Extreme Reversion,162.31767,162.32048,false,London,Wed,8,"",,
+2026-07-15T08:52:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.3172,162.32506,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:53:00.000Z,USD/JPY,CALL,51,80,Trend Corridor Breakout,162.32156,162.3226,true,London,Wed,8,"",,
+2026-07-15T08:54:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32119,162.32491,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:55:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32124,162.32908,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:56:00.000Z,USD/JPY,CALL,55,85,Trend Corridor Breakout,162.32367,162.33273,true,London,Wed,8,"",,
+2026-07-15T08:57:00.000Z,USD/JPY,CALL,60,90,Trend Corridor Breakout,162.32994,162.31643,false,London,Wed,8,"",,
+2026-07-15T08:58:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.31877,162.30298,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:59:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.31,162.29739,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:00:00.000Z,USD/JPY,PUT,55,90,Trend Corridor Breakout,162.30012,162.3035,false,London,Wed,9,"",,
+2026-07-15T09:01:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30064,162.29485,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:02:00.000Z,USD/JPY,PUT,51,85,Trend Corridor Breakout,162.29726,162.30776,false,London,Wed,9,"",,
+2026-07-15T09:03:00.000Z,USD/JPY,PUT,50,75,Trend Corridor Breakout,162.29877,162.31576,false,London,Wed,9,"",,
+2026-07-15T09:04:00.000Z,USD/JPY,PUT,50,75,Trend Corridor Breakout,162.31161,162.30466,true,London,Wed,9,"",,
+2026-07-15T09:05:00.000Z,USD/JPY,PUT,51,85,Trend Corridor Breakout,162.30599,162.30133,true,London,Wed,9,"",,
+2026-07-15T09:06:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30169,162.30388,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:07:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30291,162.29903,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:08:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29857,162.31056,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:09:00.000Z,USD/JPY,CALL,53,85,Range Extreme Reversion,162.30372,162.31469,true,London,Wed,9,"",,
+2026-07-15T09:10:00.000Z,USD/JPY,CALL,56,85,Range Extreme Reversion,162.31008,162.29479,false,London,Wed,9,"",,
+2026-07-15T09:11:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29892,162.28,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:12:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.28159,162.30685,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:13:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30063,162.29378,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:14:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29481,162.2961,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:15:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29486,162.28074,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:16:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.28454,162.29785,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:17:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29091,162.30416,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:18:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29953,162.30524,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:19:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30228,162.29702,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:20:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29771,162.29837,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:21:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29427,162.3028,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:22:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29848,162.30103,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:23:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29835,162.30143,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:24:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.30013,162.28881,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:25:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29125,162.29758,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:26:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29227,162.30175,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:27:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29744,162.30836,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:28:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.29827,162.32131,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:29:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.31339,162.32468,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:30:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.3208,162.3175,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:31:00.000Z,USD/JPY,PUT,54,85,Range Extreme Reversion,162.31966,162.32436,false,London,Wed,9,"",,
+2026-07-15T09:32:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32069,162.33394,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:33:00.000Z,USD/JPY,PUT,54,80,Range Extreme Reversion,162.32598,162.33515,false,London,Wed,9,"",,
+2026-07-15T09:34:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.33267,162.32906,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:35:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32957,162.32652,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:36:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32751,162.33513,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:37:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.33286,162.32712,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:38:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32754,162.32142,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:39:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32131,162.3323,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:40:00.000Z,USD/JPY,CALL,58,85,Trend Corridor Breakout,162.32719,162.3351,true,London,Wed,9,"",,
+2026-07-15T09:41:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.33014,162.31919,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:42:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32176,162.32461,,London,Wed,9,"Directional confidence too balanced",true,false
+2026-07-15T09:43:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32231,162.31855,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:44:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.31941,162.32367,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:45:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.32148,162.3306,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:46:00.000Z,USD/JPY,CALL,60,85,Trend Corridor Breakout,162.3227,162.33414,true,London,Wed,9,"",,
+2026-07-15T09:47:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.33121,162.33508,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:48:00.000Z,USD/JPY,WAIT,0,0,No Setup Detected,162.33132,162.33955,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T07:21:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69859,0.69859,,Asian,Wed,7,"Insufficient indicator alignment",false,false
+2026-07-15T07:22:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6986,0.69843,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:23:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69846,0.69846,,Asian,Wed,7,"Insufficient indicator alignment",false,false
+2026-07-15T07:24:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69847,0.69825,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:25:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69828,0.6981,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:26:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6982,0.69797,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:27:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69805,0.69784,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:28:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6979,0.69806,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:29:00.000Z,AUD/USD,PUT,60,95,Trend Corridor Breakout,0.69802,0.69802,false,Asian,Wed,7,"",,
+2026-07-15T07:30:00.000Z,AUD/USD,PUT,50,90,Trend Corridor Breakout,0.69803,0.69815,false,Asian,Wed,7,"",,
+2026-07-15T07:31:00.000Z,AUD/USD,PUT,55,85,Trend Corridor Breakout,0.69807,0.69823,false,Asian,Wed,7,"",,
+2026-07-15T07:32:00.000Z,AUD/USD,PUT,55,85,Trend Corridor Breakout,0.69818,0.69829,false,Asian,Wed,7,"",,
+2026-07-15T07:33:00.000Z,AUD/USD,PUT,55,85,Trend Corridor Breakout,0.69823,0.69835,false,Asian,Wed,7,"",,
+2026-07-15T07:34:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69833,0.69837,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:35:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69834,0.69829,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:36:00.000Z,AUD/USD,PUT,53,90,Trend Corridor Breakout,0.6983,0.6983,false,Asian,Wed,7,"",,
+2026-07-15T07:37:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69829,0.69835,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:38:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69833,0.69833,,Asian,Wed,7,"Insufficient indicator alignment",false,false
+2026-07-15T07:39:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69833,0.69831,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:40:00.000Z,AUD/USD,PUT,53,95,Trend Corridor Breakout,0.69831,0.69838,false,Asian,Wed,7,"",,
+2026-07-15T07:41:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69836,0.6984,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:42:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69838,0.6983,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:43:00.000Z,AUD/USD,PUT,65,95,Trend Corridor Breakout,0.69837,0.69846,false,Asian,Wed,7,"",,
+2026-07-15T07:44:00.000Z,AUD/USD,PUT,51,85,Trend Corridor Breakout,0.69842,0.6985,false,Asian,Wed,7,"",,
+2026-07-15T07:45:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69847,0.69849,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:46:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69848,0.69851,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:47:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69849,0.69855,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:48:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6985,0.69863,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:49:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69856,0.69868,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:50:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69865,0.69865,,Asian,Wed,7,"Insufficient indicator alignment",false,false
+2026-07-15T07:51:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69863,0.69871,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:52:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69868,0.69875,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:53:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69868,0.69881,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:54:00.000Z,AUD/USD,CALL,51,85,Trend Corridor Breakout,0.69878,0.69878,false,Asian,Wed,7,"",,
+2026-07-15T07:55:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69876,0.6988,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:56:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69879,0.69872,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:57:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69876,0.69868,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:58:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6987,0.6987,,Asian,Wed,7,"Insufficient indicator alignment",false,false
+2026-07-15T07:59:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6987,0.69867,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:00:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69868,0.69865,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:01:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69866,0.69872,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:02:00.000Z,AUD/USD,CALL,55,85,Trend Corridor Breakout,0.69863,0.69884,true,London,Wed,8,"",,
+2026-07-15T08:03:00.000Z,AUD/USD,CALL,55,85,Trend Corridor Breakout,0.69878,0.6989,true,London,Wed,8,"",,
+2026-07-15T08:04:00.000Z,AUD/USD,CALL,53,85,Trend Corridor Breakout,0.69884,0.69895,true,London,Wed,8,"",,
+2026-07-15T08:05:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69892,0.69892,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:06:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69891,0.6988,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:07:00.000Z,AUD/USD,CALL,51,80,Trend Corridor Breakout,0.69887,0.69865,false,London,Wed,8,"",,
+2026-07-15T08:08:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69873,0.69858,,London,Wed,8,"Directional confidence too balanced",false,true
+2026-07-15T08:09:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69861,0.69859,,London,Wed,8,"Directional confidence too balanced",false,true
+2026-07-15T08:10:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69859,0.69865,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:11:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69859,0.69869,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:12:00.000Z,AUD/USD,CALL,58,90,Trend Corridor Breakout,0.69866,0.69862,false,London,Wed,8,"",,
+2026-07-15T08:13:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69863,0.69863,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:14:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69863,0.6986,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:15:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6986,0.69864,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:16:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69861,0.69863,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:17:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69862,0.69862,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:18:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69861,0.69866,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:19:00.000Z,AUD/USD,CALL,52,85,Range Extreme Reversion,0.69864,0.69862,false,London,Wed,8,"",,
+2026-07-15T08:20:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69862,0.69862,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:21:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69862,0.69864,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:22:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69863,0.69858,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:23:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69859,0.69856,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:24:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69856,0.69869,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:25:00.000Z,AUD/USD,CALL,60,85,Range Extreme Reversion,0.6986,0.69878,true,London,Wed,8,"",,
+2026-07-15T08:26:00.000Z,AUD/USD,CALL,53,85,Range Extreme Reversion,0.6987,0.69885,true,London,Wed,8,"",,
+2026-07-15T08:27:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69881,0.6987,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:28:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69873,0.69881,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:29:00.000Z,AUD/USD,PUT,58,90,Range Extreme Reversion,0.69875,0.69887,false,London,Wed,8,"",,
+2026-07-15T08:30:00.000Z,AUD/USD,PUT,58,90,Range Extreme Reversion,0.69883,0.6989,false,London,Wed,8,"",,
+2026-07-15T08:31:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69887,0.69891,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:32:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69889,0.69881,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:33:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69882,0.69895,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:34:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69889,0.69902,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:35:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69898,0.69888,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:36:00.000Z,AUD/USD,CALL,58,85,Trend Corridor Breakout,0.6989,0.69884,false,London,Wed,8,"",,
+2026-07-15T08:37:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69887,0.69882,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:38:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69883,0.69884,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:39:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69884,0.69884,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:40:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69883,0.69878,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:41:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69879,0.69879,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:42:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69877,0.6988,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:43:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69878,0.69871,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:44:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69873,0.69872,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:45:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69872,0.69872,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:46:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69871,0.69872,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:47:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69871,0.69862,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:48:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69867,0.69857,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:49:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69859,0.69858,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:50:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69858,0.69858,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:51:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69857,0.69859,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:52:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69858,0.69859,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:53:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69858,0.69853,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:54:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69854,0.6985,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:55:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69851,0.69849,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:56:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6985,0.69859,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:57:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6985,0.69871,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:58:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69864,0.69877,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:59:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69873,0.69883,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:00:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69879,0.69886,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:01:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69883,0.69888,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:02:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69886,0.6988,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:03:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69881,0.69875,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:04:00.000Z,AUD/USD,PUT,52,90,Trend Corridor Breakout,0.69876,0.69882,false,London,Wed,9,"",,
+2026-07-15T09:05:00.000Z,AUD/USD,CALL,55,85,Trend Corridor Breakout,0.69879,0.69883,true,London,Wed,9,"",,
+2026-07-15T09:06:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69881,0.69875,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:07:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69877,0.69881,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:08:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69879,0.69885,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:09:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69882,0.69887,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:10:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69885,0.69889,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:11:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69887,0.69891,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:12:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6989,0.69893,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:13:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69889,0.69897,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:14:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69895,0.69898,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:15:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69896,0.69893,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:16:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69894,0.69886,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:17:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69891,0.69879,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:18:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69882,0.69883,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:19:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69883,0.69888,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:20:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69883,0.69894,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:21:00.000Z,AUD/USD,CALL,51,80,Range Extreme Reversion,0.69889,0.69897,true,London,Wed,9,"",,
+2026-07-15T09:22:00.000Z,AUD/USD,CALL,56,80,Trend Corridor Breakout,0.69894,0.69898,true,London,Wed,9,"",,
+2026-07-15T09:23:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69897,0.69899,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:24:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69896,0.69904,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:25:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69901,0.69909,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:26:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69904,0.6989,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:27:00.000Z,AUD/USD,CALL,53,85,Trend Corridor Breakout,0.69894,0.69881,false,London,Wed,9,"",,
+2026-07-15T09:28:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69885,0.69879,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:29:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6988,0.69875,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:30:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69878,0.69871,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:31:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69873,0.69868,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:32:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69869,0.69861,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:33:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69865,0.69858,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:34:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69859,0.69853,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:35:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69853,0.69862,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:36:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6986,0.6986,,London,Wed,9,"Insufficient indicator alignment",false,false
+2026-07-15T09:37:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69859,0.69863,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:38:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.6986,0.69863,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:39:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69861,0.69855,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:40:00.000Z,AUD/USD,PUT,51,80,Trend Corridor Breakout,0.69859,0.69849,true,London,Wed,9,"",,
+2026-07-15T09:41:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69852,0.69863,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:42:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69859,0.69867,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:43:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69863,0.69869,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:44:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69867,0.69874,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:45:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69869,0.69877,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:46:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69875,0.69872,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:47:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69873,0.69876,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:48:00.000Z,AUD/USD,WAIT,0,0,No Setup Detected,0.69875,0.69875,,London,Wed,9,"Insufficient indicator alignment",false,false
+2026-07-15T07:21:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40505,1.40516,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:22:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40504,1.40528,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:23:00.000Z,USD/CAD,CALL,53,85,Trend Corridor Breakout,1.40522,1.40534,true,Asian,Wed,7,"",,
+2026-07-15T07:24:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40525,1.40553,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:25:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40537,1.40565,,Asian,Wed,7,"Directional confidence too balanced",true,false
+2026-07-15T07:26:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40558,1.40571,,Asian,Wed,7,"Directional confidence too balanced",true,false
+2026-07-15T07:27:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40564,1.40574,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:28:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40571,1.40566,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:29:00.000Z,USD/CAD,PUT,53,95,Trend Corridor Breakout,1.40566,1.40565,true,Asian,Wed,7,"",,
+2026-07-15T07:30:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40565,1.40565,,Asian,Wed,7,"Insufficient indicator alignment",false,false
+2026-07-15T07:31:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40565,1.40546,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:32:00.000Z,USD/CAD,CALL,53,80,Trend Corridor Breakout,1.40548,1.40526,false,Asian,Wed,7,"",,
+2026-07-15T07:33:00.000Z,USD/CAD,PUT,54,85,Trend Corridor Breakout,1.40544,1.40511,true,Asian,Wed,7,"",,
+2026-07-15T07:34:00.000Z,USD/CAD,PUT,57,85,Trend Corridor Breakout,1.40519,1.40528,false,Asian,Wed,7,"",,
+2026-07-15T07:35:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40521,1.40534,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:36:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4053,1.40533,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:37:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40531,1.40518,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:38:00.000Z,USD/CAD,PUT,52,75,Trend Corridor Breakout,1.4052,1.4052,false,Asian,Wed,7,"",,
+2026-07-15T07:39:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40521,1.40525,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:40:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40522,1.4052,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:41:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4052,1.40521,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:42:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40518,1.40523,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:43:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40521,1.40512,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:44:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40514,1.40518,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:45:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40514,1.40521,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:46:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40516,1.40525,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:47:00.000Z,USD/CAD,CALL,52,85,Trend Corridor Breakout,1.40522,1.40526,true,Asian,Wed,7,"",,
+2026-07-15T07:48:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40524,1.40526,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:49:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40523,1.40521,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:50:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40522,1.40525,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:51:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40521,1.40533,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:52:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40528,1.40534,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:53:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40531,1.40525,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:54:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40525,1.40515,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:55:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4052,1.4051,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:56:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40511,1.40524,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:57:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40516,1.40531,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:58:00.000Z,USD/CAD,CALL,53,80,Range Extreme Reversion,1.40526,1.40535,true,Asian,Wed,7,"",,
+2026-07-15T07:59:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40532,1.40538,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:00:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40534,1.40521,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:01:00.000Z,USD/CAD,PUT,60,75,Range Extreme Reversion,1.40523,1.40505,true,London,Wed,8,"",,
+2026-07-15T08:02:00.000Z,USD/CAD,PUT,53,80,Range Extreme Reversion,1.40521,1.40493,true,London,Wed,8,"",,
+2026-07-15T08:03:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40497,1.40476,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:04:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40488,1.40465,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:05:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4047,1.4047,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:06:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40469,1.40491,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:07:00.000Z,USD/CAD,PUT,53,80,Trend Corridor Breakout,1.40477,1.40507,false,London,Wed,8,"",,
+2026-07-15T08:08:00.000Z,USD/CAD,PUT,53,80,Trend Corridor Breakout,1.40497,1.40515,false,London,Wed,8,"",,
+2026-07-15T08:09:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4051,1.40514,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:10:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40512,1.40514,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:11:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40511,1.40502,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:12:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40509,1.4052,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:13:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40516,1.40522,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:14:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40519,1.4052,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:15:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40518,1.40523,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:16:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4052,1.40523,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:17:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40521,1.40525,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:18:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40522,1.40528,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:19:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40526,1.40529,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:20:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40524,1.40535,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:21:00.000Z,USD/CAD,PUT,52,80,Range Extreme Reversion,1.40532,1.40535,false,London,Wed,8,"",,
+2026-07-15T08:22:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40532,1.40526,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:23:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40528,1.40533,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:24:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4053,1.40518,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:25:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40524,1.40501,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:26:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4051,1.4049,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:27:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40494,1.40504,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:28:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40501,1.40502,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:29:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40499,1.40496,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:30:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40498,1.40505,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:31:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40502,1.40493,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:32:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40498,1.40504,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:33:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40502,1.40498,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:34:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40498,1.40493,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:35:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40494,1.40494,,London,Wed,8,"Insufficient indicator alignment",false,false
+2026-07-15T08:36:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40493,1.40506,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:37:00.000Z,USD/CAD,CALL,52,70,Range Extreme Reversion,1.40496,1.40515,true,London,Wed,8,"",,
+2026-07-15T08:38:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4051,1.40522,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:39:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40515,1.40527,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:40:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40521,1.40536,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:41:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4053,1.40538,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:42:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40535,1.40529,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:43:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40531,1.40535,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:44:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40531,1.40541,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:45:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40537,1.40541,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:46:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40539,1.40545,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:47:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4054,1.40552,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:48:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40544,1.40558,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:49:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40553,1.40564,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:50:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40559,1.40566,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:51:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40562,1.40569,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:52:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40567,1.40561,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:53:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40564,1.40551,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:54:00.000Z,USD/CAD,CALL,56,85,Trend Corridor Breakout,1.40562,1.40579,true,London,Wed,8,"",,
+2026-07-15T08:55:00.000Z,USD/CAD,PUT,52,100,Trend Corridor Breakout,1.40575,1.40571,true,London,Wed,8,"",,
+2026-07-15T08:56:00.000Z,USD/CAD,CALL,54,90,Trend Corridor Breakout,1.40572,1.40568,false,London,Wed,8,"",,
+2026-07-15T08:57:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40569,1.40563,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:58:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40567,1.40555,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:59:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40558,1.40552,,London,Wed,9,"Directional confidence too balanced",false,true
+2026-07-15T09:00:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40554,1.40549,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:01:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4055,1.40553,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:02:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40549,1.40543,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:03:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40551,1.4056,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:04:00.000Z,USD/CAD,CALL,69,95,Trend Corridor Breakout,1.40557,1.40565,true,London,Wed,9,"",,
+2026-07-15T09:05:00.000Z,USD/CAD,CALL,69,90,Trend Corridor Breakout,1.40558,1.4057,true,London,Wed,9,"",,
+2026-07-15T09:06:00.000Z,USD/CAD,CALL,69,90,Trend Corridor Breakout,1.40563,1.40576,true,London,Wed,9,"",,
+2026-07-15T09:07:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40573,1.4057,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:08:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4057,1.4057,,London,Wed,9,"Insufficient indicator alignment",false,false
+2026-07-15T09:09:00.000Z,USD/CAD,CALL,51,85,Trend Corridor Breakout,1.40568,1.40565,false,London,Wed,9,"",,
+2026-07-15T09:10:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40565,1.40558,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:11:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40561,1.40555,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:12:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40556,1.40563,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:13:00.000Z,USD/CAD,CALL,59,90,Trend Corridor Breakout,1.40557,1.40545,false,London,Wed,9,"",,
+2026-07-15T09:14:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40547,1.40543,,London,Wed,9,"Directional confidence too balanced",false,true
+2026-07-15T09:15:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40544,1.40542,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:16:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40543,1.40543,,London,Wed,9,"Insufficient indicator alignment",false,false
+2026-07-15T09:17:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40542,1.40563,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:18:00.000Z,USD/CAD,CALL,68,90,Trend Corridor Breakout,1.40552,1.40571,true,London,Wed,9,"",,
+2026-07-15T09:19:00.000Z,USD/CAD,CALL,69,90,Trend Corridor Breakout,1.40567,1.40573,true,London,Wed,9,"",,
+2026-07-15T09:20:00.000Z,USD/CAD,CALL,59,85,Trend Corridor Breakout,1.40571,1.40562,false,London,Wed,9,"",,
+2026-07-15T09:21:00.000Z,USD/CAD,CALL,54,75,Trend Corridor Breakout,1.40564,1.40552,false,London,Wed,9,"",,
+2026-07-15T09:22:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40553,1.40563,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:23:00.000Z,USD/CAD,CALL,61,80,Trend Corridor Breakout,1.40557,1.40564,true,London,Wed,9,"",,
+2026-07-15T09:24:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40561,1.40557,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:25:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40558,1.40561,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:26:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40558,1.40568,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:27:00.000Z,USD/CAD,CALL,51,80,Range Extreme Reversion,1.40562,1.40571,true,London,Wed,9,"",,
+2026-07-15T09:28:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40568,1.40573,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:29:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40571,1.40568,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:30:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40571,1.40577,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:31:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40575,1.40568,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:32:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40574,1.4059,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:33:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40575,1.40607,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:34:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40599,1.40616,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:35:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40608,1.40589,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:36:00.000Z,USD/CAD,CALL,64,95,Trend Corridor Breakout,1.40593,1.40595,true,London,Wed,9,"",,
+2026-07-15T09:37:00.000Z,USD/CAD,CALL,60,95,Trend Corridor Breakout,1.40594,1.40596,true,London,Wed,9,"",,
+2026-07-15T09:38:00.000Z,USD/CAD,CALL,59,90,Trend Corridor Breakout,1.40594,1.40587,false,London,Wed,9,"",,
+2026-07-15T09:39:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.4059,1.40599,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:40:00.000Z,USD/CAD,CALL,72,95,Trend Corridor Breakout,1.40592,1.40604,true,London,Wed,9,"",,
+2026-07-15T09:41:00.000Z,USD/CAD,CALL,69,90,Trend Corridor Breakout,1.406,1.4059,false,London,Wed,9,"",,
+2026-07-15T09:42:00.000Z,USD/CAD,CALL,58,80,Trend Corridor Breakout,1.40594,1.40587,false,London,Wed,9,"",,
+2026-07-15T09:43:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40588,1.40591,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:44:00.000Z,USD/CAD,CALL,53,85,Trend Corridor Breakout,1.40588,1.40585,false,London,Wed,9,"",,
+2026-07-15T09:45:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40586,1.40577,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:46:00.000Z,USD/CAD,WAIT,0,0,No Setup Detected,1.40579,1.40587,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:47:00.000Z,USD/CAD,CALL,58,90,Trend Corridor Breakout,1.40581,1.4059,true,London,Wed,9,"",,
+2026-07-15T09:48:00.000Z,USD/CAD,CALL,58,90,Trend Corridor Breakout,1.40587,1.40587,false,London,Wed,9,"",,
+2026-07-15T07:21:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.37928,185.35138,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:22:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.36703,185.3544,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:23:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.36224,185.37998,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:24:00.000Z,EUR/JPY,PUT,51,80,Trend Corridor Breakout,185.36879,185.38664,false,Asian,Wed,7,"",,
+2026-07-15T07:25:00.000Z,EUR/JPY,PUT,53,80,Trend Corridor Breakout,185.37875,185.39346,false,Asian,Wed,7,"",,
+2026-07-15T07:26:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38819,185.35963,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:27:00.000Z,EUR/JPY,PUT,66,90,Trend Corridor Breakout,185.38107,185.35502,true,Asian,Wed,7,"",,
+2026-07-15T07:28:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.36129,185.35081,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:29:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.35634,185.3688,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:30:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.35949,185.36993,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:31:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.36338,185.37887,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:32:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.36892,185.38888,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:33:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38141,185.38792,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:34:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38294,185.36481,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:35:00.000Z,EUR/JPY,PUT,58,90,Trend Corridor Breakout,185.38142,185.38915,false,Asian,Wed,7,"",,
+2026-07-15T07:36:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.3793,185.37073,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:37:00.000Z,EUR/JPY,PUT,54,90,Trend Corridor Breakout,185.37351,185.35924,true,Asian,Wed,7,"",,
+2026-07-15T07:38:00.000Z,EUR/JPY,PUT,54,90,Trend Corridor Breakout,185.36628,185.38548,false,Asian,Wed,7,"",,
+2026-07-15T07:39:00.000Z,EUR/JPY,PUT,51,80,Trend Corridor Breakout,185.37171,185.39278,false,Asian,Wed,7,"",,
+2026-07-15T07:40:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38715,185.39039,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:41:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38833,185.36868,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:42:00.000Z,EUR/JPY,PUT,67,95,Trend Corridor Breakout,185.37608,185.36059,true,Asian,Wed,7,"",,
+2026-07-15T07:43:00.000Z,EUR/JPY,PUT,63,90,Trend Corridor Breakout,185.3705,185.34513,true,Asian,Wed,7,"",,
+2026-07-15T07:44:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.3545,185.36358,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:45:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.35007,185.38117,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:46:00.000Z,EUR/JPY,PUT,51,80,Trend Corridor Breakout,185.36547,185.39404,false,Asian,Wed,7,"",,
+2026-07-15T07:47:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38629,185.36744,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:48:00.000Z,EUR/JPY,PUT,56,90,Trend Corridor Breakout,185.37151,185.38054,false,Asian,Wed,7,"",,
+2026-07-15T07:49:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.37013,185.38553,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:50:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38211,185.36626,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:51:00.000Z,EUR/JPY,PUT,61,80,Trend Corridor Breakout,185.37279,185.34724,true,Asian,Wed,7,"",,
+2026-07-15T07:52:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.35937,185.35281,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:53:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.35888,185.37219,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:54:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.36661,185.3824,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:55:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.37324,185.38512,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:56:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38104,185.36567,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:57:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38067,185.37221,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:58:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.37781,185.36533,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:59:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.37522,185.3682,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:00:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.37007,185.39566,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:01:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.37863,185.41435,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:02:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40213,185.42553,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:03:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41664,185.42701,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:04:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42271,185.40867,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:05:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41333,185.42571,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:06:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42193,185.42419,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:07:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42033,185.40367,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:08:00.000Z,EUR/JPY,PUT,54,70,Range Extreme Reversion,185.4164,185.4207,false,London,Wed,8,"",,
+2026-07-15T08:09:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41528,185.396,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:10:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40791,185.39745,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:11:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.4073,185.44285,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:12:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43653,185.44585,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:13:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43887,185.44872,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:14:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.44385,185.4524,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:15:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.44722,185.43558,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:16:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43929,185.42823,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:17:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.4416,185.46143,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:18:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.45522,185.44325,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:19:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.44742,185.44839,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:20:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.44624,185.43591,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:21:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43946,185.44268,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:22:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43904,185.42451,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:23:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43073,185.423,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:24:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42652,185.42996,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:25:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42223,185.43832,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:26:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43265,185.43772,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:27:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.4345,185.42212,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:28:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43001,185.42012,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:29:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42653,185.41415,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:30:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41687,185.43254,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:31:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42629,185.43218,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:32:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42725,185.43573,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:33:00.000Z,EUR/JPY,CALL,56,80,Range Extreme Reversion,185.43078,185.42808,false,London,Wed,8,"",,
+2026-07-15T08:34:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.4254,185.44782,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:35:00.000Z,EUR/JPY,CALL,54,80,Range Extreme Reversion,185.43735,185.45431,true,London,Wed,8,"",,
+2026-07-15T08:36:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.44759,185.45477,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:37:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.44899,185.45445,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:38:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.4499,185.46334,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:39:00.000Z,EUR/JPY,PUT,54,80,Range Extreme Reversion,185.45437,185.46939,false,London,Wed,8,"",,
+2026-07-15T08:40:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.46251,185.43073,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:41:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43901,185.42911,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:42:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43193,185.44334,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:43:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.44027,185.41935,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:44:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42903,185.42915,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:45:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42462,185.43676,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:46:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42853,185.4413,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:47:00.000Z,EUR/JPY,CALL,51,80,Range Extreme Reversion,185.43245,185.44814,true,London,Wed,8,"",,
+2026-07-15T08:48:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.44378,185.42455,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:49:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43355,185.41661,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:50:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42608,185.41383,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:51:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42136,185.41446,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:52:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41464,185.42458,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:53:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42231,185.41022,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:54:00.000Z,EUR/JPY,CALL,55,80,Range Extreme Reversion,185.41936,185.40729,false,London,Wed,8,"",,
+2026-07-15T08:55:00.000Z,EUR/JPY,CALL,53,80,Range Extreme Reversion,185.41078,185.41625,true,London,Wed,8,"",,
+2026-07-15T08:56:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41066,185.4347,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:57:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42108,185.44064,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:58:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43223,185.41572,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:59:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42021,185.41226,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:00:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41417,185.42753,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:01:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42413,185.39928,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:02:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40933,185.38973,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:03:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40523,185.38573,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:04:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.39662,185.4125,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:05:00.000Z,EUR/JPY,CALL,55,75,Range Extreme Reversion,185.40178,185.41183,true,London,Wed,9,"",,
+2026-07-15T09:06:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40603,185.41524,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:07:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40943,185.3962,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:08:00.000Z,EUR/JPY,PUT,55,80,Range Extreme Reversion,185.40015,185.40684,false,London,Wed,9,"",,
+2026-07-15T09:09:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40326,185.41637,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:10:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40888,185.42293,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:11:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41428,185.39589,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:12:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40738,185.43671,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:13:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42887,185.44309,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:14:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.43835,185.412,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:15:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42505,185.3975,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:16:00.000Z,EUR/JPY,PUT,56,85,Range Extreme Reversion,185.40426,185.41848,false,London,Wed,9,"",,
+2026-07-15T09:17:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41465,185.41663,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:18:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41283,185.40356,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:19:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40969,185.39028,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:20:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.39774,185.418,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:21:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40235,185.42441,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:22:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42114,185.42557,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:23:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.42309,185.41646,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:24:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41821,185.42016,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:25:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41589,185.42157,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:26:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41744,185.42075,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:27:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41658,185.40621,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:28:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41577,185.42223,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:29:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41592,185.42403,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:30:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41881,185.40406,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:31:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40769,185.39047,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:32:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.40419,185.36326,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:33:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38529,185.36155,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:34:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.36744,185.35761,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:35:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.36074,185.36794,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:36:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.36161,185.37979,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:37:00.000Z,EUR/JPY,PUT,50,75,Trend Corridor Breakout,185.37183,185.38587,false,London,Wed,9,"",,
+2026-07-15T09:38:00.000Z,EUR/JPY,PUT,50,75,Trend Corridor Breakout,185.37757,185.3716,true,London,Wed,9,"",,
+2026-07-15T09:39:00.000Z,EUR/JPY,PUT,53,85,Trend Corridor Breakout,185.37572,185.38095,false,London,Wed,9,"",,
+2026-07-15T09:40:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.37856,185.37192,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:41:00.000Z,EUR/JPY,PUT,56,80,Trend Corridor Breakout,185.3757,185.39467,false,London,Wed,9,"",,
+2026-07-15T09:42:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38717,185.39994,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:43:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.39703,185.38315,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:44:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38715,185.3901,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:45:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.38592,185.40565,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:46:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.39205,185.41287,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:47:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.4066,185.41949,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:48:00.000Z,EUR/JPY,WAIT,0,0,No Setup Detected,185.41552,185.42253,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T07:21:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.59094,217.5854,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:22:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.58588,217.56297,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:23:00.000Z,GBP/JPY,CALL,52,75,Range Extreme Reversion,217.5772,217.5569,false,Asian,Wed,7,"",,
+2026-07-15T07:24:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.56118,217.53565,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:25:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.54652,217.53463,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:26:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.5437,217.54835,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:27:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.54279,217.56709,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:28:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.54739,217.58728,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:29:00.000Z,GBP/JPY,CALL,53,85,Range Extreme Reversion,217.57279,217.58354,true,Asian,Wed,7,"",,
+2026-07-15T07:30:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.58031,217.56851,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:31:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.57431,217.59693,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:32:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.57229,217.62361,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:33:00.000Z,GBP/JPY,CALL,53,80,Range Extreme Reversion,217.61035,217.63452,true,Asian,Wed,7,"",,
+2026-07-15T07:34:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.62315,217.62848,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:35:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.62277,217.59383,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:36:00.000Z,GBP/JPY,PUT,53,70,Range Extreme Reversion,217.60723,217.58208,true,Asian,Wed,7,"",,
+2026-07-15T07:37:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.5887,217.56647,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:38:00.000Z,GBP/JPY,PUT,50,80,Range Extreme Reversion,217.5718,217.57853,false,Asian,Wed,7,"",,
+2026-07-15T07:39:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.56829,217.58781,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:40:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.58075,217.59355,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:41:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.588,217.57071,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:42:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.57195,217.55421,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:43:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.56176,217.53897,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:44:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.54799,217.51721,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:45:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.53435,217.49954,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:46:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.51195,217.54362,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:47:00.000Z,GBP/JPY,CALL,50,75,Range Extreme Reversion,217.53071,217.51505,false,Asian,Wed,7,"",,
+2026-07-15T07:48:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.51825,217.53183,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:49:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.52111,217.53999,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:50:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.5357,217.51567,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:51:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.5193,217.5005,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:52:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.5065,217.49314,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:53:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.49667,217.49684,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:54:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.49153,217.50132,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:55:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.49568,217.50253,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:56:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.49666,217.48004,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:57:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.48508,217.49289,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:58:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.48877,217.49554,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:59:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.49305,217.48551,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:00:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.48829,217.48168,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:01:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.4802,217.52117,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:02:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.50774,217.53423,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:03:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.52102,217.53687,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:04:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.52981,217.54051,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:05:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.53167,217.53766,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:06:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.53205,217.51341,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:07:00.000Z,GBP/JPY,PUT,65,85,Range Extreme Reversion,217.52186,217.5021,true,London,Wed,8,"",,
+2026-07-15T08:08:00.000Z,GBP/JPY,PUT,52,85,Range Extreme Reversion,217.50823,217.49514,true,London,Wed,8,"",,
+2026-07-15T08:09:00.000Z,GBP/JPY,PUT,54,80,Range Extreme Reversion,217.50398,217.48709,true,London,Wed,8,"",,
+2026-07-15T08:10:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.49296,217.46238,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:11:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.48891,217.54127,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:12:00.000Z,GBP/JPY,CALL,53,80,Trend Corridor Breakout,217.52835,217.51408,false,London,Wed,8,"",,
+2026-07-15T08:13:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.51901,217.52901,,London,Wed,8,"Directional confidence too balanced",true,false
+2026-07-15T08:14:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.5218,217.49035,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:15:00.000Z,GBP/JPY,PUT,67,100,Trend Corridor Breakout,217.50286,217.46236,true,London,Wed,8,"",,
+2026-07-15T08:16:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.47293,217.45011,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:17:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.46016,217.48493,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:18:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.47822,217.46724,,London,Wed,8,"Directional confidence too balanced",false,true
+2026-07-15T08:19:00.000Z,GBP/JPY,PUT,51,95,Trend Corridor Breakout,217.47336,217.45735,true,London,Wed,8,"",,
+2026-07-15T08:20:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.46087,217.44372,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:21:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.45175,217.43465,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:22:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.43717,217.43999,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:23:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.42999,217.45275,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:24:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.445,217.45927,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:25:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.44548,217.47062,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:26:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.46528,217.45949,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:27:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.46205,217.45066,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:28:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.45792,217.47549,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:29:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.46375,217.47742,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:30:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.46596,217.4588,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:31:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.46331,217.47667,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:32:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.46345,217.48504,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:33:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.47755,217.45953,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:34:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.46141,217.47706,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:35:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.46754,217.48263,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:36:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.47367,217.47772,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:37:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.47476,217.46073,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:38:00.000Z,GBP/JPY,PUT,58,90,Trend Corridor Breakout,217.46692,217.45795,true,London,Wed,8,"",,
+2026-07-15T08:39:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.46301,217.44319,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:40:00.000Z,GBP/JPY,PUT,51,85,Trend Corridor Breakout,217.44876,217.43229,true,London,Wed,8,"",,
+2026-07-15T08:41:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.43617,217.42485,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:42:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.42827,217.44267,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:43:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.43269,217.40233,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:44:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.40931,217.41375,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:45:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.40936,217.40469,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:46:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.40826,217.41733,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:47:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.4111,217.42055,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:48:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.41638,217.40205,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:49:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.40733,217.38861,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:50:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.39786,217.37419,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:51:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.38072,217.39628,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:52:00.000Z,GBP/JPY,PUT,53,80,Trend Corridor Breakout,217.38553,217.40895,false,London,Wed,8,"",,
+2026-07-15T08:53:00.000Z,GBP/JPY,PUT,53,80,Trend Corridor Breakout,217.4007,217.41115,false,London,Wed,8,"",,
+2026-07-15T08:54:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.4065,217.40106,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:55:00.000Z,GBP/JPY,PUT,53,85,Trend Corridor Breakout,217.40596,217.41411,false,London,Wed,8,"",,
+2026-07-15T08:56:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.40901,217.42418,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:57:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.41608,217.42929,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:58:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.42083,217.40683,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:59:00.000Z,GBP/JPY,PUT,61,90,Trend Corridor Breakout,217.41536,217.43026,false,London,Wed,9,"",,
+2026-07-15T09:00:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.419,217.4395,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:01:00.000Z,GBP/JPY,PUT,50,80,Trend Corridor Breakout,217.43283,217.43918,false,London,Wed,9,"",,
+2026-07-15T09:02:00.000Z,GBP/JPY,PUT,51,85,Trend Corridor Breakout,217.43523,217.42013,true,London,Wed,9,"",,
+2026-07-15T09:03:00.000Z,GBP/JPY,PUT,63,85,Trend Corridor Breakout,217.43273,217.4027,true,London,Wed,9,"",,
+2026-07-15T09:04:00.000Z,GBP/JPY,PUT,66,90,Trend Corridor Breakout,217.41521,217.42524,false,London,Wed,9,"",,
+2026-07-15T09:05:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.4169,217.42948,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:06:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.42466,217.42935,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:07:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.4229,217.40649,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:08:00.000Z,GBP/JPY,PUT,63,80,Trend Corridor Breakout,217.41087,217.43234,false,London,Wed,9,"",,
+2026-07-15T09:09:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.41942,217.44324,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:10:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.43702,217.44669,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:11:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.43834,217.40626,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:12:00.000Z,GBP/JPY,PUT,58,90,Range Extreme Reversion,217.40991,217.44568,false,London,Wed,9,"",,
+2026-07-15T09:13:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.43618,217.4526,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:14:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.44441,217.42136,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:15:00.000Z,GBP/JPY,PUT,51,85,Range Extreme Reversion,217.43458,217.39175,true,London,Wed,9,"",,
+2026-07-15T09:16:00.000Z,GBP/JPY,PUT,57,90,Range Extreme Reversion,217.39888,217.41728,false,London,Wed,9,"",,
+2026-07-15T09:17:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.41278,217.4165,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:18:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.41104,217.41398,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:19:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.41103,217.40111,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:20:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.40376,217.40929,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:21:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.40473,217.41,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:22:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.40606,217.41056,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:23:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.4053,217.40988,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:24:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.40787,217.3988,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:25:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.39899,217.42036,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:26:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.41561,217.42028,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:27:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.41486,217.40079,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:28:00.000Z,GBP/JPY,PUT,51,85,Trend Corridor Breakout,217.40519,217.41527,false,London,Wed,9,"",,
+2026-07-15T09:29:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.4041,217.41634,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:30:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.41143,217.40801,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:31:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.40894,217.41514,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:32:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.41119,217.39049,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:33:00.000Z,GBP/JPY,PUT,56,90,Trend Corridor Breakout,217.40409,217.36144,true,London,Wed,9,"",,
+2026-07-15T09:34:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.37522,217.35266,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:35:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.35741,217.36495,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:36:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.36055,217.35433,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:37:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.36009,217.37215,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:38:00.000Z,GBP/JPY,PUT,51,80,Trend Corridor Breakout,217.36597,217.38138,false,London,Wed,9,"",,
+2026-07-15T09:39:00.000Z,GBP/JPY,PUT,53,85,Trend Corridor Breakout,217.36636,217.38734,false,London,Wed,9,"",,
+2026-07-15T09:40:00.000Z,GBP/JPY,PUT,55,85,Trend Corridor Breakout,217.38269,217.37853,true,London,Wed,9,"",,
+2026-07-15T09:41:00.000Z,GBP/JPY,PUT,53,85,Trend Corridor Breakout,217.37897,217.39344,false,London,Wed,9,"",,
+2026-07-15T09:42:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.38769,217.39631,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:43:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.39244,217.38158,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:44:00.000Z,GBP/JPY,PUT,53,90,Trend Corridor Breakout,217.38306,217.38513,false,London,Wed,9,"",,
+2026-07-15T09:45:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.3807,217.37295,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:46:00.000Z,GBP/JPY,PUT,55,85,Trend Corridor Breakout,217.37917,217.39054,false,London,Wed,9,"",,
+2026-07-15T09:47:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.38291,217.3993,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:48:00.000Z,GBP/JPY,WAIT,0,0,No Setup Detected,217.39432,217.39712,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T07:21:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.33711,113.34125,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:22:00.000Z,AUD/JPY,CALL,54,90,Trend Corridor Breakout,113.33769,113.31913,false,Asian,Wed,7,"",,
+2026-07-15T07:23:00.000Z,AUD/JPY,PUT,52,80,Trend Corridor Breakout,113.32689,113.34122,false,Asian,Wed,7,"",,
+2026-07-15T07:24:00.000Z,AUD/JPY,CALL,65,90,Trend Corridor Breakout,113.33308,113.30609,false,Asian,Wed,7,"",,
+2026-07-15T07:25:00.000Z,AUD/JPY,PUT,55,85,Trend Corridor Breakout,113.31331,113.2949,true,Asian,Wed,7,"",,
+2026-07-15T07:26:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.30799,113.27801,,Asian,Wed,7,"Directional confidence too balanced",false,true
+2026-07-15T07:27:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.28679,113.25864,,Asian,Wed,7,"Directional confidence too balanced",false,true
+2026-07-15T07:28:00.000Z,AUD/JPY,CALL,52,95,Trend Corridor Breakout,113.26653,113.28787,true,Asian,Wed,7,"",,
+2026-07-15T07:29:00.000Z,AUD/JPY,PUT,60,95,Trend Corridor Breakout,113.27974,113.28299,false,Asian,Wed,7,"",,
+2026-07-15T07:30:00.000Z,AUD/JPY,PUT,56,90,Trend Corridor Breakout,113.27973,113.29341,false,Asian,Wed,7,"",,
+2026-07-15T07:31:00.000Z,AUD/JPY,PUT,55,85,Trend Corridor Breakout,113.28152,113.30684,false,Asian,Wed,7,"",,
+2026-07-15T07:32:00.000Z,AUD/JPY,PUT,55,85,Trend Corridor Breakout,113.299,113.31437,false,Asian,Wed,7,"",,
+2026-07-15T07:33:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.30714,113.32561,,Asian,Wed,7,"Directional confidence too balanced",true,false
+2026-07-15T07:34:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.31882,113.32882,,Asian,Wed,7,"Directional confidence too balanced",true,false
+2026-07-15T07:35:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.32545,113.33019,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:36:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.3272,113.32927,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:37:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.32707,113.31967,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:38:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.32355,113.32985,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:39:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.32556,113.33571,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:40:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.3309,113.33892,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:41:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.3359,113.3409,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:42:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.33892,113.33149,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:43:00.000Z,AUD/JPY,PUT,55,85,Range Extreme Reversion,113.33269,113.33935,false,Asian,Wed,7,"",,
+2026-07-15T07:44:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.33094,113.33812,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:45:00.000Z,AUD/JPY,PUT,51,80,Range Extreme Reversion,113.33288,113.34827,false,Asian,Wed,7,"",,
+2026-07-15T07:46:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.33376,113.35926,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:47:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.35472,113.35645,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:48:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.35371,113.36864,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:49:00.000Z,AUD/JPY,PUT,52,80,Range Extreme Reversion,113.35757,113.37596,false,Asian,Wed,7,"",,
+2026-07-15T07:50:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.37101,113.36412,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:51:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.36541,113.36078,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:52:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.36508,113.37864,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:53:00.000Z,AUD/JPY,PUT,54,80,Range Extreme Reversion,113.36757,113.38642,false,Asian,Wed,7,"",,
+2026-07-15T07:54:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.38256,113.3841,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:55:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.38019,113.38733,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:56:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.3856,113.37971,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:57:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.38405,113.37368,,Asian,Wed,7,"Insufficient indicator alignment",false,true
+2026-07-15T07:58:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.37796,113.38005,,Asian,Wed,7,"Insufficient indicator alignment",true,false
+2026-07-15T07:59:00.000Z,AUD/JPY,CALL,51,85,Trend Corridor Breakout,113.37908,113.37673,false,London,Wed,8,"",,
+2026-07-15T08:00:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.37776,113.37492,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:01:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.37644,113.38631,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:02:00.000Z,AUD/JPY,CALL,58,85,Trend Corridor Breakout,113.37542,113.40039,true,London,Wed,8,"",,
+2026-07-15T08:03:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.39226,113.4076,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:04:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40109,113.41152,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:05:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40743,113.41214,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:06:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40947,113.4001,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:07:00.000Z,AUD/JPY,CALL,56,80,Trend Corridor Breakout,113.40602,113.38311,false,London,Wed,8,"",,
+2026-07-15T08:08:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.3921,113.37536,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:09:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.38085,113.38741,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:10:00.000Z,AUD/JPY,CALL,54,85,Trend Corridor Breakout,113.38097,113.40854,true,London,Wed,8,"",,
+2026-07-15T08:11:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.38674,113.4241,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:12:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41609,113.4104,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:13:00.000Z,AUD/JPY,CALL,52,85,Trend Corridor Breakout,113.41126,113.41843,true,London,Wed,8,"",,
+2026-07-15T08:14:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.4154,113.42105,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:15:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41697,113.40746,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:16:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40959,113.4132,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:17:00.000Z,AUD/JPY,CALL,59,85,Trend Corridor Breakout,113.40917,113.41692,true,London,Wed,8,"",,
+2026-07-15T08:18:00.000Z,AUD/JPY,CALL,57,85,Trend Corridor Breakout,113.41489,113.40837,false,London,Wed,8,"",,
+2026-07-15T08:19:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41205,113.40392,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:20:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40584,113.39863,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:21:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.39983,113.39161,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:22:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.39743,113.38514,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:23:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.38704,113.38119,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:24:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.38394,113.36351,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:25:00.000Z,AUD/JPY,PUT,57,85,Trend Corridor Breakout,113.38455,113.41534,false,London,Wed,8,"",,
+2026-07-15T08:26:00.000Z,AUD/JPY,CALL,67,95,Trend Corridor Breakout,113.3996,113.42712,true,London,Wed,8,"",,
+2026-07-15T08:27:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42127,113.40932,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:28:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41507,113.409,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:29:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41196,113.41739,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:30:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41275,113.4198,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:31:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41533,113.42026,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:32:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41793,113.40799,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:33:00.000Z,AUD/JPY,PUT,53,70,Range Extreme Reversion,113.41127,113.43235,false,London,Wed,8,"",,
+2026-07-15T08:34:00.000Z,AUD/JPY,PUT,54,85,Range Extreme Reversion,113.42112,113.4423,false,London,Wed,8,"",,
+2026-07-15T08:35:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.43671,113.42857,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:36:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.43276,113.42797,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:37:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.43036,113.42457,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:38:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42724,113.42926,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:39:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42806,113.42911,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:40:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42827,113.41743,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:41:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41874,113.4152,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:42:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41502,113.41998,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:43:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41612,113.39932,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:44:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40271,113.39994,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:45:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40034,113.40231,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:46:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.39742,113.40654,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:47:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40431,113.39599,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:48:00.000Z,AUD/JPY,CALL,52,75,Range Extreme Reversion,113.40328,113.38833,false,London,Wed,8,"",,
+2026-07-15T08:49:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.39256,113.39105,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:50:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.39146,113.39335,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:51:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.39034,113.39476,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:52:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.3926,113.39585,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:53:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.39394,113.38736,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:54:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.38781,113.38166,,London,Wed,8,"Insufficient indicator alignment",false,true
+2026-07-15T08:55:00.000Z,AUD/JPY,PUT,50,80,Trend Corridor Breakout,113.38271,113.37722,true,London,Wed,8,"",,
+2026-07-15T08:56:00.000Z,AUD/JPY,PUT,52,80,Trend Corridor Breakout,113.3837,113.39776,false,London,Wed,8,"",,
+2026-07-15T08:57:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.38707,113.41023,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:58:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40347,113.41563,,London,Wed,8,"Insufficient indicator alignment",true,false
+2026-07-15T08:59:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40911,113.4196,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:00:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41355,113.42229,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:01:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41978,113.42431,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:02:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42223,113.41625,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:03:00.000Z,AUD/JPY,PUT,52,85,Range Extreme Reversion,113.41821,113.42243,false,London,Wed,9,"",,
+2026-07-15T09:04:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41716,113.42073,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:05:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41806,113.42096,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:06:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41749,113.40924,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:07:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41174,113.41743,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:08:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41182,113.42873,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:09:00.000Z,AUD/JPY,PUT,54,80,Range Extreme Reversion,113.4207,113.43179,false,London,Wed,9,"",,
+2026-07-15T09:10:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42946,113.42462,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:11:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42843,113.41521,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:12:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42159,113.43585,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:13:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.43152,113.43931,,London,Wed,9,"Directional confidence too balanced",true,false
+2026-07-15T09:14:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.43598,113.44499,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:15:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.43932,113.42388,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:16:00.000Z,AUD/JPY,PUT,55,75,Range Extreme Reversion,113.42701,113.4331,false,London,Wed,9,"",,
+2026-07-15T09:17:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42792,113.41287,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:18:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41847,113.42244,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:19:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42108,113.41745,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:20:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41917,113.43491,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:21:00.000Z,AUD/JPY,CALL,57,85,Range Extreme Reversion,113.42643,113.44216,true,London,Wed,9,"",,
+2026-07-15T09:22:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.43768,113.44477,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:23:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.44233,113.44529,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:24:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.44307,113.43774,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:25:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.4429,113.45507,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:26:00.000Z,AUD/JPY,PUT,52,80,Range Extreme Reversion,113.44928,113.43088,true,London,Wed,9,"",,
+2026-07-15T09:27:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.43523,113.41718,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:28:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42227,113.42861,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:29:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42377,113.43103,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:30:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42761,113.41439,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:31:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41627,113.41102,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:32:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41244,113.40506,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:33:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40808,113.40044,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:34:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40291,113.39264,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:35:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.39292,113.40584,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:36:00.000Z,AUD/JPY,CALL,58,85,Range Extreme Reversion,113.40204,113.40586,true,London,Wed,9,"",,
+2026-07-15T09:37:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40367,113.4012,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:38:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40214,113.40285,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:39:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40069,113.39499,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:40:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.39853,113.38581,,London,Wed,9,"Insufficient indicator alignment",false,true
+2026-07-15T09:41:00.000Z,AUD/JPY,PUT,54,80,Trend Corridor Breakout,113.38945,113.40228,false,London,Wed,9,"",,
+2026-07-15T09:42:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.39702,113.40757,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:43:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40263,113.41134,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:44:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.40713,113.42167,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:45:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.41343,113.42618,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:46:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42271,113.43125,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:47:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42623,113.43177,,London,Wed,9,"Insufficient indicator alignment",true,false
+2026-07-15T09:48:00.000Z,AUD/JPY,WAIT,0,0,No Setup Detected,113.42952,113.43134,,London,Wed,9,"Insufficient indicator alignment",true,false

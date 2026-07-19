@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -9,10 +9,36 @@ import { getUserAccessState } from '@/app/actions/admin_optimization';
 import UpgradeModal from '@/components/UpgradeModal';
 import { 
   BarChart3, BookOpen, Award, Settings, LogOut, 
-  TrendingUp, Shield, Menu, X, Loader, User, Radio, History,
-  Calculator, Send, CheckSquare, LineChart, Video, Zap, CreditCard, Bell
+  TrendingUp, Shield, Menu, X, Loader2, User, Radio, History,
+  Calculator, Send, CheckSquare, LineChart, Video, Zap, CreditCard, Bell,
+  Lock
 } from 'lucide-react';
 import { getUserNotifications, markNotificationsRead } from '@/app/actions/billing';
+
+const NAV_ACCOUNT = [
+  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+  { name: 'Membership', href: '/dashboard/membership', icon: Award },
+  { name: 'Subscription', href: '/dashboard/subscription', icon: CreditCard },
+  { name: 'Payments', href: '/dashboard/payments', icon: History },
+  { name: 'Access Center', href: '/dashboard/access', icon: Shield },
+  { name: 'Profile', href: '/dashboard/profile', icon: User }
+];
+const NAV_TRADING = [
+  { name: 'Journal', href: '/dashboard/journal', icon: BookOpen },
+  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { name: 'Checklist', href: '/dashboard/checklist', icon: CheckSquare },
+  { name: 'Risk Calculator', href: '/dashboard/risk-calculator', icon: Calculator }
+];
+const NAV_SIGNALS = [
+  { name: 'Signal Dashboard', href: '/dashboard/signals', icon: Radio },
+  { name: 'Signal History', href: '/dashboard/signal-history', icon: History },
+  { name: 'Performance', href: '/dashboard/performance', icon: LineChart }
+];
+const NAV_COMMUNITY = [
+  { name: 'Telegram', href: 'https://t.me/Magnetoftrade', icon: Send, isExternal: true },
+  { name: 'YouTube', href: 'https://youtube.com/@magnetoftrade7751?si=Un1BlRIvS8z2Nd7W', icon: Video, isExternal: true },
+  { name: 'Referral Program', href: '/dashboard/referral', icon: Award }
+];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -29,7 +55,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   useEffect(() => {
     async function checkAuth() {
@@ -155,53 +182,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   };
 
-  // Grouped Navigation Items
-  const accountGroup = [
-    { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-    { name: 'Membership', href: '/dashboard/membership', icon: Award },
-    { name: 'Subscription', href: '/dashboard/subscription', icon: CreditCard },
-    { name: 'Payments', href: '/dashboard/payments', icon: History },
-    { name: 'Access Center', href: '/dashboard/access', icon: Shield },
-    { name: 'Profile', href: '/dashboard/profile', icon: User }
-  ];
-
-  const tradingGroup = [
-    { name: 'Journal', href: '/dashboard/journal', icon: BookOpen },
-    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-    { name: 'Checklist', href: '/dashboard/checklist', icon: CheckSquare },
-    { name: 'Risk Calculator', href: '/dashboard/risk-calculator', icon: Calculator }
-  ];
-
-  const signalsGroup = [
-    { name: 'Signal Dashboard', href: '/dashboard/signals', icon: Radio },
-    { name: 'Signal History', href: '/dashboard/signal-history', icon: History },
-    { name: 'Performance', href: '/dashboard/performance', icon: LineChart }
-  ];
-
-  const communityGroup = [
-    { name: 'Telegram', href: 'https://t.me/Magnetoftrade', icon: Send, isExternal: true },
-    { name: 'YouTube', href: 'https://youtube.com/@magnetoftrade7751?si=Un1BlRIvS8z2Nd7W', icon: Video, isExternal: true },
-    { name: 'Referral Program', href: '/dashboard/referral', icon: Award }
-  ];
-
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 grid-overlay">
-        <main className="flex-1 flex flex-col items-center justify-center space-y-4">
-          <Loader className="h-8 w-8 animate-spin text-neon-green" />
-          <span className="text-xs font-mono text-slate-500">AUTHORIZING SECURE SYSTEM PORT...</span>
+        <main className="flex-1 flex flex-col items-center justify-center space-y-4 animate-fadeIn">
+          <div className="relative">
+            <Loader2 className="h-8 w-8 animate-spin text-neon-green" />
+            <div className="absolute inset-0 h-8 w-8 animate-ping opacity-20 rounded-full bg-neon-green" />
+          </div>
+          <span className="text-xs font-mono text-slate-500 tracking-widest">AUTHORIZING SECURE SYSTEM PORT...</span>
         </main>
       </div>
     );
   }
 
-  const renderNavGroupLinks = (items: typeof accountGroup, isMobile = false) => {
+  const renderNavGroupLinks = (items: typeof NAV_ACCOUNT, isMobile = false, isPremiumGroup = false) => {
+    const hasPremiumAccess = profile?.premium_access || isAdmin;
     return items.map((item) => {
       const isActive = pathname === item.href;
       const key = `${isMobile ? 'm-' : 'd-'}${item.name}`;
 
-      // Check if external link
       const isExt = 'isExternal' in item && (item as any).isExternal;
+      const isLocked = isPremiumGroup && !hasPremiumAccess;
+
+      const baseClasses = 'group flex items-center px-4 py-2 text-[10px] font-mono font-bold tracking-wider rounded-md border transition-all duration-150';
+      const activeClasses = 'bg-neon-green/15 border-neon-green/35 text-neon-green glow-text-green';
+      const inactiveClasses = 'bg-transparent border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50';
+      const externalClasses = 'bg-transparent border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50';
+      const lockedClasses = 'bg-transparent border-transparent text-slate-600 select-none';
 
       if (isExt) {
         return (
@@ -211,11 +219,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => isMobile && setMobileMenuOpen(false)}
-            className="group flex items-center px-4 py-2 text-[10px] font-mono font-bold tracking-wider rounded-md border bg-transparent border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 transition-all uppercase"
+            className={`${baseClasses} ${externalClasses} uppercase`}
+            aria-label={`${item.name} (opens external)`}
           >
-            <item.icon className="mr-3 h-3.5 w-3.5 shrink-0" />
-            {item.name}
+            <item.icon className="mr-3 h-3.5 w-3.5 shrink-0 transition-transform duration-150 group-hover:scale-110" />
+            <span className="relative">
+              {item.name}
+              <span className="ml-1 text-[7px] opacity-40">↗</span>
+            </span>
           </a>
+        );
+      }
+
+      if (isLocked) {
+        return (
+          <button
+            key={key}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: { requestedPlan: 'premium' } }));
+              if (isMobile) setMobileMenuOpen(false);
+            }}
+            className={`${baseClasses} ${lockedClasses} uppercase relative w-full text-left cursor-pointer`}
+            title="Upgrade to Premium Signal Pro to unlock"
+          >
+            <item.icon className="mr-3 h-3.5 w-3.5 shrink-0 text-slate-600" />
+            <span className="flex-1">{item.name.toUpperCase()}</span>
+            <Lock className="h-3 w-3 text-amber-500/70 shrink-0" />
+          </button>
         );
       }
 
@@ -224,13 +254,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           key={key}
           href={item.href}
           onClick={() => isMobile && setMobileMenuOpen(false)}
-          className={`group flex items-center px-4 py-2 text-[10px] font-mono font-bold tracking-wider rounded-md border transition-all ${
-            isActive
-              ? 'bg-neon-green/15 border-neon-green/35 text-neon-green glow-text-green'
-              : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
-          }`}
+          className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses} uppercase relative`}
+          aria-current={isActive ? 'page' : undefined}
         >
-          <item.icon className="mr-3 h-3.5 w-3.5 shrink-0" />
+          {isActive && (
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-neon-green rounded-full animate-fadeIn" />
+          )}
+          <item.icon className={`mr-3 h-3.5 w-3.5 shrink-0 transition-all duration-150 ${isActive ? 'text-neon-green' : ''} ${!isActive ? 'group-hover:scale-110' : ''}`} />
           {item.name.toUpperCase()}
         </Link>
       );
@@ -260,25 +290,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* ACCOUNT */}
             <div className="space-y-1">
               <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Account</span>
-              {renderNavGroupLinks(accountGroup)}
+              {renderNavGroupLinks(NAV_ACCOUNT)}
             </div>
 
             {/* TRADING */}
             <div className="space-y-1">
               <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Trading</span>
-              {renderNavGroupLinks(tradingGroup)}
+              {renderNavGroupLinks(NAV_TRADING)}
             </div>
 
             {/* SIGNALS */}
             <div className="space-y-1">
               <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Signals</span>
-              {renderNavGroupLinks(signalsGroup)}
+              {renderNavGroupLinks(NAV_SIGNALS, false, true)}
             </div>
 
             {/* COMMUNITY */}
             <div className="space-y-1">
               <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Community</span>
-              {renderNavGroupLinks(communityGroup as any)}
+              {renderNavGroupLinks(NAV_COMMUNITY as any)}
             </div>
 
             {/* ADMIN ACCESS */}
@@ -376,19 +406,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <nav className="space-y-4 text-left">
               <div className="space-y-1">
                 <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Account</span>
-                {renderNavGroupLinks(accountGroup, true)}
+                {renderNavGroupLinks(NAV_ACCOUNT, true)}
               </div>
               <div className="space-y-1">
                 <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Trading</span>
-                {renderNavGroupLinks(tradingGroup, true)}
+                {renderNavGroupLinks(NAV_TRADING, true)}
               </div>
               <div className="space-y-1">
                 <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Signals</span>
-                {renderNavGroupLinks(signalsGroup, true)}
+                {renderNavGroupLinks(NAV_SIGNALS, true, true)}
               </div>
               <div className="space-y-1">
                 <span className="text-[8px] font-mono text-slate-600 tracking-widest uppercase block pl-4">Community</span>
-                {renderNavGroupLinks(communityGroup as any, true)}
+                {renderNavGroupLinks(NAV_COMMUNITY as any, true)}
               </div>
             </nav>
 

@@ -4,14 +4,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getPerformanceStats } from '@/app/actions/performance';
 import { getUserAccessState } from '@/app/actions/admin_optimization';
 import { canAccess } from '@/lib/permissions';
+import { sourceLabel, type DataPipeline } from '@/lib/pipeline';
 import LockedFeature from '@/components/LockedFeature';
 import { 
   LineChart, Line, BarChart, Bar, CartesianGrid, 
   XAxis, YAxis, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
 import { 
-  Calendar, Layers, CheckCircle, XCircle, Clock, 
-  Activity, ArrowDown, ArrowUp, AlertCircle, RefreshCw, BarChart3, TrendingUp
+  Layers, CheckCircle, XCircle, Clock, 
+  Activity, ArrowDown, ArrowUp, AlertCircle, RefreshCw, BarChart3
 } from 'lucide-react';
 
 export default function PerformancePage() {
@@ -26,7 +27,7 @@ export default function PerformancePage() {
   const [range, setRange] = useState<'7d' | '30d' | '90d' | 'custom'>('7d');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [source, setSource] = useState<'ALL' | 'simulation' | 'live_otc' | 'live_market'>('ALL');
+  const [pipeline, setPipeline] = useState<DataPipeline>('ALL');
   
   const [performance, setPerformance] = useState<any>(null);
   const [hasData, setHasData] = useState(false);
@@ -57,7 +58,7 @@ export default function PerformancePage() {
         getPerformanceStats({
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
-          source
+          source: pipeline
         })
       ]);
 
@@ -78,7 +79,7 @@ export default function PerformancePage() {
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo, source]);
+  }, [dateFrom, dateTo, pipeline]);
 
   useEffect(() => {
     loadData();
@@ -121,7 +122,7 @@ export default function PerformancePage() {
       </div>
 
       {/* Date & Filter Settings bar */}
-      <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4">
+      <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4 transition-all duration-200 hover:border-glass-border/50">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 font-mono text-xs">
           
           {/* Ranges Toggles */}
@@ -147,25 +148,24 @@ export default function PerformancePage() {
             ))}
           </div>
 
-          {/* Source filters */}
+          {/* Pipeline selector */}
           <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-[9px] text-slate-500 uppercase tracking-widest w-16">Source</span>
+            <span className="text-[9px] text-slate-500 uppercase tracking-widest w-12">Pipeline</span>
             {[
-              { id: 'ALL', label: 'ALL PIPELINES' },
-              { id: 'simulation', label: 'SIMULATION' },
-              { id: 'live_otc', label: 'LIVE OTC' },
-              { id: 'live_market', label: 'LIVE FOREX' }
-            ].map(s => (
+              { id: 'ALL' as DataPipeline, label: 'ALL' },
+              { id: 'live_otc' as DataPipeline, label: sourceLabel('live_otc') },
+              { id: 'live_market' as DataPipeline, label: sourceLabel('live_market') },
+            ].map(p => (
               <button
-                key={s.id}
-                onClick={() => setSource(s.id as any)}
+                key={p.id}
+                onClick={() => setPipeline(p.id)}
                 className={`px-3 py-1.5 rounded text-[10px] font-bold border transition-all ${
-                  source === s.id
+                  pipeline === p.id
                     ? 'bg-neon-green/10 border-neon-green/30 text-neon-green'
                     : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700'
                 }`}
               >
-                {s.label}
+                {p.label}
               </button>
             ))}
           </div>
@@ -211,7 +211,7 @@ export default function PerformancePage() {
               { label: 'PENDING', value: String(performance.pending), icon: Clock, color: 'text-slate-400' },
               { label: 'AVG DAILY', value: String(performance.avgDailySignals), icon: Activity, color: 'text-slate-300' }
             ].map((stat, i) => (
-              <div key={i} className="glass-panel p-4 rounded-xl flex flex-col justify-between">
+              <div key={i} className="glass-panel p-4 rounded-xl flex flex-col justify-between transition-all duration-300 hover:scale-[1.03] hover:border-glass-border/50 animate-fadeInUp" style={{ animationDelay: `${i * 0.05}s` }}>
                 <div className="flex items-center justify-between text-slate-500 text-[8px] tracking-wider font-mono uppercase">
                   <span>{stat.label}</span>
                   <stat.icon className="h-3.5 w-3.5" />
@@ -222,22 +222,22 @@ export default function PerformancePage() {
           </div>
 
           {/* Highlights box: Best, Worst, Most Traded assets */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono text-xs">
-            <div className="glass-panel p-4.5 rounded-xl border border-glass-border/60 bg-slate-900/10 flex items-center justify-between">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono text-xs animate-fadeInUp">
+            <div className="glass-panel p-4.5 rounded-xl border border-glass-border/60 bg-slate-900/10 flex items-center justify-between transition-all duration-300 hover:scale-[1.02] hover:border-glass-border/50">
               <div>
                 <div className="text-[8px] text-slate-500 uppercase tracking-wider">Most Active Asset</div>
                 <div className="text-sm font-bold text-slate-200 mt-1">{performance.mostTradedAsset}</div>
               </div>
               <BarChart3 className="h-6 w-6 text-slate-500" />
             </div>
-            <div className="glass-panel p-4.5 rounded-xl border border-emerald-500/20 bg-emerald-950/5 flex items-center justify-between">
+            <div className="glass-panel p-4.5 rounded-xl border border-emerald-500/20 bg-emerald-950/5 flex items-center justify-between transition-all duration-300 hover:scale-[1.02] hover:border-emerald-500/30">
               <div>
                 <div className="text-[8px] text-emerald-500 uppercase tracking-wider">Best Accuracy Ticker</div>
                 <div className="text-sm font-bold text-neon-green mt-1">{performance.bestPerformingAsset}</div>
               </div>
               <ArrowUp className="h-6 w-6 text-emerald-500" />
             </div>
-            <div className="glass-panel p-4.5 rounded-xl border border-rose-500/20 bg-rose-950/5 flex items-center justify-between">
+            <div className="glass-panel p-4.5 rounded-xl border border-rose-500/20 bg-rose-950/5 flex items-center justify-between transition-all duration-300 hover:scale-[1.02] hover:border-rose-500/30">
               <div>
                 <div className="text-[8px] text-rose-500/70 uppercase tracking-wider">Lowest Accuracy Ticker</div>
                 <div className="text-sm font-bold text-rose-400 mt-1">{performance.worstPerformingAsset}</div>
@@ -250,7 +250,7 @@ export default function PerformancePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
             {/* Win Rate Line Chart */}
-            <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4">
+            <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp">
               <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Daily Accuracy Rate Progression (%)</span>
               <div className="h-[280px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -266,7 +266,7 @@ export default function PerformancePage() {
             </div>
 
             {/* Wins vs Losses Net performance Chart */}
-            <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4">
+            <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
               <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Daily Volume (Wins vs Losses)</span>
               <div className="h-[280px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -284,7 +284,7 @@ export default function PerformancePage() {
             </div>
 
             {/* Asset accuracy analysis */}
-            <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4 lg:col-span-2">
+            <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4 lg:col-span-2 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
               <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Asset Accuracy comparison (%)</span>
               <div className="h-[280px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -307,11 +307,11 @@ export default function PerformancePage() {
 
         </div>
       ) : (
-        <div className="glass-panel rounded-xl border border-glass-border p-16 text-center space-y-4 max-w-xl mx-auto my-12">
-          <AlertCircle className="h-10 w-10 text-slate-500 mx-auto" />
+        <div className="glass-panel rounded-xl border border-glass-border p-16 text-center space-y-4 max-w-xl mx-auto my-12 animate-fadeInUp">
+          <AlertCircle className="h-10 w-10 text-slate-500 mx-auto animate-pulse-soft" />
           <h2 className="text-base font-bold font-mono text-slate-200">NO HISTORICAL DATA AVAILABLE</h2>
           <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-            There are no signal audits logged in the database within the selected parameters. Adjust date ranges or switch engine sources.
+            There are no signal records within the selected parameters. Adjust date ranges or pipeline filter.
           </p>
         </div>
       )}

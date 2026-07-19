@@ -42,3 +42,44 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# AI agent config directories
+.agents/
+.augment/
+.claude/
+.codebuddy/
+.codex/
+.continue/
+.cursor/
+.factory/
+.gemini/
+.jetro/
+.kilocode/
+.kiro/
+.opencode/
+.qoder/
+.roo/
+.trae/
+.warp/
+.windsurf/
+.windsurfrules
+
+# AI prompts & handover
+.github/prompts/
+AI_HANDOVER.md
+Current_task.md
+AGENT.md
+CLAUDE.md
+
+# Development logs
+dev-server*.log
+
+# Graphify output
+graphify-out/
+graphify.md
+
+# Test/scratch scripts (not for production)
+scratch/
+
+# Project ideas
+projects/

@@ -6,8 +6,8 @@ import { getUserAccessState } from '@/app/actions/admin_optimization';
 import { canAccess } from '@/lib/permissions';
 import LockedFeature from '@/components/LockedFeature';
 import { 
-  ListTodo, CheckSquare, Plus, Trash2, ShieldCheck, 
-  Activity, Award, Sparkles, AlertTriangle, Play, HelpCircle
+  CheckSquare, Plus, Trash2, ShieldCheck, 
+  Activity, Award, Sparkles, AlertTriangle
 } from 'lucide-react';
 
 interface ChecklistItem {
@@ -110,10 +110,15 @@ export default function ChecklistPage() {
     saveItems(updated);
   };
 
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+
   const handleRestoreDefaults = () => {
-    if (confirm('Restore default binary trading rules? Custom rules will be erased.')) {
-      saveItems(DEFAULT_RULES);
-    }
+    setShowRestoreConfirm(true);
+  };
+
+  const confirmRestoreDefaults = () => {
+    setShowRestoreConfirm(false);
+    saveItems(DEFAULT_RULES);
   };
 
   if (loading) {
@@ -266,20 +271,20 @@ export default function ChecklistPage() {
             {items.map((item) => {
               const rule = parseRuleText(item.text);
               return (
-                <div 
-                  key={item.id} 
-                  className={`p-4 rounded-xl border flex items-start gap-4 transition-all ${
-                    item.checked 
-                      ? 'bg-emerald-950/10 border-emerald-500/25 text-slate-300' 
-                      : 'bg-slate-900/10 border-glass-border text-slate-400 hover:border-glass-border/75'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={item.checked}
-                    onChange={() => handleToggle(item.id)}
-                    className="mt-0.5 h-4 w-4 rounded bg-slate-950 border-glass-border text-neon-green focus:ring-0 cursor-pointer shrink-0"
-                  />
+                  <div 
+                    key={item.id} 
+                    className={`p-4 rounded-xl border flex items-start gap-4 transition-all duration-300 ${
+                      item.checked 
+                        ? 'bg-emerald-950/10 border-emerald-500/25 text-slate-300 scale-[1.01]' 
+                        : 'bg-slate-900/10 border-glass-border text-slate-400 hover:border-glass-border/75 hover:scale-[1.01]'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={item.checked}
+                      onChange={() => handleToggle(item.id)}
+                      className="mt-0.5 h-4 w-4 rounded bg-slate-950 border-glass-border text-neon-green focus:ring-0 cursor-pointer shrink-0 transition-transform duration-200 active:scale-90"
+                    />
                   <div className="flex-1 space-y-1">
                     <strong className={`text-xs font-mono block ${item.checked ? 'line-through text-slate-500 font-normal' : 'text-slate-200'}`}>
                       {rule.title}
@@ -405,7 +410,7 @@ export default function ChecklistPage() {
                   </div>
                   <button
                     onClick={() => c.set(prev => prev + 1)}
-                    className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-glass-border text-[10px] font-mono text-neon-green transition-all"
+                    className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-glass-border text-[10px] font-mono text-neon-green transition-all duration-200 active:scale-95"
                   >
                     + Log
                   </button>
@@ -444,7 +449,7 @@ export default function ChecklistPage() {
             "Missing a trade is better than forcing one",
             "Discipline creates consistency"
           ].map((item, idx) => (
-            <div key={idx} className="glass-panel p-3.5 rounded border border-glass-border/60 text-left flex gap-2 items-center">
+            <div key={idx} className="glass-panel p-3.5 rounded border border-glass-border/60 text-left flex gap-2 items-center transition-all duration-300 hover:scale-[1.03] hover:border-neon-green/20 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: `${idx * 0.05}s` }}>
               <span className="text-neon-green text-sm">✓</span>
               <span>{item}</span>
             </div>
@@ -452,6 +457,34 @@ export default function ChecklistPage() {
         </div>
       </div>
 
+      {/* Restore defaults confirmation dialog */}
+      {showRestoreConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-400" />
+              <h3 className="text-sm font-bold font-mono text-slate-200">Restore Defaults</h3>
+            </div>
+            <p className="text-xs font-mono text-slate-400 leading-relaxed">
+              Restore default binary trading rules? Custom rules will be erased.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowRestoreConfirm(false)}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-slate-400 bg-slate-800 hover:bg-slate-700 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRestoreDefaults}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-white bg-amber-600 hover:bg-amber-500 transition-all"
+              >
+                Restore
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

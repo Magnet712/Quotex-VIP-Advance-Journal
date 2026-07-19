@@ -7,7 +7,19 @@ import { revalidatePath } from 'next/cache';
 async function verifyAdmin(): Promise<boolean> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    let user: any = null;
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data.user ?? null;
+    } catch {
+      // getUser() threw (network error / Auth API unreachable); fall through to getSession()
+    }
+
+    if (!user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      user = session?.user ?? null;
+    }
+
     if (!user) return false;
 
     const { data: adminRecord } = await supabase
@@ -26,8 +38,23 @@ async function verifyAdmin(): Promise<boolean> {
 export async function getUserAccessState() {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: true, isLoggedIn: false, isAdmin: false, vipAccess: false, premiumAccess: false };
+    let user: any = null;
+
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data.user ?? null;
+    } catch {
+      // getUser() threw; fall through to getSession()
+    }
+
+    if (!user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      user = session?.user ?? null;
+    }
+
+    if (!user) {
+      return { success: false, isLoggedIn: false, isAdmin: false, vipAccess: false, premiumAccess: false };
+    }
 
     const [adminCheck, userProfile] = await Promise.all([
       supabase.from('admins').select('id').eq('id', user.id).maybeSingle(),
@@ -42,8 +69,8 @@ export async function getUserAccessState() {
       premiumAccess: userProfile.data?.premium_access ?? false,
       status: userProfile.data?.status ?? 'pending'
     };
-  } catch (err: any) {
-    return { success: false, error: err.message, isLoggedIn: false, isAdmin: false, vipAccess: false };
+  } catch {
+    return { success: false, isLoggedIn: false, isAdmin: false, vipAccess: false, premiumAccess: false };
   }
 }
 
@@ -106,8 +133,8 @@ export async function getAdminOptimizationSettings() {
     }
 
     return { success: true, settings };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch {
+    return { success: false, error: 'Failed to fetch settings' };
   }
 }
 
@@ -136,8 +163,8 @@ export async function updateAdminOptimizationSettings(settings: Record<string, s
     revalidatePath('/dashboard/signals');
 
     return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch {
+    return { success: false, error: 'Failed to update settings' };
   }
 }
 
@@ -388,8 +415,8 @@ export async function getAdminSignalAnalytics(filters: AnalyticsFilters = {}) {
       recentSignals,
       recommendedSettings
     };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch {
+    return { success: false, error: 'Failed to fetch signal analytics' };
   }
 }
 
@@ -397,7 +424,17 @@ export async function getAdminSignalAnalytics(filters: AnalyticsFilters = {}) {
 export async function getPublicOptimizationSettings() {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    let user: any = null;
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data.user ?? null;
+    } catch {
+      // getUser() threw; fall through to getSession()
+    }
+    if (!user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      user = session?.user ?? null;
+    }
     if (!user) return { success: false, error: 'Not logged in' };
 
     const { data: profile } = await supabase
@@ -424,6 +461,7 @@ export async function getPublicOptimizationSettings() {
       losing_streak_pause_minutes: '15',
       premium_filter_mode: 'PRODUCTION',
       min_quality_score: '80',
+      min_quality_score_live: '80',
       disabled_pairs: '',
       premium_signal_status: 'ACTIVE',
       paused_until: '',
@@ -455,7 +493,7 @@ export async function getPublicOptimizationSettings() {
     }
 
     return { success: true, settings };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch {
+    return { success: false, error: 'Failed to fetch settings' };
   }
 }

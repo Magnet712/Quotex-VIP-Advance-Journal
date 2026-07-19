@@ -13,13 +13,16 @@ export class ProviderManager extends EventEmitter {
   private supabaseClient: any = null;
   private syncTimer: NodeJS.Timeout | null = null;
 
-  constructor(supabaseClient?: any) {
+  constructor(supabaseClient?: any, autoSync = false) {
     super();
     this.supabaseClient = supabaseClient || null;
 
-    // Start background metrics synchronizer if client is supplied
-    if (this.supabaseClient) {
+    // Start background metrics synchronizer if client is supplied and autoSync is enabled
+    if (this.supabaseClient && autoSync) {
       this.syncTimer = setInterval(() => this.syncTelemetryToDatabase(), 15000); // every 15s
+      if (this.syncTimer && typeof this.syncTimer.unref === 'function') {
+        this.syncTimer.unref();
+      }
     }
   }
 
@@ -223,6 +226,13 @@ export class ProviderManager extends EventEmitter {
   }
 
   /**
+   * Manually trigger metrics synchronization to the database
+   */
+  public async syncTelemetry(): Promise<void> {
+    await this.syncTelemetryToDatabase();
+  }
+
+  /**
    * Retrieves the current active provider instance
    */
   public getActiveProvider(): BaseProvider | null {
@@ -230,43 +240,94 @@ export class ProviderManager extends EventEmitter {
     return this.providers.get(this.activeProviderId) || null;
   }
 
-  /**
-   * Fetches historical candles from the active provider
-   */
-  public async fetchHistoricCandles(pair: string, limit: number): Promise<any[]> {
+  public async fetchHistoricCandles(pair: string, limit: number, interval?: string): Promise<any[]> {
     const provider = this.getActiveProvider();
     if (!provider) {
       throw new Error("[ProviderManager] No active provider configured.");
     }
-    return provider.fetchHistoricCandles(pair, limit);
+    return provider.fetchHistoricCandles(pair, limit, interval);
   }
 
   /**
-   * Fetches historical candles batch from the active provider if supported, else falls back to sequential fetches
+   * Fetches historical candles batch from the active provider if supported, else falls back to sequential fetches.
+   * Detects silent failures (all-empty results) and automatically tries the next provider in the failover chain.
    */
-  public async fetchHistoricCandlesBatch(pairs: string[], limit: number): Promise<Map<string, any[]>> {
+  public async fetchHistoricCandlesBatch(pairs: string[], limit: number, interval?: string): Promise<Map<string, any[]>> {
     const provider = this.getActiveProvider();
     if (!provider) {
       throw new Error("[ProviderManager] No active provider configured.");
     }
-    
-    // Check if the provider has a batch fetch capability
-    if (typeof (provider as any).fetchHistoricCandlesBatch === "function") {
-      return (provider as any).fetchHistoricCandlesBatch(pairs, limit);
-    }
-    
-    // Sequential fallback
-    const results = new Map<string, any[]>();
-    for (const pair of pairs) {
+
+    const failoverOrder = ["twelvedata", "yahoo", "simulator", "oanda"];
+    const startIdx = failoverOrder.indexOf(provider.id);
+    const orderedCandidates = startIdx >= 0
+      ? [...failoverOrder.slice(startIdx), ...failoverOrder.slice(0, startIdx)]
+      : failoverOrder;
+
+    let lastError: string | null = null;
+
+    for (const candidateId of orderedCandidates) {
+      const candidate = this.providers.get(candidateId);
+      if (!candidate) continue;
+
+      const breaker = this.breakers.get(candidateId);
+      if (breaker && !breaker.isAvailable()) {
+        console.warn(`[ProviderManager] Skipping ${candidateId} (circuit breaker OPEN)`);
+        continue;
+      }
+
+      if (candidateId !== provider.id) {
+        console.warn(`[ProviderManager] Failing over to ${candidateId} for batch fetch (previous: ${lastError || 'empty data'})`);
+        this.setActiveProvider(candidateId);
+        this.emit("failover", { from: provider.id, to: candidateId, reason: lastError || 'empty data' });
+      }
+
       try {
-        const candles = await provider.fetchHistoricCandles(pair, limit);
-        results.set(pair, candles);
+        let results: Map<string, any[]>;
+
+        if (typeof (candidate as any).fetchHistoricCandlesBatch === "function") {
+          results = await (candidate as any).fetchHistoricCandlesBatch(pairs, limit, interval);
+        } else {
+          results = new Map<string, any[]>();
+          for (const pair of pairs) {
+            try {
+              const candles = await candidate.fetchHistoricCandles(pair, limit, interval);
+              results.set(pair, candles);
+            } catch (err: any) {
+              console.error(`[ProviderManager] Failed fetching candles for ${pair} from ${candidateId}:`, err.message);
+              results.set(pair, []);
+            }
+          }
+        }
+
+        // Check for silent failure: all pairs returned empty
+        const allEmpty = pairs.every(p => {
+          const arr = results.get(p);
+          return !arr || arr.length === 0;
+        });
+
+        if (allEmpty && pairs.length > 0) {
+          lastError = `Provider ${candidateId} returned empty data for all ${pairs.length} pairs`;
+          console.warn(`[ProviderManager] ${lastError}. Will try next provider.`);
+          continue;
+        }
+
+        console.log(`[ProviderManager] Successfully fetched data from ${candidateId} for ${pairs.length} pairs`);
+        return results;
       } catch (err: any) {
-        console.error(`[ProviderManager] Failed fetching candles for ${pair}:`, err.message);
-        results.set(pair, []);
+        lastError = `Provider ${candidateId} threw: ${err.message}`;
+        console.error(`[ProviderManager] ${lastError}. Will try next provider.`);
+        if (breaker) {
+          breaker.recordFailure();
+          this.emit("status", { id: candidateId, status: "error" });
+        }
       }
     }
-    return results;
+
+    console.error(`[ProviderManager] All providers failed for batch fetch. Last error: ${lastError}`);
+    const emptyResults = new Map<string, any[]>();
+    pairs.forEach(p => emptyResults.set(p, []));
+    return emptyResults;
   }
 
   /**

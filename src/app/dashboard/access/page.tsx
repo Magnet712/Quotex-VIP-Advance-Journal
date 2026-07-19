@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { getMembershipRole, canAccess, FEATURES_LIST } from '@/lib/permissions';
 import { ShieldCheck, ShieldAlert, ArrowRight, Activity, Award, Zap, User } from 'lucide-react';
@@ -9,7 +9,8 @@ import Link from 'next/link';
 export default function AccessMatrixPage() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   useEffect(() => {
     async function loadProfile() {
@@ -62,7 +63,7 @@ export default function AccessMatrixPage() {
       </div>
 
       {/* Overview Status Banner */}
-      <div className="glass-panel p-5 rounded-xl border border-glass-border bg-[#030812]/50 flex items-center justify-between">
+      <div className="glass-panel p-5 rounded-xl border border-glass-border bg-[#030812]/50 flex items-center justify-between transition-all duration-300 hover:border-glass-border/50 animate-fadeInUp">
         <div className="space-y-0.5">
           <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Authorization Level</span>
           <div className="text-sm font-mono font-bold text-slate-200">
@@ -111,7 +112,7 @@ export default function AccessMatrixPage() {
                 }
 
                 return (
-                  <tr key={feature.id} className="hover:bg-slate-900/10 transition-colors">
+                  <tr key={feature.id} className="hover:bg-slate-900/10 transition-all duration-150 hover:scale-[1.001]">
                     <td className="p-4 space-y-1">
                       <div className="font-bold text-slate-200">{feature.name}</div>
                       <div className="text-[10px] text-slate-500 font-sans">{feature.desc}</div>

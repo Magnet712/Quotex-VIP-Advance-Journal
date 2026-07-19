@@ -64,7 +64,7 @@ export default function UserProfilePage() {
       </div>
 
       {/* Main details list */}
-      <div className="glass-panel p-6 rounded-2xl border border-glass-border bg-slate-900/10 space-y-6 relative overflow-hidden">
+      <div className="glass-panel p-6 rounded-2xl border border-glass-border bg-slate-900/10 space-y-6 relative overflow-hidden transition-all duration-300 hover:border-glass-border/50 animate-fadeInUp">
         
         {/* Glow backdrop decoration */}
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-slate-800/10 rounded-full blur-3xl pointer-events-none" />
@@ -100,8 +100,8 @@ export default function UserProfilePage() {
           {/* Email */}
           <div className="space-y-1">
             <span className="text-[9px] text-slate-500 uppercase tracking-widest block">System Email Address</span>
-            <div className="flex items-center gap-2 text-slate-300 bg-slate-950/40 border border-glass-border/30 px-3.5 py-2.5 rounded">
-              <Mail className="h-4 w-4 text-slate-500" />
+            <div className="flex items-center gap-2 text-slate-300 bg-slate-950/40 border border-glass-border/30 px-3.5 py-2.5 rounded transition-all duration-200 hover:border-neon-green/20 group">
+              <Mail className="h-4 w-4 text-slate-500 group-hover:text-neon-green transition-colors" />
               <span>{user?.email || 'N/A'}</span>
             </div>
           </div>
@@ -109,7 +109,7 @@ export default function UserProfilePage() {
           {/* Trader ID */}
           <div className="space-y-1">
             <span className="text-[9px] text-slate-500 uppercase tracking-widest block">Partner Broker Trader ID</span>
-            <div className="flex items-center justify-between text-slate-300 bg-slate-950/40 border border-glass-border/30 px-3.5 py-2.5 rounded">
+            <div className="flex items-center justify-between text-slate-300 bg-slate-950/40 border border-glass-border/30 px-3.5 py-2.5 rounded transition-all duration-200 hover:border-neon-green/20 group">
               <span className="font-bold">{profile?.trader_id || 'N/A'}</span>
               {profile?.trader_id && (
                 <button
@@ -146,7 +146,7 @@ export default function UserProfilePage() {
       </div>
 
       {/* Security Tip Box */}
-      <div className="p-4 bg-slate-950/30 border border-glass-border/50 rounded-xl text-left flex items-start gap-3">
+      <div className="p-4 bg-slate-950/30 border border-glass-border/50 rounded-xl text-left flex items-start gap-3 transition-all duration-200 hover:border-glass-border/75 animate-fadeInUp">
         <ShieldAlert className="h-5 w-5 text-slate-500 shrink-0 mt-0.5" />
         <div className="space-y-1 font-mono text-[10px] text-slate-500 leading-normal">
           <h4 className="font-bold uppercase text-slate-400">Profile Security Notice</h4>

@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { getTrades } from '@/app/actions/trades';
+import { getSignalPerformance } from '@/app/actions/signals';
 import { getUserAccessState, getPublicOptimizationSettings } from '@/app/actions/admin_optimization';
 import { canAccess, getMembershipRole, FEATURES_LIST } from '@/lib/permissions';
 import { 
-  User, Award, Zap, Calendar, Activity, CheckSquare, 
-  Play, Radio, History, BarChart3, AlertCircle, Bell, ArrowRight, ShieldCheck 
+  User, Award, Zap, Calendar, Activity, Bell, ArrowRight, ShieldCheck, TrendingUp
 } from 'lucide-react';
 
 export default function DashboardHome() {
@@ -16,10 +16,12 @@ export default function DashboardHome() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [tradesCount, setTradesCount] = useState(0);
+  const [signalStats, setSignalStats] = useState<{ total: number; totalToday: number; winRate: number } | null>(null);
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [signalVisibility, setSignalVisibility] = useState('premium');
 
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   useEffect(() => {
     async function loadData() {
@@ -29,10 +31,11 @@ export default function DashboardHome() {
         
         setUser(session.user);
 
-        // Fetch profile, trades, and system settings concurrently
-        const [profileRes, tradesRes, settingsRes] = await Promise.all([
+        // Fetch profile, trades, signal stats, and system settings concurrently
+        const [profileRes, tradesRes, perfRes, settingsRes] = await Promise.all([
           supabase.from('users').select('*').eq('id', session.user.id).single(),
           getTrades(),
+          getSignalPerformance('ALL'),
           getPublicOptimizationSettings()
         ]);
 
@@ -42,6 +45,14 @@ export default function DashboardHome() {
 
         if (tradesRes.success && tradesRes.trades) {
           setTradesCount(tradesRes.trades.length);
+        }
+
+        if (perfRes.success && perfRes.stats) {
+          setSignalStats({
+            total: perfRes.stats.total,
+            totalToday: perfRes.stats.totalToday,
+            winRate: perfRes.stats.accuracy,
+          });
         }
 
         if (settingsRes.success && settingsRes.settings) {
@@ -121,7 +132,7 @@ export default function DashboardHome() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 w-full max-w-7xl mx-auto animate-fadeIn">
       
       {/* Top Welcome Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-glass-border pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-glass-border pb-6 animate-fadeInUp">
         <div className="space-y-1">
           <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">saas member portal</span>
           <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-100">
@@ -185,10 +196,10 @@ export default function DashboardHome() {
       )}
 
       {/* Account Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Current Plan */}
-        <div className="glass-panel p-5 rounded-xl border border-glass-border flex flex-col justify-between space-y-4">
+        <div className="glass-panel p-5 rounded-xl border border-glass-border flex flex-col justify-between space-y-4 transition-all duration-300 hover:scale-[1.02] hover:border-glass-border/50 animate-fadeInUp">
           <div className="flex items-center justify-between text-slate-500 text-[9px] tracking-wider font-mono uppercase">
             <span>Current Plan</span>
             <Award className="h-4 w-4" />
@@ -204,7 +215,7 @@ export default function DashboardHome() {
         </div>
 
         {/* Account Status / Expiry */}
-        <div className="glass-panel p-5 rounded-xl border border-glass-border flex flex-col justify-between space-y-4">
+        <div className="glass-panel p-5 rounded-xl border border-glass-border flex flex-col justify-between space-y-4 transition-all duration-300 hover:scale-[1.02] hover:border-glass-border/50 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center justify-between text-slate-500 text-[9px] tracking-wider font-mono uppercase">
             <span>Membership Status</span>
             <ShieldCheck className="h-4 w-4 text-emerald-500" />
@@ -220,7 +231,7 @@ export default function DashboardHome() {
         </div>
 
         {/* Usage Stats (Journal Count & Sign ups) */}
-        <div className="glass-panel p-5 rounded-xl border border-glass-border flex flex-col justify-between space-y-4">
+        <div className="glass-panel p-5 rounded-xl border border-glass-border flex flex-col justify-between space-y-4 transition-all duration-300 hover:scale-[1.02] hover:border-glass-border/50 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center justify-between text-slate-500 text-[9px] tracking-wider font-mono uppercase">
             <span>Account Details</span>
             <Calendar className="h-4 w-4" />
@@ -231,6 +242,22 @@ export default function DashboardHome() {
             </div>
             <div className="text-[10px] text-slate-500 font-mono mt-1">
               Logged Transactions: {tradesCount} • Partner ID: {profile?.trader_id || 'None'}
+            </div>
+          </div>
+        </div>
+
+        {/* Signal Performance Stats */}
+        <div className="glass-panel p-5 rounded-xl border border-glass-border flex flex-col justify-between space-y-4 transition-all duration-300 hover:scale-[1.02] hover:border-glass-border/50 animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
+          <div className="flex items-center justify-between text-slate-500 text-[9px] tracking-wider font-mono uppercase">
+            <span>Signal Performance</span>
+            <TrendingUp className="h-4 w-4 text-neon-green" />
+          </div>
+          <div>
+            <div className="text-lg font-mono font-extrabold text-neon-green">
+              {signalStats ? `${signalStats.winRate}%` : '—'}
+            </div>
+            <div className="text-[10px] text-slate-500 font-mono mt-1">
+              {signalStats ? `${signalStats.totalToday} Today · ${signalStats.total} Total Signals` : 'No signal data yet'}
             </div>
           </div>
         </div>
@@ -268,10 +295,10 @@ export default function DashboardHome() {
             return (
               <div 
                 key={feature.id} 
-                className={`glass-panel border p-5 rounded-xl flex flex-col justify-between space-y-5 transition-all hover:scale-[1.01] ${
+                className={`glass-panel border p-5 rounded-xl flex flex-col justify-between space-y-5 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg ${
                   hasAccess 
-                    ? 'border-glass-border/70 bg-slate-900/10' 
-                    : 'border-glass-border bg-slate-950/50 opacity-80 hover:opacity-100'
+                    ? 'border-glass-border/70 bg-slate-900/10 hover:border-neon-green/20' 
+                    : 'border-glass-border bg-slate-950/50 opacity-80 hover:opacity-100 hover:border-purple-500/20'
                 }`}
               >
                 <div className="space-y-3.5 text-left">

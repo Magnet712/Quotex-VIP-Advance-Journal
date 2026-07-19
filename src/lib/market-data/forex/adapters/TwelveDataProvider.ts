@@ -115,10 +115,17 @@ export class TwelveDataProvider extends BaseProvider {
     if (!this.apiKey) return false;
 
     return new Promise((resolve) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.warn("[TwelveData checkHealth] Health check request timed out after 5s. Aborting.");
+        controller.abort();
+      }, 5000);
+
       const options = {
         hostname: "api.twelvedata.com",
         path: `/api_usage?apikey=${this.apiKey}`,
-        method: "GET"
+        method: "GET",
+        signal: controller.signal
       };
 
       const req = https.request(options, (res) => {
@@ -126,6 +133,7 @@ export class TwelveDataProvider extends BaseProvider {
           let data = "";
           res.on("data", chunk => data += chunk);
           res.on("end", () => {
+            clearTimeout(timeoutId);
             try {
               const json = JSON.parse(data);
               if (json.timestamp) {
@@ -135,39 +143,64 @@ export class TwelveDataProvider extends BaseProvider {
                 resolve(true);
                 return;
               }
-            } catch {}
+              console.warn(`[TwelveData checkHealth] Unexpected response format: ${data.slice(0, 200)}`);
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : String(err);
+              console.error(`[TwelveData checkHealth] JSON parse error: ${msg}. Body: ${data.slice(0, 200)}`);
+            }
             resolve(false);
           });
         } else {
+          clearTimeout(timeoutId);
+          console.warn(`[TwelveData checkHealth] Non-200 status: ${res.statusCode}`);
           resolve(false);
         }
       });
-      req.on("error", () => resolve(false));
+      req.on("error", (err: any) => {
+        clearTimeout(timeoutId);
+        console.error(`[TwelveData checkHealth] HTTPS error: ${err.message}`);
+        resolve(false);
+      });
       req.end();
     });
   }
 
-  public async fetchHistoricCandles(pair: string, limit: number): Promise<NormalizedCandle[]> {
+  public async fetchHistoricCandles(pair: string, limit: number, interval?: string): Promise<NormalizedCandle[]> {
+    return this.fetchHistoricCandlesWithRetry(pair, limit, interval, 0);
+  }
+
+  private async fetchHistoricCandlesWithRetry(pair: string, limit: number, interval?: string, attempt = 0): Promise<NormalizedCandle[]> {
     if (!this.apiKey) {
       console.warn(`[TwelveData Error] Credentials missing.
 Provider: TwelveData
 Pair: ${pair}
-Interval: 1min
+Interval: ${interval || '1min'}
 Reason: API Key not set inside environment variables.`);
       return [];
     }
 
-    return new Promise((resolve) => {
+    const twelveInterval = (interval === "5min" || interval === "5m") ? "5min" : "1min";
+
+    const result = await new Promise<NormalizedCandle[]>((resolve) => {
+      const controller = new AbortController();
+      const timeoutMs = 15000;
+      const timeoutId = setTimeout(() => {
+        console.warn(`[TwelveData Timeout] Request timed out after ${timeoutMs / 1000}s for ${pair} (attempt ${attempt + 1}). Aborting request.`);
+        controller.abort();
+      }, timeoutMs);
+
       const options = {
         hostname: "api.twelvedata.com",
-        path: `/time_series?symbol=${pair}&interval=1min&outputsize=${limit}&timezone=UTC&apikey=${this.apiKey}`,
-        method: "GET"
+        path: `/time_series?symbol=${pair}&interval=${twelveInterval}&outputsize=${limit}&timezone=UTC&apikey=${this.apiKey}`,
+        method: "GET",
+        signal: controller.signal
       };
 
-      https.get(options, (res) => {
+      const req = https.get(options, (res) => {
         let data = "";
         res.on("data", chunk => data += chunk);
         res.on("end", () => {
+          clearTimeout(timeoutId);
           try {
             const json = JSON.parse(data);
             if (json.values && Array.isArray(json.values)) {
@@ -193,45 +226,61 @@ Reason: API Key not set inside environment variables.`);
                   providerTimezone: exchangeTimezone
                 };
               });
+              console.log(`[TwelveData] Fetched ${candles.length} candles for ${pair} (attempt ${attempt + 1})`);
               resolve(candles.reverse());
               return;
-            } else {
-              console.error(`[TwelveData Error] API returned non-candle payload.
+            }
+            console.error(`[TwelveData Error] API returned non-candle payload (attempt ${attempt + 1}).
 Provider: TwelveData
 Pair: ${pair}
-Interval: 1min
 Request: GET https://${options.hostname}${options.path.split('&apikey=')[0]} (API Key hidden)
 Response Status: ${res.statusCode}
 Response Body: ${data}
 Reason: ${json.message || json.status || 'Unknown API Error'}`);
-            }
           } catch (err: any) {
-            console.error(`[TwelveData Error] Failed to parse JSON response.
+            console.error(`[TwelveData Error] Failed to parse JSON response (attempt ${attempt + 1}).
 Provider: TwelveData
 Pair: ${pair}
-Interval: 1min
-Request: GET https://${options.hostname}${options.path.split('&apikey=')[0]} (API Key hidden)
 Response Status: ${res.statusCode}
 Response Body: ${data}
 Error: ${err.message}`);
           }
           resolve([]);
         });
-      }).on("error", (err) => {
-        console.error(`[TwelveData Error] HTTPS request execution failed.
+      });
+
+      req.on("error", (err) => {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          console.error(`[TwelveData Error] HTTPS request aborted due to timeout (attempt ${attempt + 1}).
+Provider: TwelveData
+Pair: ${pair}`);
+        } else {
+          console.error(`[TwelveData Error] HTTPS request execution failed (attempt ${attempt + 1}).
 Provider: TwelveData
 Pair: ${pair}
-Interval: 1min
 Error: ${err.message}`);
+        }
         resolve([]);
       });
     });
+
+    if (result.length === 0 && attempt < 1) {
+      console.warn(`[TwelveData] Retrying fetch for ${pair} after empty result (attempt ${attempt + 1} -> ${attempt + 2})`);
+      await new Promise(r => setTimeout(r, 1000));
+      return this.fetchHistoricCandlesWithRetry(pair, limit, interval, attempt + 1);
+    }
+    return result;
   }
 
   /**
    * Fetches historical candles for multiple symbols in a single batch request
    */
-  public async fetchHistoricCandlesBatch(pairs: string[], limit: number): Promise<Map<string, NormalizedCandle[]>> {
+  public async fetchHistoricCandlesBatch(pairs: string[], limit: number, interval?: string): Promise<Map<string, NormalizedCandle[]>> {
+    return this.fetchHistoricCandlesBatchWithRetry(pairs, limit, interval, 0);
+  }
+
+  private async fetchHistoricCandlesBatchWithRetry(pairs: string[], limit: number, interval?: string, attempt = 0): Promise<Map<string, NormalizedCandle[]>> {
     const results = new Map<string, NormalizedCandle[]>();
     if (!this.apiKey) {
       console.warn("[TwelveData] Credentials missing, returning empty batch backfill.");
@@ -243,28 +292,46 @@ Error: ${err.message}`);
 
     // For single pair, delegate to standard single-pair fetch logic
     if (pairs.length === 1) {
-      const candles = await this.fetchHistoricCandles(pairs[0], limit);
+      const candles = await this.fetchHistoricCandlesWithRetry(pairs[0], limit, interval, attempt);
       results.set(pairs[0], candles);
       return results;
     }
 
-    return new Promise((resolve) => {
+    const twelveInterval = (interval === "5min" || interval === "5m") ? "5min" : "1min";
+
+    const batchResult = await new Promise<{ map: Map<string, NormalizedCandle[]>; hadData: boolean }>((resolve) => {
       const symbols = pairs.join(",");
+      const controller = new AbortController();
+      const timeoutMs = 15000;
+      const timeoutId = setTimeout(() => {
+        console.warn(`[TwelveData Batch Timeout] Request timed out after ${timeoutMs / 1000}s for symbols: ${symbols} (attempt ${attempt + 1}). Aborting request.`);
+        controller.abort();
+      }, timeoutMs);
+
       const options = {
         hostname: "api.twelvedata.com",
-        path: `/time_series?symbol=${symbols}&interval=1min&outputsize=${limit}&timezone=UTC&apikey=${this.apiKey}`,
-        method: "GET"
+        path: `/time_series?symbol=${symbols}&interval=${twelveInterval}&outputsize=${limit}&timezone=UTC&apikey=${this.apiKey}`,
+        method: "GET",
+        signal: controller.signal
       };
 
-      https.get(options, (res) => {
+      const req = https.get(options, (res) => {
+        const remainingHeader = res.headers["x-ratelimit-remaining"];
+        if (remainingHeader) {
+          this.rateLimitRemaining = parseInt(remainingHeader as string) || this.rateLimitRemaining;
+        }
+
         let data = "";
         res.on("data", chunk => data += chunk);
         res.on("end", () => {
+          clearTimeout(timeoutId);
           try {
             const json = JSON.parse(data);
-             pairs.forEach(pair => {
+            let anyData = false;
+            pairs.forEach(pair => {
               const item = json[pair];
               if (item && item.values && Array.isArray(item.values)) {
+                anyData = true;
                 const exchangeTimezone = item.meta?.exchange_timezone || "UTC";
                 const isConfirmedUTC = exchangeTimezone.toUpperCase() === "UTC";
                 const candles = item.values.map((v: { datetime: string; open: string; high: string; low: string; close: string; volume?: string }) => {
@@ -288,49 +355,66 @@ Error: ${err.message}`);
                   };
                 });
                 results.set(pair, candles.reverse());
+              } else if (pairs.length === 1 && json.values && Array.isArray(json.values)) {
+                anyData = true;
+                const exchangeTimezone = json.meta?.exchange_timezone || "UTC";
+                const isConfirmedUTC = exchangeTimezone.toUpperCase() === "UTC";
+                const candles = json.values.map((v: { datetime: string; open: string; high: string; low: string; close: string; volume?: string }) => {
+                  let timestamp = "";
+                  if (isConfirmedUTC) {
+                    const dtStr = v.datetime.includes("T") ? v.datetime : v.datetime.replace(" ", "T");
+                    timestamp = new Date(dtStr.endsWith("Z") ? dtStr : (dtStr + "Z")).toISOString();
+                  } else {
+                    timestamp = new Date(v.datetime + " " + exchangeTimezone).toISOString();
+                  }
+                  return {
+                    timestamp,
+                    open: parseFloat(v.open),
+                    high: parseFloat(v.high),
+                    low: parseFloat(v.low),
+                    close: parseFloat(v.close),
+                    volume: parseInt(v.volume || "0"),
+                    cvd: 0,
+                    providerTimestamp: v.datetime,
+                    providerTimezone: exchangeTimezone
+                  };
+                });
+                results.set(pair, candles.reverse());
               } else {
-                // Check if symbol matches single pair format without the symbol key (in case API returns single-object representation)
-                if (pairs.length === 1 && json.values && Array.isArray(json.values)) {
-                  const exchangeTimezone = json.meta?.exchange_timezone || "UTC";
-                  const isConfirmedUTC = exchangeTimezone.toUpperCase() === "UTC";
-                  const candles = json.values.map((v: { datetime: string; open: string; high: string; low: string; close: string; volume?: string }) => {
-                    let timestamp = "";
-                    if (isConfirmedUTC) {
-                      const dtStr = v.datetime.includes("T") ? v.datetime : v.datetime.replace(" ", "T");
-                      timestamp = new Date(dtStr.endsWith("Z") ? dtStr : (dtStr + "Z")).toISOString();
-                    } else {
-                      timestamp = new Date(v.datetime + " " + exchangeTimezone).toISOString();
-                    }
-                    return {
-                      timestamp,
-                      open: parseFloat(v.open),
-                      high: parseFloat(v.high),
-                      low: parseFloat(v.low),
-                      close: parseFloat(v.close),
-                      volume: parseInt(v.volume || "0"),
-                      cvd: 0,
-                      providerTimestamp: v.datetime,
-                      providerTimezone: exchangeTimezone
-                    };
-                  });
-                  results.set(pair, candles.reverse());
-                } else {
-                  results.set(pair, []);
-                }
+                console.warn(`[TwelveData Batch] No data for ${pair} in batch response (attempt ${attempt + 1})`);
+                results.set(pair, []);
               }
             });
+            resolve({ map: results, hadData: anyData });
           } catch (err: any) {
-            console.error("[TwelveData Batch Fetch Error]:", err.message);
+            console.error(`[TwelveData Batch Fetch Error] (attempt ${attempt + 1}): ${err.message}. Body: ${data.slice(0, 300)}`);
             pairs.forEach(p => results.set(p, []));
+            resolve({ map: results, hadData: false });
           }
-          resolve(results);
         });
-      }).on("error", (err) => {
-        console.error("[TwelveData Batch HTTPS Error]:", err.message);
+      });
+
+      req.on("error", (err) => {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          console.error(`[TwelveData Error] HTTPS batch request aborted due to timeout (attempt ${attempt + 1}).
+Symbols: ${symbols}`);
+        } else {
+          console.error(`[TwelveData Batch HTTPS Error] (attempt ${attempt + 1}): ${err.message}`);
+        }
         pairs.forEach(p => results.set(p, []));
-        resolve(results);
+        resolve({ map: results, hadData: false });
       });
     });
+
+    if (!batchResult.hadData && attempt < 1) {
+      console.warn(`[TwelveData] Retrying batch fetch after empty result for ${pairs.length} pairs (attempt ${attempt + 1} -> ${attempt + 2})`);
+      await new Promise(r => setTimeout(r, 1000));
+      return this.fetchHistoricCandlesBatchWithRetry(pairs, limit, interval, attempt + 1);
+    }
+
+    console.log(`[TwelveData] Batch fetch completed for ${pairs.length} pairs (attempt ${attempt + 1})`);
+    return batchResult.map;
   }
 
   private connectWebSocket() {
@@ -552,7 +636,8 @@ Error: ${err.message}`);
           this.isPolling = false;
         }
       });
-    }).on("error", () => {
+    }).on("error", (pollErr: Error) => {
+      console.error(`[TwelveData Poll] HTTPS request error: ${pollErr.message}. Rescheduling poll.`);
       if (this.active && this.activePairs.size > 0) {
         this.restTimeout = setTimeout(() => this.pollREST(), this.getDelayUntilNextPoll(this.getAdaptivePollInterval()));
       } else {

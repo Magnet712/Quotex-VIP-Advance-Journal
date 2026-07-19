@@ -10,7 +10,8 @@ import {
 } from '@/app/actions/admin';
 import { 
   getAdminOptimizationSettings, 
-  updateAdminOptimizationSettings 
+  updateAdminOptimizationSettings,
+  getAdminSignalAnalytics
 } from '@/app/actions/admin_optimization';
 import {
   getAllFeatureFlags,
@@ -27,7 +28,8 @@ import {
   ShieldAlert, Check, X, Award, Key, Trash, RefreshCw, 
   Users, UserCheck, UserPlus, Star, BarChart2, Loader,
   Radio, Database, Cpu, Zap, CreditCard, Wallet, FileText,
-  DollarSign, TrendingUp, HelpCircle, Clock, ChevronUp, ChevronDown, AlertCircle
+  DollarSign, TrendingUp, HelpCircle, Clock, ChevronUp, ChevronDown, AlertCircle,
+  Activity
 } from 'lucide-react';
 import { getSignalMode, setSignalMode } from '@/app/actions/signal_mode';
 
@@ -69,6 +71,8 @@ export default function AdminDashboardPage() {
   const [pricingMessage, setPricingMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
   const [flagsLoading, setFlagsLoading] = useState(false);
+  const [otcAnalytics, setOtcAnalytics] = useState<any>(null);
+  const [otcAnalyticsLoading, setOtcAnalyticsLoading] = useState(false);
 
   // BILLING SAAS STATE
   const [plans, setPlans] = useState<any[]>([]);
@@ -137,6 +141,12 @@ export default function AdminDashboardPage() {
       const settingsRes = await getAdminOptimizationSettings();
       if (settingsRes.success && settingsRes.settings) {
         setSignalVisibilityState(settingsRes.settings.signal_visibility || 'premium');
+      }
+
+      // Load OTC analytics
+      const otcRes = await getAdminSignalAnalytics({ source: 'live_otc' });
+      if (otcRes.success) {
+        setOtcAnalytics(otcRes);
       }
 
       // Load feature flags
@@ -466,6 +476,12 @@ export default function AdminDashboardPage() {
               className="flex items-center gap-1.5 px-3 py-2 rounded border border-glass-border hover:border-rose-500/30 bg-slate-900/40 text-slate-400 hover:text-rose-400 text-xs transition-colors"
             >
               <BarChart2 className="h-3.5 w-3.5 text-rose-500" /> OPTIMIZATION
+            </button>
+            <button
+              onClick={() => router.push('/admin/login/api-monitor')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded border border-glass-border hover:border-rose-500/30 bg-slate-900/40 text-slate-400 hover:text-rose-400 text-xs transition-colors"
+            >
+              <Activity className="h-3.5 w-3.5 text-rose-500" /> API MONITOR
             </button>
             <button
               onClick={loadData}
@@ -885,6 +901,97 @@ export default function AdminDashboardPage() {
                   );
                 })}
               </div>
+            </div>
+
+            {/* ── OTC Section ────────────────────────────────────────────────── */}
+            <div className="glass-panel rounded-xl border border-glass-border p-6 space-y-4">
+              <div className="flex items-center gap-3 border-b border-glass-border/40 pb-4">
+                <Radio className="h-4 w-4 text-neon-green" />
+                <div>
+                  <div className="text-xs font-bold text-neon-green tracking-widest uppercase">OTC Execution Statistics</div>
+                  <div className="text-[9px] text-slate-500">Manual OTC execution engine metrics</div>
+                </div>
+              </div>
+
+              {otcAnalyticsLoading && (
+                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
+                  <Activity className="h-3.5 w-3.5 animate-spin" />
+                  Loading OTC statistics...
+                </div>
+              )}
+
+              {!otcAnalyticsLoading && (!otcAnalytics || !otcAnalytics.summary) && (
+                <div className="text-[10px] text-slate-500 font-mono text-center py-6">
+                  No OTC signal data available yet. Run manual OTC scans to generate statistics.
+                </div>
+              )}
+
+              {otcAnalytics?.summary && (
+                <div className="space-y-4">
+                  {/* OTC Metric Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                    {[
+                      { label: 'SIGNALS TODAY', value: otcAnalytics.summary.totalSignals, color: 'text-slate-200' },
+                      { label: 'TOTAL SIGNALS', value: otcAnalytics.summary.totalSignals, color: 'text-slate-200' },
+                      { label: 'WINS', value: otcAnalytics.summary.wins, color: 'text-neon-green' },
+                      { label: 'LOSSES', value: otcAnalytics.summary.losses, color: 'text-rose-400' },
+                      { label: 'ACCURACY', value: `${otcAnalytics.summary.accuracy}%`, color: 'text-neon-green' },
+                      { label: 'AVG CONFIDENCE', value: `${otcAnalytics.summary.avgConfidence}%`, color: 'text-slate-200' },
+                      { label: 'FAILED', value: String(otcAnalytics.summary.totalSignals - otcAnalytics.summary.wins - otcAnalytics.summary.losses), color: 'text-slate-500' },
+                    ].map((stat, i) => (
+                      <div key={i} className="bg-[#02050b] border border-glass-border/40 rounded-lg p-3 flex flex-col gap-1">
+                        <div className="text-[8px] font-mono text-slate-500 uppercase tracking-wider">{stat.label}</div>
+                        <div className={`text-sm font-extrabold font-mono ${stat.color}`}>{stat.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* OTC Pair Ranking (top/bottom) */}
+                  {otcAnalytics.pairRankings && otcAnalytics.pairRankings.length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
+                      <div className="bg-[#02050b] border border-glass-border/40 rounded-lg p-4">
+                        <div className="text-[9px] font-mono text-neon-green font-bold uppercase tracking-wider mb-3">OTC Top Pairs</div>
+                        <div className="space-y-1.5">
+                          {otcAnalytics.pairRankings.slice(0, 5).map((p: any) => (
+                            <div key={p.pair} className="flex items-center justify-between text-[10px] font-mono text-slate-300">
+                              <span className="font-bold">{p.pair}</span>
+                              <span className={`${p.accuracy >= 60 ? 'text-neon-green' : 'text-rose-400'}`}>
+                                {p.accuracy}% ({p.wins}W/{p.losses}L)
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="bg-[#02050b] border border-glass-border/40 rounded-lg p-4">
+                        <div className="text-[9px] font-mono text-rose-400 font-bold uppercase tracking-wider mb-3">OTC Worst Pairs</div>
+                        <div className="space-y-1.5">
+                          {otcAnalytics.pairRankings.slice(-5).reverse().map((p: any) => (
+                            <div key={p.pair} className="flex items-center justify-between text-[10px] font-mono text-slate-300">
+                              <span className="font-bold">{p.pair}</span>
+                              <span className="text-rose-400">{p.accuracy}% ({p.wins}W/{p.losses}L)</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* OTC Strategy Performance */}
+                  {otcAnalytics.strategyPerformance && otcAnalytics.strategyPerformance.length > 0 && (
+                    <div className="bg-[#02050b] border border-glass-border/40 rounded-lg p-4">
+                      <div className="text-[9px] font-mono text-slate-400 font-bold uppercase tracking-wider mb-3">OTC Strategy Performance</div>
+                      <div className="space-y-1.5">
+                        {otcAnalytics.strategyPerformance.slice(0, 5).map((s: any) => (
+                          <div key={s.name} className="flex items-center justify-between text-[10px] font-mono text-slate-300">
+                            <span className="font-bold truncate max-w-[200px]">{s.name}</span>
+                            <span className="text-slate-400">{s.wins}/{s.count} wins ({Math.round((s.wins / s.count) * 100)}%)</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
           </div>

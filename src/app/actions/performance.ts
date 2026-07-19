@@ -1,11 +1,12 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import type { DataPipeline } from '@/lib/pipeline';
 
 export interface PerformanceStatsFilter {
   dateFrom?: string;
   dateTo?: string;
-  source?: 'ALL' | 'simulation' | 'live_otc' | 'live_market';
+  source?: DataPipeline;
 }
 
 export async function getPerformanceStats(filters: PerformanceStatsFilter = {}) {
@@ -14,7 +15,6 @@ export async function getPerformanceStats(filters: PerformanceStatsFilter = {}) 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not logged in' };
 
-    // Verify approval
     const { data: profile } = await supabase
       .from('users')
       .select('status')
@@ -25,43 +25,82 @@ export async function getPerformanceStats(filters: PerformanceStatsFilter = {}) 
       return { success: false, error: 'Unauthorized status' };
     }
 
-    let query = supabase.from('signals').select('*');
+    const src = filters.source ?? 'ALL';
 
-    if (filters.source && filters.source !== 'ALL') {
-      query = query.eq('source', filters.source);
+    // ── 1. Fetch manual_signal_audits (Live FOREX) ────────────────────────
+    let msaNormalised: { pair: string; ts: string; result: 'WIN' | 'LOSS' | 'PENDING' }[] = [];
+    if (src === 'ALL' || src === 'live_market') {
+      let msaQuery = supabase
+        .from('manual_signal_audits')
+        .select('pair, status, entry_time, created_at')
+        .eq('user_id', user.id);
+
+      if (filters.dateFrom) {
+        msaQuery = msaQuery.gte('entry_time', new Date(filters.dateFrom).toISOString());
+      }
+      if (filters.dateTo) {
+        const endOfDay = new Date(filters.dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        msaQuery = msaQuery.lte('entry_time', endOfDay.toISOString());
+      }
+
+      const { data: msaRows, error: msaErr } = await msaQuery;
+      if (msaErr) throw msaErr;
+
+      msaNormalised = (msaRows ?? []).map((r: any) => ({
+        pair: r.pair || 'Unknown',
+        ts: r.entry_time || r.created_at || '',
+        result: r.status as 'WIN' | 'LOSS' | 'PENDING',
+      }));
     }
 
-    if (filters.dateFrom) {
-      query = query.gte('entry_time', new Date(filters.dateFrom).toISOString());
+    // ── 2. Fetch signals (Live OTC) — exclude simulation ───────────────────
+    let sigNormalised: { pair: string; ts: string; result: 'WIN' | 'LOSS' | 'PENDING' }[] = [];
+    if (src === 'ALL' || src === 'live_otc') {
+      let sigQuery = supabase
+        .from('signals')
+        .select('pair, result, entry_time')
+        .eq('source', 'live_otc');
+
+      if (filters.dateFrom) {
+        sigQuery = sigQuery.gte('entry_time', new Date(filters.dateFrom).toISOString());
+      }
+      if (filters.dateTo) {
+        const endOfDay = new Date(filters.dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        sigQuery = sigQuery.lte('entry_time', endOfDay.toISOString());
+      }
+
+      const { data: sigRows, error: sigErr } = await sigQuery;
+      if (sigErr) throw sigErr;
+
+      sigNormalised = (sigRows ?? []).map((r: any) => ({
+        pair: r.pair || 'Unknown',
+        ts: r.entry_time || '',
+        result: r.result as 'WIN' | 'LOSS' | 'PENDING',
+      }));
     }
 
-    if (filters.dateTo) {
-      const endOfDay = new Date(filters.dateTo);
-      endOfDay.setHours(23, 59, 59, 999);
-      query = query.lte('entry_time', endOfDay.toISOString());
-    }
+    const signals = [...msaNormalised, ...sigNormalised];
 
-    const { data: signals, error } = await query;
-
-    if (error) throw error;
-    if (!signals || signals.length === 0) {
+    if (signals.length === 0) {
       return { success: true, hasData: false, stats: null };
     }
 
-    // Basic Metrics
+    // ── 3. Basic Metrics ───────────────────────────────────────────────────
     const total = signals.length;
     const wins = signals.filter(s => s.result === 'WIN').length;
     const losses = signals.filter(s => s.result === 'LOSS').length;
     const pending = signals.filter(s => s.result === 'PENDING').length;
-    const cancelled = signals.filter(s => s.result === 'CANCELLED').length;
+    const cancelled = 0;
     const resolved = wins + losses;
     const accuracy = resolved > 0 ? Number(((wins / resolved) * 100).toFixed(1)) : 0;
 
     // Daily averages
     const daysSet = new Set<string>();
     signals.forEach(s => {
-      if (s.entry_time) {
-        const d = new Date(s.entry_time).toLocaleDateString('sv-SE'); // YYYY-MM-DD
+      if (s.ts) {
+        const d = new Date(s.ts).toLocaleDateString('sv-SE');
         daysSet.add(d);
       }
     });
@@ -71,8 +110,8 @@ export async function getPerformanceStats(filters: PerformanceStatsFilter = {}) 
     // Daily Performance Chart data & Win Rate progression
     const dailyMap: Record<string, { wins: number; losses: number; resolved: number }> = {};
     signals.forEach(s => {
-      if (!s.entry_time) return;
-      const day = new Date(s.entry_time).toLocaleDateString([], { month: 'short', day: 'numeric' });
+      if (!s.ts) return;
+      const day = new Date(s.ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
       if (!dailyMap[day]) {
         dailyMap[day] = { wins: 0, losses: 0, resolved: 0 };
       }
@@ -95,16 +134,15 @@ export async function getPerformanceStats(filters: PerformanceStatsFilter = {}) 
     // Asset-based Performance
     const assetMap: Record<string, { total: number; wins: number; resolved: number }> = {};
     signals.forEach(s => {
-      const asset = s.pair || 'Unknown';
-      if (!assetMap[asset]) {
-        assetMap[asset] = { total: 0, wins: 0, resolved: 0 };
+      if (!assetMap[s.pair]) {
+        assetMap[s.pair] = { total: 0, wins: 0, resolved: 0 };
       }
-      assetMap[asset].total += 1;
+      assetMap[s.pair].total += 1;
       if (s.result === 'WIN') {
-        assetMap[asset].wins += 1;
-        assetMap[asset].resolved += 1;
+        assetMap[s.pair].wins += 1;
+        assetMap[s.pair].resolved += 1;
       } else if (s.result === 'LOSS') {
-        assetMap[asset].resolved += 1;
+        assetMap[s.pair].resolved += 1;
       }
     });
 
@@ -127,7 +165,6 @@ export async function getPerformanceStats(filters: PerformanceStatsFilter = {}) 
         mostTradedAsset = asset;
         mostTradedCount = data.total;
       }
-      // Require at least 2 signals to qualify for best/worst to reduce anomalies
       if (data.resolved >= 2) {
         const rate = (data.wins / data.resolved) * 100;
         if (rate > bestAccuracy) {

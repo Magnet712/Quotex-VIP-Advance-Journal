@@ -19,14 +19,21 @@ import { simulatedFeed }                   from './simulated_feed';
 import { otcFeedProvider, OTCFeedUnavailableError } from './otc_feed';
 import type { OTCCandle, SignalMode, CandleRouterResult } from './types';
 
-// ─── Read current signal mode from Supabase ────────────────────────────────
-// This is a server-side only utility (uses service key implicitly via anon).
-// Falls back to SIMULATION if Supabase is unreachable.
+// ─── Read current signal mode from Supabase (cached 5 min) ─────────────────
+// The signal mode is toggled by admin — never changes mid-session.
+// Caching eliminates redundant Supabase queries on every candle fetch.
+let _modeCache: { mode: SignalMode; ts: number } | null = null;
+const MODE_CACHE_TTL = 300_000; // 5 minutes
+
 async function readSignalMode(): Promise<SignalMode> {
+  const now = Date.now();
+  if (_modeCache && now - _modeCache.ts < MODE_CACHE_TTL) {
+    return _modeCache.mode;
+  }
+
   try {
-    // Dynamic import to avoid bundling server-only code on client
-    const { createClient } = await import('@/lib/supabase/server');
-    const supabase = await createClient();
+    const { createClient } = await import('@/lib/supabase/client');
+    const supabase = createClient();
 
     const { data, error } = await supabase
       .from('system_settings')
@@ -34,10 +41,11 @@ async function readSignalMode(): Promise<SignalMode> {
       .eq('key', 'signal_mode')
       .single();
 
-    if (error || !data) return 'SIMULATION';
-    return (data.value as SignalMode) ?? 'SIMULATION';
+    const mode = (error || !data) ? 'SIMULATION' : (data.value as SignalMode) ?? 'SIMULATION';
+    _modeCache = { mode, ts: now };
+    return mode;
   } catch {
-    // If Supabase is unreachable, default to safe simulation mode
+    _modeCache = { mode: 'SIMULATION' as SignalMode, ts: now };
     return 'SIMULATION';
   }
 }
@@ -97,7 +105,11 @@ export async function getCandleAtTime(
   try {
     if (mode === 'LIVE_OTC') {
       try {
-        const candles = await otcFeedProvider.getCandleRange(pair, at, to, timeframe);
+        const livePromise = otcFeedProvider.getCandleRange(pair, at, to, timeframe);
+        const timeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Live provider timeout')), 10_000)
+        );
+        const candles = await Promise.race([livePromise, timeout]);
         return candles[0] ?? null;
       } catch {
         // Fallthrough to simulation
@@ -108,6 +120,40 @@ export async function getCandleAtTime(
   } catch {
     return null;
   }
+}
+
+/**
+ * Get a range of candles for a pair over a time window.
+ * Used by the indicator engine to compute RSI, moving averages, ATR, etc.
+ * Routes to the correct feed based on the current signal mode.
+ *
+ * @param pair - e.g. "EUR/USD"
+ * @param from - start of the range
+ * @param to   - end of the range (inclusive)
+ * @param timeframe - e.g. "1m"
+ * @returns Array of OTCCandle ordered chronologically
+ */
+export async function getCandleRange(
+  pair: string,
+  from: Date,
+  to: Date,
+  timeframe = '1m'
+): Promise<OTCCandle[]> {
+  const mode = await readSignalMode();
+
+  if (mode === 'LIVE_OTC') {
+    try {
+      return await otcFeedProvider.getCandleRange(pair, from, to, timeframe);
+    } catch (err) {
+      if (err instanceof OTCFeedUnavailableError) {
+        console.warn(`[OTC Router] Live feed unavailable for ${pair} range fetch. Using simulation fallback.`);
+      } else {
+        console.error(`[OTC Router] Unexpected error for ${pair} range fetch:`, err);
+      }
+    }
+  }
+
+  return await simulatedFeed.getCandleRange(pair, from, to, timeframe);
 }
 
 // ─── Re-export types for convenience ──────────────────────────────────────

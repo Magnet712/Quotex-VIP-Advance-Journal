@@ -14,7 +14,8 @@ export abstract class BaseProvider extends EventEmitter {
   // Historic backfill for initialization indicators
   public abstract fetchHistoricCandles(
     pair: string,
-    limit: number
+    limit: number,
+    interval?: string
   ): Promise<NormalizedCandle[]>;
 
   // Callback registrars

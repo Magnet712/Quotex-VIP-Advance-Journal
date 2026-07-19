@@ -5,7 +5,11 @@ export async function GET(request: Request) {
   // 1. Verify cron secret key to prevent public execution
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get('secret') || request.headers.get('x-cron-secret');
-  const cronSecret = process.env.CRON_SECRET || 'quotex-journal-cron-secret-key-123';
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    console.error('[Cron] CRON_SECRET environment variable is not set');
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
 
   if (secret !== cronSecret) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

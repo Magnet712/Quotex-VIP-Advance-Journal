@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Layers, Clock, CheckCircle, XCircle, Search, Filter,
+  Clock, CheckCircle, XCircle,
   ChevronLeft, ChevronRight, RefreshCw, Download, 
-  Database, Activity, FileText, ExternalLink, AlertCircle, ChevronDown, ChevronUp, Check
+  Activity, FileText, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { getUserPayments } from '@/app/actions/billing';
 
@@ -140,7 +140,7 @@ export default function PaymentsHistoryPage() {
           { label: 'PENDING VERIFICATION', value: String(pendingCount), icon: Clock, color: 'text-amber-400 animate-pulse' },
           { label: 'FAILED / EXPIRED', value: String(payments.filter(p => p.status === 'FAILED' || p.status === 'EXPIRED' || p.status === 'REJECTED' || p.status === 'DUPLICATE').length), icon: XCircle, color: 'text-rose-400' }
         ].map((stat, i) => (
-          <div key={i} className="glass-panel p-4 rounded-xl flex items-center justify-between">
+          <div key={i} className="glass-panel p-4 rounded-xl flex items-center justify-between transition-all duration-300 hover:scale-[1.03] hover:border-glass-border/50 animate-fadeInUp" style={{ animationDelay: `${i * 0.05}s` }}>
             <div>
               <div className="text-[8px] text-slate-500 tracking-wider uppercase">{stat.label}</div>
               <div className={`text-lg font-bold mt-2 ${stat.color}`}>{stat.value}</div>
@@ -151,7 +151,7 @@ export default function PaymentsHistoryPage() {
       </div>
 
       {/* Filters ledger bar */}
-      <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-4">
+      <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-4 transition-all duration-200 hover:border-glass-border/50">
         <div className="flex flex-col sm:flex-row gap-3.5 items-stretch sm:items-center text-xs">
           <input
             type="text"
@@ -204,7 +204,7 @@ export default function PaymentsHistoryPage() {
                 <React.Fragment key={p.id}>
                   <tr 
                     onClick={() => setExpandedInvoice(isExpanded ? null : p.id)}
-                    className="hover:bg-slate-900/20 transition-colors cursor-pointer"
+                    className="hover:bg-slate-900/20 transition-all duration-150 cursor-pointer hover:scale-[1.001]"
                   >
                     <td className="p-4 text-slate-500 font-bold flex items-center gap-1">
                       {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}

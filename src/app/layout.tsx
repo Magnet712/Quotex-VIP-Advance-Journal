@@ -14,10 +14,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://quotex-vip-advance-journal.onrender.com";
+
 export const metadata: Metadata = {
   title: "Quotex VIP Advance Journal | Professional Binary Options & Market Journal",
   description: "Unlock advanced statistics of your binary options and financial market performance. Log trades, audit your trading psychology, visualize risk parameters, and gain a VIP edge.",
   keywords: ["Quotex VIP", "Trading Journal", "Binary Options Journal", "Risk Management", "Trading Psychology", "Quotex Journal", "Trader Log"],
+  openGraph: {
+    title: "Quotex VIP Advance Journal",
+    description: "Professional binary options trading journal with advanced analytics, risk management, and signal scanning.",
+    url: baseUrl,
+    siteName: "Quotex VIP Advance Journal",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Quotex VIP Advance Journal",
+    description: "Professional binary options trading journal with advanced analytics, risk management, and signal scanning.",
+  },
 };
 
 export default function RootLayout({

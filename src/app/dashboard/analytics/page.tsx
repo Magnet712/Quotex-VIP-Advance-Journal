@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { getTrades, eraseTrades } from '@/app/actions/trades';
+import { getSignalPerformance } from '@/app/actions/signals';
 import { getUserAccessState } from '@/app/actions/admin_optimization';
 import { canAccess } from '@/lib/permissions';
 import LockedFeature from '@/components/LockedFeature';
@@ -12,8 +13,8 @@ import {
   Legend, ResponsiveContainer 
 } from 'recharts';
 import { 
-  TrendingUp, Award, DollarSign, Target, Activity, 
-  Flame, ShieldAlert, BarChart3, Plus, ArrowRight, Loader, Trash2, Calendar, Zap, Sparkles, Gift
+  Award, DollarSign, Target, Activity, 
+  Flame, BarChart3, Plus, Loader, Trash2, Calendar, AlertCircle, X
 } from 'lucide-react';
 
 interface AITradingIntelligencePanelProps {
@@ -302,7 +303,7 @@ function AITradingIntelligencePanel({
   };
 
   return (
-    <div className="glass-panel p-6 rounded-lg border border-glass-border space-y-6 mt-8 relative overflow-hidden">
+    <div className="glass-panel p-6 rounded-lg border border-glass-border space-y-6 mt-8 relative overflow-hidden animate-fadeInUp">
       <div className="absolute -top-24 -left-24 w-48 h-48 bg-gold-vip/5 rounded-full blur-3xl pointer-events-none" />
       
       {/* Header and Telemetry Stats */}
@@ -540,6 +541,8 @@ function AITradingIntelligencePanel({
   );
 }
 
+const CHART_COLORS = ['#10B981', '#EF4444'];
+
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [isErasing, setIsErasing] = useState(false);
@@ -550,6 +553,10 @@ export default function AnalyticsPage() {
     premiumAccess: false,
     status: 'pending'
   });
+
+  const [eraseConfirmStep, setEraseConfirmStep] = useState(0);
+  const [signalStats, setSignalStats] = useState<{ total: number; wins: number; losses: number; pending: number; accuracy: number; totalToday: number } | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Daily Inspector State
   const [inspectorDate, setInspectorDate] = useState(() => {
@@ -563,9 +570,10 @@ export default function AnalyticsPage() {
     setMounted(true);
     async function loadDashboardData() {
       try {
-        const [tradesRes, accessRes] = await Promise.all([
+        const [tradesRes, accessRes, perfRes] = await Promise.all([
           getTrades(),
-          getUserAccessState()
+          getUserAccessState(),
+          getSignalPerformance('ALL')
         ]);
         if (tradesRes.success && tradesRes.trades) {
           setTrades(tradesRes.trades);
@@ -577,6 +585,9 @@ export default function AnalyticsPage() {
             status: accessRes.status
           });
         }
+        if (perfRes.success && perfRes.stats) {
+          setSignalStats(perfRes.stats);
+        }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
       } finally {
@@ -586,28 +597,33 @@ export default function AnalyticsPage() {
     loadDashboardData();
   }, []);
 
+  useEffect(() => {
+    if (!notification) return;
+    const t = setTimeout(() => setNotification(null), 4000);
+    return () => clearTimeout(t);
+  }, [notification]);
+
   const handleEraseData = async () => {
-    const confirmFirst = confirm(
-      "WARNING: This will permanently delete ALL your trading journal records. This action cannot be undone.\n\nDo you want to proceed?"
-    );
-    if (!confirmFirst) return;
+    setEraseConfirmStep(1);
+  };
 
-    const confirmSecond = confirm(
-      "Are you absolutely sure you want to delete everything? Click OK to permanently erase all your data."
-    );
-    if (!confirmSecond) return;
+  const confirmEraseFirst = () => {
+    setEraseConfirmStep(2);
+  };
 
+  const confirmEraseSecond = async () => {
+    setEraseConfirmStep(0);
     setIsErasing(true);
     try {
       const res = await eraseTrades();
       if (res.success) {
-        alert("All trading data has been permanently deleted.");
+        setNotification({ type: 'success', message: 'All trading data has been permanently deleted.' });
         window.location.reload();
       } else {
-        alert(res.error || "Failed to erase data.");
+        setNotification({ type: 'error', message: res.error || 'Failed to erase data.' });
       }
     } catch (err: any) {
-      alert("Error erasing data: " + err.message);
+      setNotification({ type: 'error', message: 'Error erasing data: ' + err.message });
     } finally {
       setIsErasing(false);
     }
@@ -637,7 +653,7 @@ export default function AnalyticsPage() {
 
   if (trades.length === 0) {
     return (
-      <div className="p-8 max-w-4xl mx-auto text-center space-y-6 pt-16">
+      <div className="p-8 max-w-4xl mx-auto text-center space-y-6 pt-16 animate-fadeInUp">
         <div className="inline-flex p-3 rounded-full bg-slate-900 border border-glass-border text-slate-500 mb-2">
           <BarChart3 className="h-8 w-8 text-slate-500" />
         </div>
@@ -650,7 +666,7 @@ export default function AnalyticsPage() {
         <div className="pt-2">
           <Link
             href="/dashboard/journal"
-            className="inline-flex items-center gap-1.5 px-5 py-3 rounded bg-neon-green text-slate-950 font-bold hover:bg-neon-green-hover text-xs font-mono tracking-wider uppercase transition-colors glow-button"
+            className="inline-flex items-center gap-1.5 px-5 py-3 rounded bg-neon-green text-slate-950 font-bold hover:bg-neon-green-hover text-xs font-mono tracking-wider uppercase transition-colors glow-button hover:scale-105 active:scale-95"
           >
             <Plus className="h-4 w-4" />
             <span>Open Journal & Add Trades</span>
@@ -688,83 +704,94 @@ export default function AnalyticsPage() {
   // --- CHART DATA PREPARATION ---
 
   // Sort trades ascending for cumulative lines
-  const sortedTrades = [...trades].sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
+  const sortedTrades = useMemo(() => {
+    return [...trades].sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
+  }, [trades]);
 
   // 1. Daily P&L and 4. Equity Curve
-  let cumulativePL = 0;
   const initialEquity = 1000; // base virtual account equity
-  const dailyData = sortedTrades.map((t, index) => {
-    cumulativePL += Number(t.profit_loss);
-    return {
-      name: `Trade ${index + 1}`,
-      date: new Date(t.trade_date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-      pl: cumulativePL,
-      equity: initialEquity + cumulativePL,
-    };
-  });
+  const dailyData = useMemo(() => {
+    let cumulativePL = 0;
+    return sortedTrades.map((t, index) => {
+      cumulativePL += Number(t.profit_loss);
+      return {
+        name: `Trade ${index + 1}`,
+        date: new Date(t.trade_date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+        pl: cumulativePL,
+        equity: initialEquity + cumulativePL,
+      };
+    });
+  }, [sortedTrades]);
 
   // 2. Win/Loss Ratio
-  const winLossData = [
+  const winLossData = useMemo(() => [
     { name: 'Wins', value: wins.length },
     { name: 'Losses', value: losses.length },
-  ];
-  const COLORS = ['#10B981', '#EF4444'];
+  ], [trades]);
 
   // 3. Monthly Performance
-  const monthlyMap: Record<string, number> = {};
-  sortedTrades.forEach((t) => {
-    const month = new Date(t.trade_date).toLocaleDateString([], { month: 'short', year: '2-digit' });
-    monthlyMap[month] = (monthlyMap[month] || 0) + Number(t.profit_loss);
-  });
-  const monthlyData = Object.entries(monthlyMap).map(([month, pl]) => ({ name: month, pl }));
+  const monthlyData = useMemo(() => {
+    const monthlyMap: Record<string, number> = {};
+    sortedTrades.forEach((t) => {
+      const month = new Date(t.trade_date).toLocaleDateString([], { month: 'short', year: '2-digit' });
+      monthlyMap[month] = (monthlyMap[month] || 0) + Number(t.profit_loss);
+    });
+    return Object.entries(monthlyMap).map(([month, pl]) => ({ name: month, pl }));
+  }, [sortedTrades]);
 
   // 5. Trading Hours Analysis
-  const hourlyMap: Record<number, { count: number; wins: number; pl: number }> = {};
-  sortedTrades.forEach((t) => {
-    const hour = new Date(t.trade_date).getHours();
-    if (!hourlyMap[hour]) hourlyMap[hour] = { count: 0, wins: 0, pl: 0 };
-    hourlyMap[hour].count += 1;
-    hourlyMap[hour].pl += Number(t.profit_loss);
-    if (isTradeWin(t)) hourlyMap[hour].wins += 1;
-  });
-  const hourlyData = Array.from({ length: 24 }).map((_, h) => {
-    const data = hourlyMap[h] || { count: 0, wins: 0, pl: 0 };
-    return {
-      name: `${h}:00`,
-      pl: data.pl,
-      winRate: data.count > 0 ? Math.round((data.wins / data.count) * 100) : 0,
-    };
-  }).filter(h => h.winRate > 0 || h.pl !== 0); // only show hours with trades
+  const hourlyData = useMemo(() => {
+    const hourlyMap: Record<number, { count: number; wins: number; pl: number }> = {};
+    sortedTrades.forEach((t) => {
+      const hour = new Date(t.trade_date).getHours();
+      if (!hourlyMap[hour]) hourlyMap[hour] = { count: 0, wins: 0, pl: 0 };
+      hourlyMap[hour].count += 1;
+      hourlyMap[hour].pl += Number(t.profit_loss);
+      if (isTradeWin(t)) hourlyMap[hour].wins += 1;
+    });
+    return Array.from({ length: 24 }).map((_, h) => {
+      const data = hourlyMap[h] || { count: 0, wins: 0, pl: 0 };
+      return {
+        name: `${h}:00`,
+        pl: data.pl,
+        winRate: data.count > 0 ? Math.round((data.wins / data.count) * 100) : 0,
+      };
+    }).filter(h => h.winRate > 0 || h.pl !== 0); // only show hours with trades
+  }, [sortedTrades]);
 
   // 6. Strategy Performance
-  const strategyMap: Record<string, number> = {};
-  sortedTrades.forEach((t) => {
-    const strat = t.strategy || 'Unknown';
-    strategyMap[strat] = (strategyMap[strat] || 0) + Number(t.profit_loss);
-  });
-  const strategyData = Object.entries(strategyMap).map(([strategy, pl]) => ({ name: strategy, pl }));
+  const strategyData = useMemo(() => {
+    const strategyMap: Record<string, number> = {};
+    sortedTrades.forEach((t) => {
+      const strat = t.strategy || 'Unknown';
+      strategyMap[strat] = (strategyMap[strat] || 0) + Number(t.profit_loss);
+    });
+    return Object.entries(strategyMap).map(([strategy, pl]) => ({ name: strategy, pl }));
+  }, [sortedTrades]);
 
   // 7. Risk Reward Comparison (Avg Win vs Avg Loss)
   const avgWinAmount = wins.length > 0 ? grossProfit / wins.length : 0;
   const avgLossAmount = losses.length > 0 ? grossLoss / losses.length : 0;
-  const riskRewardData = [
+  const riskRewardData = useMemo(() => [
     { name: 'Avg Profit (Wins)', amount: Math.round(avgWinAmount) },
     { name: 'Avg Loss (Losses)', amount: Math.round(avgLossAmount) },
-  ];
+  ], [avgWinAmount, avgLossAmount]);
 
   // 8. Drawdown Chart
-  let currentMaxEquity = initialEquity;
-  const drawdownData = sortedTrades.map((t, index) => {
-    const equity = initialEquity + sortedTrades.slice(0, index + 1).reduce((sum, curr) => sum + Number(curr.profit_loss), 0);
-    if (equity > currentMaxEquity) {
-      currentMaxEquity = equity;
-    }
-    const drawdown = currentMaxEquity > 0 ? ((currentMaxEquity - equity) / currentMaxEquity) * 100 : 0;
-    return {
-      name: `T ${index + 1}`,
-      drawdown: Number(drawdown.toFixed(2)),
-    };
-  });
+  const drawdownData = useMemo(() => {
+    let cum = 0;
+    let peak = initialEquity;
+    return sortedTrades.map((t, index) => {
+      cum += Number(t.profit_loss);
+      const equity = initialEquity + cum;
+      if (equity > peak) peak = equity;
+      const drawdown = peak > 0 ? ((peak - equity) / peak) * 100 : 0;
+      return {
+        name: `T ${index + 1}`,
+        drawdown: Number(drawdown.toFixed(2)),
+      };
+    });
+  }, [sortedTrades]);
 
   // 9. Profit Factor visual stacked
   const profitFactorData = [
@@ -772,15 +799,17 @@ export default function AnalyticsPage() {
   ];
 
   // 10. Consistency Score Line Chart (Cumulative win rate progression)
-  let winSum = 0;
-  const consistencyProgression = sortedTrades.map((t, index) => {
-    if (isTradeWin(t)) winSum += 1;
-    const currentRate = (winSum / (index + 1)) * 100;
-    return {
-      name: `T ${index + 1}`,
-      rate: Number(currentRate.toFixed(1)),
-    };
-  });
+  const consistencyProgression = useMemo(() => {
+    let winSum = 0;
+    return sortedTrades.map((t, index) => {
+      if (isTradeWin(t)) winSum += 1;
+      const currentRate = (winSum / (index + 1)) * 100;
+      return {
+        name: `T ${index + 1}`,
+        rate: Number(currentRate.toFixed(1)),
+      };
+    });
+  }, [sortedTrades]);
 
   // Daily Inspector Calculations
   const inspectorTrades = trades.filter((t) => {
@@ -819,7 +848,7 @@ export default function AnalyticsPage() {
           { label: 'CONSISTENCY', value: `${consistencyScore}%`, icon: Award, color: 'text-gold-vip glow-text-gold' },
           { label: 'AVG TRADE', value: `${avgTrade >= 0 ? '+' : ''}$${Math.round(avgTrade)}`, icon: DollarSign, color: avgTrade >= 0 ? 'text-neon-green' : 'text-rose-500' },
         ].map((item, i) => (
-          <div key={i} className="glass-panel p-4 rounded-lg flex flex-col justify-between">
+          <div key={i} className="glass-panel p-4 rounded-lg flex flex-col justify-between transition-all duration-300 hover:scale-[1.03] hover:border-glass-border/50 animate-fadeInUp" style={{ animationDelay: `${i * 0.05}s` }}>
             <div className="flex items-center justify-between text-slate-500 text-[9px] tracking-wider font-mono">
               <span>{item.label}</span>
               <item.icon className="h-3.5 w-3.5" />
@@ -832,7 +861,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Daily Inspector lookup */}
-      <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4">
+      <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-4 transition-all duration-300 hover:border-glass-border/50">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
             <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">daily trade inspector</span>
@@ -849,7 +878,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2 animate-fadeInUp">
           <div className="bg-[#020617]/50 border border-glass-border/40 p-3.5 rounded text-center">
             <div className="text-[8px] font-mono text-slate-500 uppercase">total trades</div>
             <div className="text-base font-mono font-bold text-slate-200 mt-1">{inspectorTotal}</div>
@@ -880,7 +909,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
           
           {/* 1. Daily P&L Line Chart */}
-          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3">
+          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp">
             <span className="text-[10px] font-mono text-slate-500 tracking-wider block">1. DAILY CUMULATIVE P&L (USD)</span>
             <div className="h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -896,7 +925,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* 2. Win/Loss Ratio Pie Chart */}
-          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3">
+          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: '0.05s' }}>
             <span className="text-[10px] font-mono text-slate-500 tracking-wider block">2. WIN/LOSS DISTRIBUTION</span>
             <div className="h-[260px] w-full flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
@@ -911,7 +940,7 @@ export default function AnalyticsPage() {
                     dataKey="value"
                   >
                     {winLossData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={{ backgroundColor: '#020617', borderColor: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 11 }} />
@@ -922,7 +951,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* 3. Monthly Performance Bar Chart */}
-          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3">
+          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
             <span className="text-[10px] font-mono text-slate-500 tracking-wider block">3. MONTHLY NET P&L (USD)</span>
             <div className="h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -942,7 +971,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* 4. Equity Curve Chart */}
-          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3">
+          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: '0.15s' }}>
             <span className="text-[10px] font-mono text-slate-500 tracking-wider block">4. ACCOUNT EQUITY PROGRESSION (USD)</span>
             <div className="h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -964,7 +993,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* 5. Trading Hours Analysis Chart */}
-          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3">
+          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
             <span className="text-[10px] font-mono text-slate-500 tracking-wider block">5. HOURLY DISTRIBUTION P&L (USD)</span>
             <div className="h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -984,7 +1013,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* 6. Strategy Performance Chart */}
-          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3">
+          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: '0.25s' }}>
             <span className="text-[10px] font-mono text-slate-500 tracking-wider block">6. STRATEGY PROFITABILITY (USD)</span>
             <div className="h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -1004,7 +1033,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* 7. Risk Reward Ratio Chart */}
-          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3">
+          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
             <span className="text-[10px] font-mono text-slate-500 tracking-wider block">7. AVERAGE WIN VS AVERAGE LOSS SIZE (USD)</span>
             <div className="h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -1023,7 +1052,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* 8. Drawdown Chart */}
-          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3">
+          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: '0.35s' }}>
             <span className="text-[10px] font-mono text-slate-500 tracking-wider block">8. PEAK EQUITY PERCENTAGE DRAWDOWN</span>
             <div className="h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -1045,7 +1074,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* 9. Profit Factor Chart */}
-          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3">
+          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: '0.4s' }}>
             <span className="text-[10px] font-mono text-slate-500 tracking-wider block">9. CUMULATIVE VOLUMES (GROSS PROFIT VS LOSS)</span>
             <div className="h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -1063,7 +1092,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* 10. Consistency Score Chart */}
-          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3">
+          <div className="glass-panel p-5 rounded-lg border border-glass-border space-y-3 transition-all duration-200 hover:border-glass-border/50 hover:shadow-lg animate-fadeInUp" style={{ animationDelay: '0.45s' }}>
             <span className="text-[10px] font-mono text-slate-500 tracking-wider block">10. WINNING EDGE STABILITY PROGRESSION (%)</span>
             <div className="h-[260px] w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -1094,6 +1123,118 @@ export default function AnalyticsPage() {
           strategyData={strategyData}
           hourlyData={hourlyData}
         />
+      )}
+
+      {/* ── OTC + Forex Signal Performance Section ──────────────────────── */}
+      {signalStats && (
+        <div className="glass-panel p-6 rounded-lg border border-glass-border space-y-6 mt-8">
+          <div className="border-b border-glass-border pb-4">
+            <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">SIGNAL ANALYTICS</span>
+            <h2 className="text-xl font-bold font-mono tracking-tight text-slate-100">OTC & Live Forex Signal Performance</h2>
+            <p className="text-xs text-slate-400 font-sans mt-1">
+              Aggregated performance from all signal pipelines (OTC + Forex).
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[
+              { label: 'TOTAL SIGNALS', value: String(signalStats.total), color: 'text-slate-200' },
+              { label: "TODAY'S SIGNALS", value: String(signalStats.totalToday), color: 'text-slate-200' },
+              { label: 'WIN RATE', value: `${signalStats.accuracy}%`, color: 'text-neon-green' },
+              { label: 'WINS', value: String(signalStats.wins), color: 'text-neon-green' },
+              { label: 'LOSSES', value: String(signalStats.losses), color: 'text-rose-400' },
+              { label: 'PENDING', value: String(signalStats.pending), color: 'text-amber-400' },
+            ].map((stat, i) => (
+              <div key={i} className="glass-panel p-4 rounded-xl flex flex-col justify-between transition-all duration-300 hover:scale-[1.03] hover:border-glass-border/50">
+                <div className="text-[8px] font-mono text-slate-500 uppercase tracking-wider">{stat.label}</div>
+                <div className={`text-lg font-extrabold font-mono mt-2 ${stat.color}`}>{stat.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Erase all step 1 confirmation */}
+      {eraseConfirmStep === 1 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-rose-400" />
+              <h3 className="text-sm font-bold font-mono text-slate-200">Erase All Data</h3>
+            </div>
+            <p className="text-xs font-mono text-slate-400 leading-relaxed">
+              WARNING: This will permanently delete ALL your trading journal records. This action cannot be undone. Do you want to proceed?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setEraseConfirmStep(0)}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-slate-400 bg-slate-800 hover:bg-slate-700 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEraseFirst}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-white bg-rose-600 hover:bg-rose-500 transition-all"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Erase all step 2 final confirmation */}
+      {eraseConfirmStep === 2 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-rose-500/50 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-rose-400" />
+              <h3 className="text-sm font-bold font-mono text-slate-200">Final Confirmation</h3>
+            </div>
+            <p className="text-xs font-mono text-slate-400 leading-relaxed">
+              Are you absolutely sure you want to delete everything? Click Confirm to permanently erase all your data.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setEraseConfirmStep(0)}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-slate-400 bg-slate-800 hover:bg-slate-700 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEraseSecond}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-white bg-rose-600 hover:bg-rose-500 transition-all"
+              >
+                Confirm Erase
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 animate-slideIn">
+          <div className={`p-4 rounded-xl border flex items-start gap-3 w-80 shadow-2xl ${
+            notification.type === 'error'
+              ? 'border-rose-500/30 bg-[#0a0303]'
+              : 'border-neon-green/30 bg-[#030b17]'
+          }`}>
+            <AlertCircle className={`h-5 w-5 shrink-0 mt-0.5 ${notification.type === 'error' ? 'text-rose-400' : 'text-neon-green'}`} />
+            <div className="space-y-1 font-mono text-xs">
+              <div className={`font-bold uppercase ${notification.type === 'error' ? 'text-rose-300' : 'text-neon-green'}`}>
+                {notification.type === 'error' ? 'ERROR' : 'SUCCESS'}
+              </div>
+              <div className="text-slate-400">{notification.message}</div>
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              className="ml-auto text-slate-600 hover:text-slate-300 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

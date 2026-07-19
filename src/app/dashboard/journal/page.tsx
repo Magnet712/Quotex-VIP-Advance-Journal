@@ -72,6 +72,11 @@ export default function JournalPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
 
+  // Delete/Erase confirmation state
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [eraseAllStep, setEraseAllStep] = useState(0);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   const supabase = createClient();
 
   useEffect(() => {
@@ -98,6 +103,12 @@ export default function JournalPage() {
     }
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!notification) return;
+    const t = setTimeout(() => setNotification(null), 4000);
+    return () => clearTimeout(t);
+  }, [notification]);
 
   const refreshTrades = async () => {
     setLoading(true);
@@ -361,41 +372,46 @@ export default function JournalPage() {
   };
 
   const handleDelete = async (tradeId: string) => {
-    if (!confirm('Are you sure you want to delete this trade record?')) return;
+    setDeleteConfirmId(tradeId);
+  };
+
+  const confirmDelete = async () => {
+    const tradeId = deleteConfirmId;
+    if (!tradeId) return;
+    setDeleteConfirmId(null);
     try {
       const res = await deleteTrade(tradeId);
       if (res.success) {
         await refreshTrades();
       } else {
-        alert(res.error || 'Failed to delete record.');
+        setNotification({ type: 'error', message: res.error || 'Failed to delete record.' });
       }
     } catch (err: any) {
-      alert(err.message || 'Error occurred.');
+      setNotification({ type: 'error', message: err.message || 'Error occurred.' });
     }
   };
 
   const handleEraseAll = async () => {
-    const confirmFirst = confirm(
-      "WARNING: This will permanently delete ALL your trading journal records. This action cannot be undone.\n\nDo you want to proceed?"
-    );
-    if (!confirmFirst) return;
+    setEraseAllStep(1);
+  };
 
-    const confirmSecond = confirm(
-      "Are you absolutely sure you want to delete everything? Click OK to permanently erase all your data."
-    );
-    if (!confirmSecond) return;
+  const confirmEraseFirst = () => {
+    setEraseAllStep(2);
+  };
 
+  const confirmEraseSecond = async () => {
+    setEraseAllStep(0);
     setLoading(true);
     try {
       const res = await eraseTrades();
       if (res.success) {
-        alert("All trading data has been permanently deleted.");
+        setNotification({ type: 'success', message: 'All trading data has been permanently deleted.' });
         await refreshTrades();
       } else {
-        alert(res.error || "Failed to erase data.");
+        setNotification({ type: 'error', message: res.error || 'Failed to erase data.' });
       }
     } catch (err: any) {
-      alert("Error erasing data: " + err.message);
+      setNotification({ type: 'error', message: 'Error erasing data: ' + err.message });
     } finally {
       setLoading(false);
     }
@@ -436,7 +452,7 @@ export default function JournalPage() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 w-full max-w-7xl mx-auto animate-fadeIn">
       
       {/* Title / Action bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-glass-border pb-4 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-glass-border pb-4 gap-4 animate-fadeInUp">
         <div>
           <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">transaction ledger</span>
           <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-100">Trading Journal</h1>
@@ -919,7 +935,7 @@ export default function JournalPage() {
       )}
 
       {/* Filters Area */}
-      <div className="glass-panel p-4 rounded-lg flex flex-col md:flex-row gap-4 items-stretch md:items-center text-xs">
+      <div className="glass-panel p-4 rounded-lg flex flex-col md:flex-row gap-4 items-stretch md:items-center text-xs transition-all duration-200 hover:border-glass-border/50">
         {/* Search */}
         <div className="flex-1 relative flex items-center">
           <Search className="h-4 w-4 text-slate-500 absolute left-3" />
@@ -1000,18 +1016,22 @@ export default function JournalPage() {
                   <th className="p-4 text-right">Action</th>
                 </tr>
               </thead>
+              {/* Table body with enhanced row styling */}
               <tbody className="divide-y divide-glass-border/40 text-[11px]">
                 {filteredTrades.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-slate-600">
-                      NO MATCHING TRANSACTION ENTRIES RECORDED.
+                    <td colSpan={7} className="p-8 text-center text-slate-600 py-12">
+                      <div className="flex flex-col items-center gap-2">
+                        <Search className="h-6 w-6 text-slate-700" />
+                        <span>NO MATCHING TRANSACTION ENTRIES RECORDED.</span>
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  filteredTrades.map((trade) => {
+                  filteredTrades.map((trade, idx) => {
                     const isWin = trade.profit_loss > 0 || trade.results === 'Win' || trade.results === 'MTG Win';
                     return (
-                      <tr key={trade.id} className="hover:bg-slate-900/30 transition-colors">
+                      <tr key={trade.id} className="hover:bg-slate-900/30 transition-all duration-150 hover:scale-[1.001]" style={{ animationDelay: `${idx * 0.02}s` }}>
                         {/* Date / Session */}
                         <td className="p-4 text-slate-400">
                           {new Date(trade.trade_date).toLocaleDateString([], { month: 'short', day: '2-digit' })}
@@ -1146,6 +1166,117 @@ export default function JournalPage() {
         </div>
       )}
 
+      {/* Delete confirmation dialog */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-rose-400" />
+              <h3 className="text-sm font-bold font-mono text-slate-200">Delete Trade</h3>
+            </div>
+            <p className="text-xs font-mono text-slate-400 leading-relaxed">
+              Are you sure you want to delete this trade record?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-slate-400 bg-slate-800 hover:bg-slate-700 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-white bg-rose-600 hover:bg-rose-500 transition-all"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Erase all step 1 confirmation */}
+      {eraseAllStep === 1 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-rose-400" />
+              <h3 className="text-sm font-bold font-mono text-slate-200">Erase All Data</h3>
+            </div>
+            <p className="text-xs font-mono text-slate-400 leading-relaxed">
+              WARNING: This will permanently delete ALL your trading journal records. This action cannot be undone. Do you want to proceed?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setEraseAllStep(0)}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-slate-400 bg-slate-800 hover:bg-slate-700 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEraseFirst}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-white bg-rose-600 hover:bg-rose-500 transition-all"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Erase all step 2 final confirmation */}
+      {eraseAllStep === 2 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-sm w-full mx-4 space-y-4 shadow-2xl border-rose-500/50">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-rose-400" />
+              <h3 className="text-sm font-bold font-mono text-slate-200">Final Confirmation</h3>
+            </div>
+            <p className="text-xs font-mono text-slate-400 leading-relaxed">
+              Are you absolutely sure you want to delete everything? Click Confirm to permanently erase all your data.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setEraseAllStep(0)}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-slate-400 bg-slate-800 hover:bg-slate-700 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEraseSecond}
+                className="px-4 py-2 rounded text-xs font-mono font-bold text-white bg-rose-600 hover:bg-rose-500 transition-all"
+              >
+                Confirm Erase
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 animate-slideIn">
+          <div className={`p-4 rounded-xl border flex items-start gap-3 w-80 shadow-2xl ${
+            notification.type === 'error'
+              ? 'border-rose-500/30 bg-[#0a0303]'
+              : 'border-neon-green/30 bg-[#030b17]'
+          }`}>
+            <AlertCircle className={`h-5 w-5 shrink-0 mt-0.5 ${notification.type === 'error' ? 'text-rose-400' : 'text-neon-green'}`} />
+            <div className="space-y-1 font-mono text-xs">
+              <div className={`font-bold uppercase ${notification.type === 'error' ? 'text-rose-300' : 'text-neon-green'}`}>
+                {notification.type === 'error' ? 'ERROR' : 'SUCCESS'}
+              </div>
+              <div className="text-slate-400">{notification.message}</div>
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              className="ml-auto text-slate-600 hover:text-slate-300 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

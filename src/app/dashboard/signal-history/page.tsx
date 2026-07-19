@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  TrendingUp, TrendingDown, Target, Activity, Filter,
-  ChevronLeft, ChevronRight, RefreshCw, Download, BarChart2,
-  Calendar, Layers, CheckCircle, XCircle, Clock, Zap,
-  AlertTriangle, Database, Radio, Lock
+  TrendingUp, Target, Activity, Filter,
+  ChevronLeft, ChevronRight, RefreshCw, Download,
+  Calendar, Clock,
+  AlertTriangle, Database, Radio
 } from 'lucide-react';
 import {
   getSignalHistory,
@@ -16,6 +16,7 @@ import {
 import { getSignalMode } from '@/app/actions/signal_mode';
 import { getUserAccessState, getPublicOptimizationSettings } from '@/app/actions/admin_optimization';
 import { canAccess } from '@/lib/permissions';
+import { sourceLabel } from '@/lib/pipeline';
 import LockedFeature from '@/components/LockedFeature';
 
 const STRATEGY_TAGS = [
@@ -44,8 +45,8 @@ interface Signal {
   strategy_name: string;
   confidence:    number;
   risk_level:    string;
-  source:        'simulation' | 'live_otc' | 'live_market';
-  result:        'PENDING' | 'WIN' | 'LOSS';
+  source:        string;
+  result:        'PENDING' | 'WIN' | 'LOSS' | 'FAILED' | 'NO TRADE' | 'SCANNING';
 }
 
 function shortId(id: string) {
@@ -88,8 +89,8 @@ export default function SignalHistoryPage() {
   const [dateTo,     setDateTo]     = useState('');
   const [selPair,    setSelPair]    = useState('ALL');
   const [selStrategy, setSelStrategy] = useState('ALL');
-  const [selResult,  setSelResult]  = useState<'ALL' | 'PENDING' | 'WIN' | 'LOSS'>('ALL');
-  const [selSource,  setSelSource]  = useState<'ALL' | 'simulation' | 'live_otc' | 'live_market'>('ALL');
+  const [selResult,  setSelResult]  = useState<'ALL' | 'PENDING' | 'WIN' | 'LOSS' | 'FAILED' | 'NO TRADE' | 'SCANNING'>('ALL');
+  const [selSource,  setSelSource]  = useState<'ALL' | 'live_otc' | 'live_market'>('ALL');
   const [page,       setPage]       = useState(1);
   const PAGE_SIZE = 50;
 
@@ -212,7 +213,7 @@ export default function SignalHistoryPage() {
         ) : (
           <>
             {/* ── Filter Bar ──────────────────────────────────────────────── */}
-            <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4 font-mono text-xs text-slate-400">
+            <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4 font-mono text-xs text-slate-400 transition-all duration-200 hover:border-glass-border/50">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 
                 {/* Date range filters */}
@@ -271,6 +272,9 @@ export default function SignalHistoryPage() {
                     <option value="WIN">WIN</option>
                     <option value="LOSS">LOSS</option>
                     <option value="PENDING">PENDING</option>
+                    <option value="FAILED">FAILED</option>
+                    <option value="NO TRADE">NO TRADE</option>
+                    <option value="SCANNING">SCANNING</option>
                   </select>
                 </div>
 
@@ -282,9 +286,8 @@ export default function SignalHistoryPage() {
                     className="w-full bg-[#02050b] border border-glass-border px-3 py-2 rounded text-slate-200"
                   >
                     <option value="ALL">ALL PIPELINES</option>
-                    <option value="simulation">SIMULATION</option>
-                    <option value="live_otc">LIVE OTC</option>
-                    <option value="live_market">LIVE FOREX</option>
+                    <option value="live_otc">{sourceLabel('live_otc')}</option>
+                    <option value="live_market">{sourceLabel('live_market')}</option>
                   </select>
                 </div>
 
@@ -307,34 +310,43 @@ export default function SignalHistoryPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-glass-border/30 text-slate-300">
-                  {signals.map((sig) => {
+                  {signals.map((sig, idx) => {
                     const isWin = sig.result === 'WIN';
                     const isLoss = sig.result === 'LOSS';
-                    const isCall = sig.direction === 'CALL';
+                    const isInvalid = sig.result === 'FAILED' || sig.result === 'NO TRADE' || sig.result === 'SCANNING';
+                    const isCall = !isInvalid && sig.direction === 'CALL';
 
                     return (
-                      <tr key={sig.id} className="hover:bg-slate-900/10 transition-colors">
+                      <tr key={sig.id} className="hover:bg-slate-900/10 transition-all duration-150" style={{ animationDelay: `${idx * 0.02}s` }}>
                         <td className="p-4 text-slate-500 font-bold">{shortId(sig.id)}</td>
                         <td className="p-4 text-slate-400">
                           {new Date(sig.entry_time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                         </td>
                         <td className="p-4 font-bold text-slate-200">{sig.pair}</td>
                         <td className="p-4">
-                          <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded font-bold uppercase ${
-                            isCall ? 'bg-neon-green/10 text-neon-green' : 'bg-rose-500/10 text-rose-400'
-                          }`}>
-                            {isCall ? 'CALL ▲' : 'PUT ▼'}
-                          </span>
+                          {isInvalid ? (
+                            <span className="text-slate-600">—</span>
+                          ) : (
+                            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded font-bold uppercase ${
+                              isCall ? 'bg-neon-green/10 text-neon-green' : 'bg-rose-500/10 text-rose-400'
+                            }`}>
+                              {isCall ? 'CALL ▲' : 'PUT ▼'}
+                            </span>
+                          )}
                         </td>
                         <td className="p-4">
-                          {sig.entry_price} → <span className={isWin ? 'text-neon-green font-bold' : isLoss ? 'text-rose-400 font-bold' : 'text-slate-500'}>
-                            {sig.expiry_price || '—'}
-                          </span>
+                          {isInvalid ? (
+                            <span className="text-slate-500">— → —</span>
+                          ) : (
+                            <>{sig.entry_price} → <span className={isWin ? 'text-neon-green font-bold' : isLoss ? 'text-rose-400 font-bold' : 'text-slate-500'}>
+                              {sig.expiry_price || '—'}
+                            </span></>
+                          )}
                         </td>
                         <td className="p-4 text-slate-400 truncate max-w-[150px]" title={sig.strategy_name}>
-                          {sig.strategy_name}
+                          {isInvalid ? <span className="text-slate-600">—</span> : sig.strategy_name}
                         </td>
-                        <td className="p-4 uppercase text-[9px] text-slate-500">{sig.source}</td>
+                        <td className="p-4 uppercase text-[9px] text-slate-500">{sourceLabel(sig.source)}</td>
                         <td className="p-4 text-right font-bold">
                           <span className={`px-2 py-0.5 rounded border text-[10px] ${
                             isWin ? 'text-neon-green border-neon-green/30 bg-neon-green/5' :

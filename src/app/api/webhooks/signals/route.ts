@@ -18,7 +18,11 @@ export async function POST(request: Request) {
     const querySecret = searchParams.get('secret');
 
     // 1. Authenticate the webhook request (check header, query parameter, or JSON body)
-    const webhookSecret = process.env.WEBHOOK_SECRET || 'quotex-journal-webhook-secret-key-123';
+    const webhookSecret = process.env.WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error('[Webhook] WEBHOOK_SECRET environment variable is not set');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
     const authHeader = request.headers.get('x-webhook-secret');
     
     if (

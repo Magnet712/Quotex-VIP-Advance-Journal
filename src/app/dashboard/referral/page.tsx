@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { 
   Award, Copy, Check, Users, Gift, FileText, ShieldAlert, Sparkles, TrendingUp
@@ -12,7 +12,8 @@ export default function ReferralPage() {
   const [loading, setLoading] = useState(true);
   const [copiedPlatform, setCopiedPlatform] = useState(false);
   const [copiedBroker, setCopiedBroker] = useState(false);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const brokerLink = 'https://broker-qx.pro/sign-up/?lid=1712337';
   const platformLink = typeof window !== 'undefined' 
@@ -95,7 +96,7 @@ export default function ReferralPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Copy Link Card */}
-        <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-glass-border flex flex-col justify-between space-y-6 relative overflow-hidden">
+        <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-glass-border flex flex-col justify-between space-y-6 relative overflow-hidden transition-all duration-300 hover:scale-[1.005] hover:border-gold-vip/20 animate-fadeInUp">
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-gold-vip/5 rounded-full blur-3xl pointer-events-none" />
           
           <div className="space-y-2">
@@ -162,7 +163,7 @@ export default function ReferralPage() {
         </div>
 
         {/* Dynamic Milestone Progress Card */}
-        <div className="glass-panel p-6 rounded-2xl border border-glass-border flex flex-col justify-between space-y-4 text-xs font-sans relative overflow-hidden">
+        <div className="glass-panel p-6 rounded-2xl border border-glass-border flex flex-col justify-between space-y-4 text-xs font-sans relative overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:border-gold-vip/20 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
           <div>
             <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold">milestone progress</span>
             <h3 className="text-sm font-bold font-mono text-slate-200 mt-1">Next Premium Month</h3>
@@ -197,7 +198,7 @@ export default function ReferralPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
         {/* Metric 1: Approved Referrals */}
-        <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between">
+        <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between transition-all duration-300 hover:scale-[1.03] hover:border-blue-500/20 animate-fadeInUp">
           <div className="flex items-center justify-between text-blue-400">
             <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">approved referrals</span>
             <Users className="h-4 w-4 text-blue-400" />
@@ -209,7 +210,7 @@ export default function ReferralPage() {
         </div>
 
         {/* Metric 2: Premium Earned */}
-        <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between">
+        <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between transition-all duration-300 hover:scale-[1.03] hover:border-gold-vip/20 animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center justify-between text-gold-vip">
             <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">premium earned</span>
             <Sparkles className="h-4 w-4 text-gold-vip" />
@@ -221,7 +222,7 @@ export default function ReferralPage() {
         </div>
 
         {/* Metric 3: Next Reward */}
-        <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between">
+        <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-2 flex flex-col justify-between transition-all duration-300 hover:scale-[1.03] hover:border-emerald-500/20 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
           <div className="flex items-center justify-between text-emerald-400">
             <span className="text-[9px] font-mono uppercase tracking-wider block font-bold">next reward</span>
             <Award className="h-4 w-4 text-emerald-400" />
@@ -237,8 +238,8 @@ export default function ReferralPage() {
       {/* Tabs Layout: Referred Users & Instructions/T&C */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
-        {/* Referred Users Table */}
-        <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-glass-border space-y-4">
+          {/* Referred Users Table */}
+        <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-glass-border space-y-4 transition-all duration-200 hover:border-glass-border/50">
           <div className="flex items-center justify-between border-b border-glass-border pb-3">
             <div className="space-y-1">
               <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block font-bold font-mono">conversions logs</span>
@@ -266,7 +267,7 @@ export default function ReferralPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-900/40">
                   {referrals.map((user, idx) => (
-                    <tr key={idx} className="hover:bg-slate-900/20 transition-colors">
+                    <tr key={idx} className="hover:bg-slate-900/20 transition-all duration-150 hover:scale-[1.001]">
                       <td className="py-3 text-slate-200 font-bold">{user.trader_id}</td>
                       <td className="py-3 text-slate-400">
                         {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
@@ -293,7 +294,7 @@ export default function ReferralPage() {
         <div className="space-y-6">
           
           {/* How It Works Card */}
-          <div className="glass-panel p-6 rounded-2xl border border-glass-border space-y-4">
+          <div className="glass-panel p-6 rounded-2xl border border-glass-border space-y-4 transition-all duration-300 hover:border-glass-border/50">
             <div className="flex items-center gap-2 border-b border-glass-border pb-3">
               <TrendingUp className="h-4 w-4 text-neon-green" />
               <h2 className="text-xs font-bold font-mono uppercase tracking-widest text-slate-200">
@@ -325,7 +326,7 @@ export default function ReferralPage() {
           </div>
 
           {/* Terms & Conditions Box */}
-          <div className="glass-panel p-6 rounded-2xl border border-glass-border space-y-4">
+          <div className="glass-panel p-6 rounded-2xl border border-glass-border space-y-4 transition-all duration-300 hover:border-gold-vip/20">
             <div className="flex items-center gap-2 border-b border-glass-border pb-3">
               <FileText className="h-4 w-4 text-gold-vip" />
               <h2 className="text-xs font-bold font-mono uppercase tracking-widest text-slate-200">
