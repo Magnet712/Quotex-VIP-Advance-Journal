@@ -174,7 +174,7 @@ export default function AdminLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] tracking-wider text-xs font-mono uppercase flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all hover:glow-shadow-red tracking-wider text-xs font-mono uppercase flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -237,7 +237,7 @@ export default function AdminLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] tracking-wider text-xs font-mono uppercase flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all hover:glow-shadow-red tracking-wider text-xs font-mono uppercase flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>

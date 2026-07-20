@@ -314,7 +314,7 @@ export default function Admin2FAPage() {
               <button
                 onClick={handleEnroll}
                 disabled={enrolling}
-                className="w-full py-3 px-4 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] text-xs font-mono uppercase flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all hover:glow-shadow-red text-xs font-mono uppercase flex items-center justify-center gap-2"
               >
                 {enrolling ? (
                   <><Loader className="h-4 w-4 animate-spin" /> Generating...</>
@@ -380,7 +380,7 @@ export default function Admin2FAPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 px-4 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] text-xs font-mono uppercase flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all hover:glow-shadow-red text-xs font-mono uppercase flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <><Loader className="h-4 w-4 animate-spin" /> Verifying...</>

@@ -153,7 +153,7 @@ export default function Home() {
                 className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg border text-xs font-mono font-bold tracking-wider uppercase transition-all ${
                   activePreviewTab === tab.id
                     ? tab.premium
-                      ? 'bg-purple-950/20 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(139,92,246,0.1)]'
+                      ? 'bg-purple-950/20 border-purple-500/50 text-purple-300 glow-shadow-purple'
                       : 'bg-neon-green/10 border-neon-green/30 text-neon-green'
                     : 'bg-slate-900/30 border-glass-border text-slate-400 hover:text-slate-200'
                 }`}
@@ -281,7 +281,7 @@ export default function Home() {
               <div className="flex flex-col items-center justify-center min-h-[300px] text-center space-y-5 animate-fadeIn">
                 {/* Glow Background */}
                 <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md z-10 flex flex-col items-center justify-center p-6 space-y-4">
-                  <div className="h-14 w-14 rounded-full border border-purple-500/40 bg-purple-500/5 text-purple-400 flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.15)] animate-pulse">
+                  <div className="h-14 w-14 rounded-full border border-purple-500/40 bg-purple-500/5 text-purple-400 flex items-center justify-center glow-shadow-purple animate-pulse">
                     <Lock className="h-6 w-6" />
                   </div>
                   <div className="space-y-1.5 max-w-sm">
@@ -316,7 +316,7 @@ export default function Home() {
               <div className="flex flex-col items-center justify-center min-h-[300px] text-center space-y-5 animate-fadeIn">
                 {/* Glow Background */}
                 <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md z-10 flex flex-col items-center justify-center p-6 space-y-4">
-                  <div className="h-14 w-14 rounded-full border border-purple-500/40 bg-purple-500/5 text-purple-400 flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.15)] animate-pulse">
+                  <div className="h-14 w-14 rounded-full border border-purple-500/40 bg-purple-500/5 text-purple-400 flex items-center justify-center glow-shadow-purple animate-pulse">
                     <Lock className="h-6 w-6" />
                   </div>
                   <div className="space-y-1.5 max-w-sm">

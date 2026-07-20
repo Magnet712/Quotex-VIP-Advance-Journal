@@ -202,7 +202,7 @@ export default async function PricingPage() {
           </div>
 
           {/* Plan 3: Premium Signal Pro */}
-          <div className="glass-panel p-8 rounded-2xl flex flex-col justify-between relative overflow-hidden border-purple-500/35 bg-[#0a071d]/60 shadow-[0_0_30px_rgba(139,92,246,0.15)] text-left">
+          <div className="glass-panel glow-halo p-8 rounded-2xl flex flex-col justify-between relative overflow-hidden border-purple-500/35 bg-[#0a071d]/60 glow-shadow-purple text-left">
             {/* Popular Badge */}
             <div className="absolute top-0 right-0 p-3 rounded-bl bg-purple-500 text-slate-950 font-bold font-mono text-[9px] tracking-widest uppercase">
               RECOMMENDED
@@ -271,7 +271,7 @@ export default async function PricingPage() {
             <div className="pt-8">
               <Link
                 href="/register-info"
-                className="block w-full py-3.5 rounded bg-purple-500 hover:bg-purple-600 text-slate-950 font-extrabold text-xs font-mono tracking-widest text-center uppercase transition-all shadow-[0_0_15px_rgba(139,92,246,0.3)]"
+                className="block w-full py-3.5 rounded bg-purple-500 hover:bg-purple-600 text-slate-950 font-extrabold text-xs font-mono tracking-widest text-center uppercase transition-all glow-shadow-purple"
               >
                 Subscribe Now
               </Link>

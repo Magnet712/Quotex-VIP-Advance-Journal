@@ -333,7 +333,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Dynamic Membership Status Badge */}
             <div className={`p-3 rounded-lg border text-left flex items-center justify-between ${
               profile?.premium_access 
-                ? 'bg-purple-950/20 border-purple-500/35 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.1)]' 
+                ? 'bg-purple-950/20 border-purple-500/35 text-purple-300 glow-shadow-purple' 
                 : profile?.vip_access 
                 ? 'bg-blue-950/20 border-blue-500/35 text-blue-300' 
                 : 'bg-slate-900/30 border-glass-border text-slate-400'

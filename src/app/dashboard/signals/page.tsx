@@ -700,7 +700,7 @@ export default function SignalsPage() {
       {/* Dynamic Toast Alerts Feed */}
       <div className="fixed top-4 right-4 z-50 space-y-2 pointer-events-none">
         {activeToasts.map(t => t.type === 'signal' ? (
-          <div key={t.id} className="p-4 rounded-xl border border-neon-green/30 bg-[#030b17] shadow-[0_0_15px_rgba(0,230,118,0.15)] flex items-start gap-3 w-80 animate-slideIn">
+          <div key={t.id} className="p-4 rounded-xl border border-neon-green/30 bg-[#030b17] glow-shadow-green flex items-start gap-3 w-80 animate-slideIn">
             <Bell className="h-5 w-5 text-neon-green shrink-0 mt-0.5" />
             <div className="space-y-1 font-mono text-xs">
               <div className="font-bold text-slate-200 uppercase">NEW SIGNAL DETECTED</div>
@@ -710,7 +710,7 @@ export default function SignalsPage() {
             </div>
           </div>
         ) : (
-          <div key={t.id} className="p-4 rounded-xl border border-rose-500/30 bg-[#0a0303] shadow-[0_0_15px_rgba(255,0,0,0.1)] flex items-start gap-3 w-80 animate-slideIn">
+          <div key={t.id} className="p-4 rounded-xl border border-rose-500/30 bg-[#0a0303] glow-shadow-red flex items-start gap-3 w-80 animate-slideIn">
             <AlertTriangle className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
             <div className="space-y-1 font-mono text-xs">
               <div className="font-bold text-rose-300 uppercase">SCAN ERROR</div>
@@ -725,7 +725,7 @@ export default function SignalsPage() {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-neon-green animate-pulse shadow-[0_0_8px_#00E676]" />
+              <div className="h-2.5 w-2.5 rounded-full bg-neon-green animate-pulse glow-shadow-green" />
               <span className="font-mono font-extrabold text-neon-green tracking-widest text-sm glow-text-green">
                 QUOTEX SIGNAL ENGINE
               </span>
@@ -763,12 +763,12 @@ export default function SignalsPage() {
         {/* ── Stats Row ──────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'ACTIVE SIGNALS', value: activeCount.toString(), icon: Radio, color: 'text-neon-green', glow: 'shadow-[0_0_10px_rgba(0,230,118,0.12)]' },
+            { label: 'ACTIVE SIGNALS', value: activeCount.toString(), icon: Radio, color: 'text-neon-green', glow: 'glow-shadow-green' },
             { label: "TODAY'S SIGNALS", value: activeStats.totalToday.toString(), icon: Signal, color: 'text-slate-300' },
-            { label: 'WIN RATE (ALL)', value: activeStats.winRate !== null ? `${activeStats.winRate}%` : (subTab === 'live_market' ? '82.3%' : '84.5%'), icon: Target, color: 'text-gold-vip', glow: 'shadow-[0_0_10px_rgba(255,215,0,0.1)]' },
+            { label: 'WIN RATE (ALL)', value: activeStats.winRate !== null ? `${activeStats.winRate}%` : (subTab === 'live_market' ? '82.3%' : '84.5%'), icon: Target, color: 'text-gold-vip', glow: 'glow-shadow-gold' },
             { label: 'ASSETS LOADED', value: subTab !== 'live_market' ? `${selectedPairs.size}/${OTC_PAIRS.length}` : `${Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length}/${LIVE_MARKET_PAIRS.length}`, icon: BarChart2, color: 'text-slate-300' },
           ].map((stat, i) => (
-            <div key={i} className={`glass-panel rounded-xl p-4 flex items-center justify-between transition-all duration-300 ${stat.glow} ${!hasAccess ? 'blur-[4.5px] select-none pointer-events-none' : ''}`}>
+            <div key={i} className={`glass-panel glow-halo rounded-xl p-4 flex items-center justify-between transition-all duration-300 ${stat.glow} ${!hasAccess ? 'blur-[4.5px] select-none pointer-events-none' : ''}`}>
               <div>
                 <div className="text-[9px] font-mono text-slate-500 tracking-widest uppercase">{stat.label}</div>
                 <div className={`text-xl font-extrabold font-mono mt-1.5 ${stat.color}`}>{stat.value}</div>
@@ -801,7 +801,7 @@ export default function SignalsPage() {
                 <button
                   onClick={() => setSubTab('live_otc')}
                   className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${subTab === 'live_otc'
-                      ? 'bg-neon-green/10 border-neon-green/30 text-neon-green shadow-[0_0_15px_rgba(0,230,118,0.05)]'
+                      ? 'bg-neon-green/10 border-neon-green/30 text-neon-green glow-shadow-green'
                       : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
                     }`}
                 >
@@ -814,7 +814,7 @@ export default function SignalsPage() {
                 <button
                   onClick={() => setSubTab('simulation')}
                   className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${subTab === 'simulation'
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.05)]'
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 glow-shadow-gold'
                       : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
                     }`}
                 >
@@ -827,7 +827,7 @@ export default function SignalsPage() {
                 <button
                   onClick={() => setSubTab('live_market')}
                   className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${subTab === 'live_market'
-                      ? 'bg-purple-500/10 border-purple-500/30 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.05)]'
+                      ? 'bg-purple-500/10 border-purple-500/30 text-purple-400 glow-shadow-purple'
                       : 'bg-transparent border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
                     }`}
                 >
@@ -925,7 +925,7 @@ export default function SignalsPage() {
                         setSelectedPairs(next);
                       }}
                       className={`px-2 py-1 rounded text-[9px] font-mono font-bold uppercase transition-all border ${isSelected
-                          ? 'bg-purple-950/40 border-purple-500/50 text-purple-300 shadow-[0_0_8px_rgba(168,85,247,0.05)]'
+                          ? 'bg-purple-950/40 border-purple-500/50 text-purple-300 glow-shadow-purple'
                           : 'bg-transparent border-glass-border/40 text-slate-500 hover:border-slate-800'
                         }`}
                     >
@@ -1155,7 +1155,7 @@ export default function SignalsPage() {
                       return (
                         <div
                           key={p.symbol}
-                          className={`p-3 rounded-lg border flex flex-col justify-between gap-3.5 transition-all text-left bg-[#02050b]/60 border-glass-border/30 ${isSelected ? 'border-purple-500/40 bg-purple-500/[0.02] shadow-[0_0_12px_rgba(168,85,247,0.03)]' : 'hover:border-slate-800'
+                          className={`p-3 rounded-lg border flex flex-col justify-between gap-3.5 transition-all text-left bg-[#02050b]/60 border-glass-border/30 ${isSelected ? 'border-purple-500/40 bg-purple-500/[0.02] glow-shadow-purple' : 'hover:border-slate-800'
                             }`}
                         >
                           <div className="flex justify-between items-start">

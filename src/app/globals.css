@@ -332,3 +332,54 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ─── Compound Glow Shadows (3-layer depth) ────────────────────────── */
+:root {
+  --glow-green: 0 0 8px rgba(0, 230, 118, 0.6), 0 0 30px rgba(0, 230, 118, 0.3), 0 0 60px rgba(0, 230, 118, 0.1);
+  --glow-red:    0 0 8px rgba(239, 68, 68, 0.6), 0 0 30px rgba(239, 68, 68, 0.3), 0 0 60px rgba(239, 68, 68, 0.1);
+  --glow-gold:   0 0 8px rgba(255, 215, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.3), 0 0 60px rgba(255, 215, 0, 0.1);
+  --glow-purple: 0 0 8px rgba(139, 92, 246, 0.6), 0 0 30px rgba(139, 92, 246, 0.3), 0 0 60px rgba(139, 92, 246, 0.1);
+  --glow-blue:   0 0 8px rgba(59, 130, 246, 0.6), 0 0 30px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.1);
+}
+.glow-shadow-green  { box-shadow: var(--glow-green); }
+.glow-shadow-red    { box-shadow: var(--glow-red); }
+.glow-shadow-gold   { box-shadow: var(--glow-gold); }
+.glow-shadow-purple { box-shadow: var(--glow-purple); }
+.glow-shadow-blue   { box-shadow: var(--glow-blue); }
+.glow-shadow-green:hover,
+.glow-shadow-red:hover,
+.glow-shadow-gold:hover,
+.glow-shadow-purple:hover,
+.glow-shadow-blue:hover { transform: translateY(-1px); }
+
+.glow-text-green, .glow-text-gold, .glow-text-red, .glow-text-blue, .glow-text-purple {
+  mix-blend-mode: screen;
+}
+.glow-button:hover, .glow-button-gold:hover {
+  mix-blend-mode: screen;
+}
+
+/* ─── Premium Card Halo (light-bleed behind cards) ──────────────────── */
+.glow-halo {
+  position: relative;
+  isolation: isolate;
+}
+.glow-halo::before {
+  content: '';
+  position: absolute;
+  inset: -40px;
+  border-radius: inherit;
+  background: radial-gradient(400px circle at 50% 50%, var(--halo-color, rgba(0,230,118,0.06)), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.glow-halo:hover::before {
+  opacity: 1;
+}
+.glow-halo-green  { --halo-color: rgba(0, 230, 118, 0.08); }
+.glow-halo-red    { --halo-color: rgba(239, 68, 68, 0.08); }
+.glow-halo-gold   { --halo-color: rgba(255, 215, 0, 0.08); }
+.glow-halo-purple { --halo-color: rgba(139, 92, 246, 0.08); }
+.glow-halo-blue   { --halo-color: rgba(59, 130, 246, 0.08); }

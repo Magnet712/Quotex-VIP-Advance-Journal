@@ -619,7 +619,7 @@ export default function AdminDashboardPage() {
                             onClick={() => handlePremiumToggle(user.id, user.premium_access)}
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border ${
                               user.premium_access
-                                ? 'bg-purple-950/30 border border-purple-500/50 text-purple-300 shadow-[0_0_10px_rgba(139,92,246,0.1)]'
+                                ? 'bg-purple-950/30 border border-purple-500/50 text-purple-300 glow-shadow-purple'
                                 : 'bg-slate-900 border-glass-border text-slate-500 hover:text-purple-400 hover:border-purple-500/30'
                             }`}
                           >

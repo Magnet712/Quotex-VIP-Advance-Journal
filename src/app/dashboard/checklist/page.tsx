@@ -425,7 +425,7 @@ export default function ChecklistPage() {
 
       {/* Checklist complete warning banner */}
       {progressPercent === 100 && items.length > 0 && (
-        <div className="p-4 bg-emerald-950/15 border border-emerald-500/20 text-emerald-400 rounded-xl flex items-center gap-2.5 font-mono text-[10px] uppercase justify-center shadow-[0_0_15px_rgba(16,185,129,0.08)] animate-pulse">
+        <div className="p-4 bg-emerald-950/15 border border-emerald-500/20 text-emerald-400 rounded-xl flex items-center gap-2.5 font-mono text-[10px] uppercase justify-center glow-shadow-green animate-pulse">
           <ShieldCheck className="h-4.5 w-4.5 text-emerald-500 animate-spin" />
           <span>Checklist Complete — Ready for disciplined execution.</span>
         </div>

@@ -143,11 +143,11 @@ export default function DashboardHome() {
         {/* Membership Badge */}
         <div>
           {isPremium ? (
-            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-purple-500/50 bg-purple-950/20 text-purple-300 font-mono font-bold text-xs uppercase shadow-[0_0_15px_rgba(168,85,247,0.15)] animate-pulse">
+            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-purple-500/50 bg-purple-950/20 text-purple-300 font-mono font-bold text-xs uppercase glow-shadow-purple animate-pulse">
               <Zap className="h-4 w-4 fill-current text-purple-400" /> Premium Signal Pro
             </span>
           ) : isVip ? (
-            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-gold-vip/50 bg-gold-vip/10 text-gold-vip font-mono font-bold text-xs uppercase shadow-[0_0_15px_rgba(218,165,32,0.15)]">
+            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-gold-vip/50 bg-gold-vip/10 text-gold-vip font-mono font-bold text-xs uppercase glow-shadow-gold">
               <Award className="h-4 w-4 text-gold-vip" /> VIP Journal Member
             </span>
           ) : (

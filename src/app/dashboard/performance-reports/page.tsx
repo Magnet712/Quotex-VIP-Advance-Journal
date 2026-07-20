@@ -137,7 +137,7 @@ export default function PerformanceReportsPage() {
       </div>
 
       {/* Info notice */}
-      <div className="p-4 bg-purple-950/15 border border-purple-500/20 text-purple-400 rounded-xl flex items-center gap-2.5 font-mono text-[10px] uppercase justify-center shadow-[0_0_15px_rgba(139,92,246,0.08)]">
+      <div className="p-4 bg-purple-950/15 border border-purple-500/20 text-purple-400 rounded-xl flex items-center gap-2.5 font-mono text-[10px] uppercase justify-center glow-shadow-purple">
         <ShieldCheck className="h-4.5 w-4.5 text-purple-500" />
         <span>Performance metrics compiled from Live OTC signals and manual signal audits.</span>
       </div>

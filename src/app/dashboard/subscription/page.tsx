@@ -232,7 +232,7 @@ export default function SubscriptionPage() {
             <div className="space-y-1.5 pt-4">
               <div className="h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-950">
                 <div 
-                  className="h-full bg-neon-green rounded-full shadow-[0_0_8px_rgba(0,230,118,0.4)] transition-all duration-1000"
+                  className="h-full bg-neon-green rounded-full glow-shadow-green transition-all duration-1000"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>

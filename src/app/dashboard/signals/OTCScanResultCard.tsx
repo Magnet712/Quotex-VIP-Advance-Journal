@@ -71,15 +71,15 @@ const OTCScanResultCard: React.FC<OTCScanResultCardProps> = React.memo(({ result
   })();
 
   return (
-    <div className={`backdrop-blur-xl rounded-2xl border p-6 space-y-6 text-sm text-left shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300 ${
+    <div className={`backdrop-blur-xl glow-halo rounded-2xl border p-6 space-y-6 text-sm text-left shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300 ${
       isWin 
-        ? 'border-emerald-500/40 bg-slate-950/40 shadow-[0_0_30px_rgba(16,185,129,0.15)]' 
+        ? 'border-emerald-500/40 bg-slate-950/40 glow-shadow-green' 
         : isLoss 
-          ? 'border-rose-500/40 bg-slate-950/40 shadow-[0_0_30px_rgba(244,63,94,0.15)]'
+          ? 'border-rose-500/40 bg-slate-950/40 glow-shadow-red'
           : isCall 
-            ? 'border-emerald-500/40 bg-slate-950/40 shadow-[0_0_30px_rgba(16,185,129,0.15)]' 
+            ? 'border-emerald-500/40 bg-slate-950/40 glow-shadow-green' 
             : isPut 
-              ? 'border-rose-500/40 bg-slate-950/40 shadow-[0_0_30px_rgba(244,63,94,0.15)]' 
+              ? 'border-rose-500/40 bg-slate-950/40 glow-shadow-red' 
               : 'border-slate-800 bg-slate-950/30'
     }`}>
       {/* Header */}
@@ -89,9 +89,9 @@ const OTCScanResultCard: React.FC<OTCScanResultCardProps> = React.memo(({ result
             {result.pair}
             <span className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-sm transition-all ${
               isCall 
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]' 
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 glow-shadow-green' 
                 : isPut 
-                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]' 
+                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 glow-shadow-red' 
                   : 'bg-slate-800 text-slate-400 border border-slate-700'
             }`}>
               {isCall ? <ChevronUp className="h-4 w-4 inline-block align-middle animate-bounce mr-0.5" /> : isPut ? <ChevronDown className="h-4 w-4 inline-block align-middle animate-bounce mr-0.5" /> : null}
@@ -124,7 +124,7 @@ const OTCScanResultCard: React.FC<OTCScanResultCardProps> = React.memo(({ result
       )}
 
       {isPending && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-[11px] text-emerald-400 font-bold flex items-center justify-between animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.05)]">
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-[11px] text-emerald-400 font-bold flex items-center justify-between animate-pulse glow-shadow-green">
           <span className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-ping" />
             ACTIVE — PENDING EXPIRY • {countdown}
@@ -160,7 +160,7 @@ const OTCScanResultCard: React.FC<OTCScanResultCardProps> = React.memo(({ result
       )}
 
       {isWin && (
-        <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-xl p-4 text-[11px] font-bold flex items-center justify-between shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+        <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-xl p-4 text-[11px] font-bold flex items-center justify-between glow-shadow-green">
           <span className="flex items-center gap-2 text-emerald-400">
             <CheckCircle2 className="h-5 w-5 text-emerald-400" />
             OUTCOME: WIN — Entry: {result.entryPrice} | Expiry: {result.expiryPrice || '—'}
@@ -169,7 +169,7 @@ const OTCScanResultCard: React.FC<OTCScanResultCardProps> = React.memo(({ result
       )}
 
       {isLoss && (
-        <div className="bg-rose-500/15 border border-rose-500/30 rounded-xl p-4 text-[11px] font-bold flex items-center justify-between shadow-[0_0_15px_rgba(244,63,94,0.1)]">
+        <div className="bg-rose-500/15 border border-rose-500/30 rounded-xl p-4 text-[11px] font-bold flex items-center justify-between glow-shadow-red">
           <span className="flex items-center gap-2 text-rose-400">
             <XCircle className="h-5 w-5 text-rose-400" />
             OUTCOME: LOSS — Entry: {result.entryPrice} | Expiry: {result.expiryPrice || '—'}

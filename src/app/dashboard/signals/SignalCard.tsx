@@ -54,13 +54,13 @@ export const SignalCard = React.memo(function SignalCard({
   const borderColor = !isActive && !isLoadingNext
     ? 'border-glass-border'
     : isCall
-      ? 'border-neon-green/25 shadow-[0_0_20px_rgba(0,230,118,0.04)]'
-      : 'border-rose-500/25 shadow-[0_0_20px_rgba(239,68,68,0.04)]';
+      ? 'border-neon-green/25 glow-shadow-green'
+      : 'border-rose-500/25 glow-shadow-red';
 
   return (
     <div
       onClick={isActive ? onClick : undefined}
-      className={`glass-panel glass-panel-hover rounded-xl border transition-all duration-300 overflow-hidden relative ${borderColor} ${isActive ? 'cursor-pointer hover:scale-[1.01]' : ''}`}
+      className={`glass-panel glass-panel-hover glow-halo rounded-xl border transition-all duration-300 overflow-hidden relative ${borderColor} ${isActive ? 'cursor-pointer hover:scale-[1.01]' : ''}`}
     >
 
       {/* Blurred overlay locker for standard/Free users */}

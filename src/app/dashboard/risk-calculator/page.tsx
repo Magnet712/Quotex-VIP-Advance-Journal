@@ -208,7 +208,7 @@ export default function RiskCalculatorPage() {
                   type="number"
                   value={balance}
                   onChange={(e) => setBalance(Math.max(0, Number(e.target.value)))}
-                  className="w-full bg-[#02050b] border border-glass-border pl-8 pr-4 py-2.5 rounded text-xs text-slate-200 focus:outline-none focus:border-neon-green/30 focus:shadow-[0_0_12px_rgba(0,230,118,0.08)] transition-all duration-200"
+                  className="w-full bg-[#02050b] border border-glass-border pl-8 pr-4 py-2.5 rounded text-xs text-slate-200 focus:outline-none focus:border-neon-green/30 focus:glow-shadow-green transition-all duration-200"
                 />
               </div>
             </div>
