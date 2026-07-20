@@ -776,6 +776,12 @@ export default function Home() {
             <h2 className="text-3xl sm:text-5xl font-extrabold font-mono tracking-tight leading-tight">
               Stop Guessing. Start Winning.
             </h2>
+            <div className="flex items-center justify-center gap-2 font-mono">
+              <span className="text-gold-vip text-lg">★★★★★</span>
+              <span className="text-gold-vip font-bold text-base">4.8</span>
+              <span className="text-slate-500 text-base">/ 5</span>
+              <span className="text-slate-600 text-[9px] uppercase tracking-widest ml-1">Member Rated</span>
+            </div>
             <p className="text-slate-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
               Unlock the advanced statistical ledger dashboard or subscribe to receive premium live signal entries.
             </p>
