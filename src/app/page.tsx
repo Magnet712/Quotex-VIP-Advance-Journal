@@ -782,7 +782,7 @@ export default function Home() {
             <h2 className="text-3xl sm:text-5xl font-extrabold font-mono tracking-tight leading-tight">
               Stop Guessing. Start Winning.
             </h2>
-            {ratingData.count > 0 && (
+            {ratingData.count >= 5 && (
               <div className="flex items-center justify-center gap-2 font-mono">
                 <span className="text-gold-vip text-lg">★★★★★</span>
                 <span className="text-gold-vip font-bold text-base">{ratingData.average}</span>
