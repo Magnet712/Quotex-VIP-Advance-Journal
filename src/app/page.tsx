@@ -774,7 +774,7 @@ export default function Home() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-8">
           <div className="space-y-4">
             <h2 className="text-3xl sm:text-5xl font-extrabold font-mono tracking-tight leading-tight">
-              Ready To Trade Smarter?
+              Stop Guessing. Start Winning.
             </h2>
             <p className="text-slate-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
               Unlock the advanced statistical ledger dashboard or subscribe to receive premium live signal entries.
