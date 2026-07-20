@@ -425,7 +425,7 @@ export default function Home() {
                   href="/pricing"
                   className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-purple-400 hover:underline uppercase"
                 >
-                  View Premium Plans <ChevronRight className="h-3 w-3" />
+                  Unlock Premium Signals Now <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
             </div>
