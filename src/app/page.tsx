@@ -404,7 +404,7 @@ export default function Home() {
                   href="/register-info"
                   className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-gold-vip hover:underline uppercase"
                 >
-                  Unlock Free Access <ChevronRight className="h-3 w-3" />
+                  Get VIP Free (No Card Needed) <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
             </div>
