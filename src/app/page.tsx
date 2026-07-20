@@ -22,6 +22,7 @@ import {
   getPublicCommunityStats 
 } from '@/app/actions/signals';
 import { getAllFeatureFlags } from '@/app/actions/feature_flags';
+import { getAverageRating } from '@/app/actions/ratings';
 
 export default function Home() {
   // Stats states
@@ -41,21 +42,26 @@ export default function Home() {
   // Preview Tabs state
   const [activePreviewTab, setActivePreviewTab] = useState<'journal' | 'analytics' | 'checklist' | 'signals' | 'winrate'>('journal');
 
-  // Load real data from DB
+  const [ratingData, setRatingData] = useState<{ average: number; count: number }>({ average: 4.8, count: 0 });
+
   useEffect(() => {
     async function loadHomepageData() {
       try {
-        const [perfRes, signalsRes, commRes, flagsRes] = await Promise.all([
+        const [perfRes, signalsRes, commRes, flagsRes, ratingRes] = await Promise.all([
           getPublicSignalPerformance(),
-          getPublicRecentSignals(3), // load 3 signal cards
+          getPublicRecentSignals(3),
           getPublicCommunityStats(),
-          getAllFeatureFlags()
+          getAllFeatureFlags(),
+          getAverageRating()
         ]);
 
         if (perfRes.success) setStats(perfRes.stats);
         if (signalsRes.success) setRecentSignals(signalsRes.signals || []);
         if (commRes.success) setCommunity(commRes.stats);
         if (flagsRes.success) setFlags(flagsRes.flags);
+        if (ratingRes.success && ratingRes.count > 0) {
+          setRatingData({ average: ratingRes.average, count: ratingRes.count });
+        }
       } catch (err) {
         console.error('Failed to load public landing page data:', err);
       } finally {
@@ -776,12 +782,14 @@ export default function Home() {
             <h2 className="text-3xl sm:text-5xl font-extrabold font-mono tracking-tight leading-tight">
               Stop Guessing. Start Winning.
             </h2>
-            <div className="flex items-center justify-center gap-2 font-mono">
-              <span className="text-gold-vip text-lg">★★★★★</span>
-              <span className="text-gold-vip font-bold text-base">4.8</span>
-              <span className="text-slate-500 text-base">/ 5</span>
-              <span className="text-slate-600 text-[9px] uppercase tracking-widest ml-1">Member Rated</span>
-            </div>
+            {ratingData.count > 0 && (
+              <div className="flex items-center justify-center gap-2 font-mono">
+                <span className="text-gold-vip text-lg">★★★★★</span>
+                <span className="text-gold-vip font-bold text-base">{ratingData.average}</span>
+                <span className="text-slate-500 text-base">/ 5</span>
+                <span className="text-slate-600 text-[9px] uppercase tracking-widest ml-1">{ratingData.count} Member{ratingData.count !== 1 ? 's' : ''} Rated</span>
+              </div>
+            )}
             <p className="text-slate-400 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
               Unlock the advanced statistical ledger dashboard or subscribe to receive premium live signal entries.
             </p>

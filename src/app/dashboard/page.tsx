@@ -7,8 +7,9 @@ import { getTrades } from '@/app/actions/trades';
 import { getSignalPerformance } from '@/app/actions/signals';
 import { getUserAccessState, getPublicOptimizationSettings } from '@/app/actions/admin_optimization';
 import { canAccess, getMembershipRole, FEATURES_LIST } from '@/lib/permissions';
+import { getAverageRating, getUserRating, submitRating } from '@/app/actions/ratings';
 import { 
-  User, Award, Zap, Calendar, Activity, Bell, ArrowRight, ShieldCheck, TrendingUp
+  User, Award, Zap, Calendar, Activity, Bell, ArrowRight, ShieldCheck, TrendingUp, Star
 } from 'lucide-react';
 
 export default function DashboardHome() {
@@ -19,6 +20,10 @@ export default function DashboardHome() {
   const [signalStats, setSignalStats] = useState<{ total: number; totalToday: number; winRate: number } | null>(null);
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const [signalVisibility, setSignalVisibility] = useState('premium');
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [avgRating, setAvgRating] = useState(0);
+  const [ratingCount, setRatingCount] = useState(0);
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
@@ -65,6 +70,16 @@ export default function DashboardHome() {
           setDismissedNotifications(JSON.parse(dismissed));
         }
 
+        const [avgRes, userRes] = await Promise.all([
+          getAverageRating(),
+          getUserRating()
+        ]);
+        if (avgRes.success) {
+          setAvgRating(avgRes.average);
+          setRatingCount(avgRes.count);
+        }
+        if (userRes.success) setUserRating(userRes.rating);
+
       } catch (err) {
         console.error('Failed to load dashboard portal data:', err);
       } finally {
@@ -85,6 +100,21 @@ export default function DashboardHome() {
     window.dispatchEvent(new CustomEvent('open-upgrade-modal', { 
       detail: { requestedPlan: targetTier } 
     }));
+  };
+
+  const handleRate = async (newRating: number) => {
+    if (submittingRating || newRating === userRating) return;
+    setSubmittingRating(true);
+    const res = await submitRating(newRating);
+    if (res.success) {
+      setUserRating(newRating);
+      const avgRes = await getAverageRating();
+      if (avgRes.success) {
+        setAvgRating(avgRes.average);
+        setRatingCount(avgRes.count);
+      }
+    }
+    setSubmittingRating(false);
   };
 
   if (loading) {
@@ -140,8 +170,8 @@ export default function DashboardHome() {
           </h1>
         </div>
         
-        {/* Membership Badge */}
-        <div>
+        {/* Membership Badge & Rating */}
+        <div className="flex items-center gap-3">
           {isPremium ? (
             <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-purple-500/50 bg-purple-950/20 text-purple-300 font-mono font-bold text-xs uppercase glow-shadow-purple animate-pulse">
               <Zap className="h-4 w-4 fill-current text-purple-400" /> Premium Signal Pro
@@ -155,6 +185,31 @@ export default function DashboardHome() {
               <User className="h-4 w-4 text-slate-500" /> Free Trader
             </span>
           )}
+
+          {/* Star Rating Widget */}
+          <div className="flex items-center gap-2 pl-3 border-l border-glass-border/40">
+            <div className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => handleRate(star)}
+                  disabled={submittingRating}
+                  className={`transition-all duration-150 ${
+                    star <= (userRating || 0)
+                      ? 'text-gold-vip'
+                      : 'text-slate-700 hover:text-slate-500'
+                  } ${submittingRating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'}`}
+                >
+                  <Star className={`h-4 w-4 ${star <= (userRating || 0) ? 'fill-current' : ''}`} />
+                </button>
+              ))}
+            </div>
+            {avgRating > 0 && (
+              <span className="text-[10px] font-mono text-slate-500">
+                <span className="text-gold-vip font-bold">{avgRating}</span> / 5 <span className="text-slate-600">({ratingCount})</span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
