@@ -221,19 +221,23 @@ export const ManualScanResultCard = React.memo(function ManualScanResultCard({
           <div className={`grid grid-cols-2 sm:grid-cols-4 gap-4.5 ${decisionParamsDimmed ? 'opacity-40 select-none pointer-events-none' : ''}`}>
             <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]">
               <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Confidence</span>
-              <span className="text-sm font-extrabold text-amber-400 mt-2 block tracking-wider">{starsStr}</span>
-              <span className="text-[8px] text-slate-400 font-bold mt-1.5 block">{result.confidence}% Probability</span>
+              <span className={`text-sm font-extrabold mt-2 block tracking-wider ${isRunning ? 'text-slate-600' : 'text-amber-400'}`}>{isRunning ? '—' : starsStr}</span>
+              <span className="text-[8px] text-slate-400 font-bold mt-1.5 block">{isRunning ? 'Analyzing...' : `${result.confidence}% Probability`}</span>
             </div>
             <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]">
               <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Trend Strength</span>
               <span className="text-xs font-extrabold text-slate-300 mt-2 block tracking-wider">
-                {(() => {
-                  const score = result.trendStrength || result.qualityScore || 70;
-                  const filled = Math.round(score / 10);
-                  return '█'.repeat(filled) + '░'.repeat(10 - filled);
-                })()}
+                {isRunning ? (
+                  <span className="text-slate-600">—</span>
+                ) : (
+                  (() => {
+                    const score = result.trendStrength || result.qualityScore || 70;
+                    const filled = Math.round(score / 10);
+                    return '█'.repeat(filled) + '░'.repeat(10 - filled);
+                  })()
+                )}
               </span>
-              <span className="text-[8px] text-slate-400 font-bold mt-1.5 block">INDEX: {result.trendStrength || result.qualityScore}%</span>
+              <span className="text-[8px] text-slate-400 font-bold mt-1.5 block">{isRunning ? 'Analyzing...' : `INDEX: ${result.trendStrength || result.qualityScore}%`}</span>
             </div>
             <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]">
               <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Market Bias</span>
