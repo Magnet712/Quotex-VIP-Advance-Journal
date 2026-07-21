@@ -768,7 +768,7 @@ export default function SignalsPage() {
             { label: 'WIN RATE (ALL)', value: activeStats.winRate !== null ? `${activeStats.winRate}%` : (subTab === 'live_market' ? '82.3%' : '84.5%'), icon: Target, color: 'text-gold-vip', glow: 'glow-shadow-gold' },
             { label: 'ASSETS LOADED', value: subTab !== 'live_market' ? `${selectedPairs.size}/${OTC_PAIRS.length}` : `${Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length}/${LIVE_MARKET_PAIRS.length}`, icon: BarChart2, color: 'text-slate-300' },
           ].map((stat, i) => (
-            <div key={i} className={`glass-panel glow-halo rounded-xl p-4 flex items-center justify-between transition-all duration-300 ${stat.glow} ${!hasAccess ? 'blur-[4.5px] select-none pointer-events-none' : ''}`}>
+            <div key={i} className={`glass-panel glow-halo rounded-xl p-4 flex items-center justify-between transition-all duration-300 ${stat.glow} ${!hasAccess && !accessLoading ? 'blur-[4.5px] select-none pointer-events-none' : accessLoading ? 'animate-pulse opacity-50' : ''}`}>
               <div>
                 <div className="text-[9px] font-mono text-slate-500 tracking-widest uppercase">{stat.label}</div>
                 <div className={`text-xl font-extrabold font-mono mt-1.5 ${stat.color}`}>{stat.value}</div>
@@ -908,7 +908,7 @@ export default function SignalsPage() {
                 </div>
               )}
 
-              <div className={`flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1 scrollbar-thin ${!hasAccess ? 'blur-[4.5px] select-none pointer-events-none' : ''}`}>
+              <div className={`flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1 scrollbar-thin ${!hasAccess && !accessLoading ? 'blur-[4.5px] select-none pointer-events-none' : accessLoading ? 'animate-pulse opacity-50' : ''}`}>
                 {(subTab !== 'live_market' ? OTC_PAIRS : LIVE_MARKET_PAIRS).map((p) => {
                   const shortCode = p.short;
                   const isSelected = selectedPairs.has(shortCode);
@@ -1252,7 +1252,7 @@ export default function SignalsPage() {
                 /* Timeline feed wrapper */
                 <div className="space-y-3.5 max-h-[600px] overflow-y-auto pr-1 relative animate-fadeIn">
                   {/* Lock overlay for non-premium members */}
-                  {!hasAccess && (
+                  {!hasAccess && !accessLoading && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-slate-950/40 z-20 text-center space-y-2.5 font-mono">
                       <div className="p-2.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400">
                         <Lock className="h-4.5 w-4.5" />
@@ -1267,7 +1267,7 @@ export default function SignalsPage() {
                     </div>
                   )}
 
-                  <div className={!hasAccess ? 'blur-[4.5px] select-none pointer-events-none space-y-3.5' : 'space-y-3.5'}>
+                  <div className={!hasAccess && !accessLoading ? 'blur-[4.5px] select-none pointer-events-none space-y-3.5' : 'space-y-3.5'}>
                     {mergedTimeline.map((sig) => {
                       const isCall = sig.direction === 'CALL';
                       const isPut = sig.direction === 'PUT';
