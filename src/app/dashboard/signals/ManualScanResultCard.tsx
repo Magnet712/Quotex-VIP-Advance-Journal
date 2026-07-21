@@ -242,19 +242,23 @@ export const ManualScanResultCard = React.memo(function ManualScanResultCard({
               <span className="text-[8px] text-slate-400 font-bold mt-1.5 block">DIRECTIONS ALIGNED</span>
             </div>
             <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]">
-              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">{isWaitingEntry ? 'Next Candle Entry' : 'Current Trade'}</span>
+              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">{isWaitingEntry || isRunning ? 'Next Candle Entry' : 'Current Trade'}</span>
               <span className={`text-xs font-extrabold mt-2 block uppercase tracking-wide ${
                 isWaitingEntry
                   ? (secToEntry <= 10 ? 'text-rose-400 animate-pulse' : 'text-amber-400 animate-pulse')
-                  : (diffSec > 0 && isEntryActive)
-                    ? (diffSec <= 10 ? 'text-rose-400 animate-pulse' : 'text-yellow-400 animate-pulse')
-                    : 'text-slate-500 font-bold'
+                  : isRunning
+                    ? 'text-amber-400 animate-pulse'
+                    : (diffSec > 0 && isEntryActive)
+                      ? (diffSec <= 10 ? 'text-rose-400 animate-pulse' : 'text-yellow-400 animate-pulse')
+                      : 'text-slate-500 font-bold'
                 }`}>
                 {isWaitingEntry
                   ? `Starts in ${countdownStr}`
-                  : (diffSec > 0 && isEntryActive)
-                    ? `Remaining ${countdownStr}`
-                    : 'EXPIRED'}
+                  : isRunning
+                    ? 'Awaiting entry...'
+                    : (diffSec > 0 && isEntryActive)
+                      ? `Remaining ${countdownStr}`
+                      : 'EXPIRED'}
               </span>
               <span className="text-[8px] text-slate-400 font-bold mt-1.5 block">NEXT CANDLE LIMIT</span>
             </div>
