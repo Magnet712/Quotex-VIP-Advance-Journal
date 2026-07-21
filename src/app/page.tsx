@@ -838,7 +838,7 @@ export default function Home() {
               href="/pricing"
               className="w-full sm:w-auto px-8 py-4 rounded border border-glass-border hover:border-neon-green/30 bg-slate-900/40 text-slate-300 hover:text-neon-green text-sm tracking-wider uppercase transition-all flex items-center justify-center gap-1.5"
             >
-              <span>View Membership Plans</span>
+              <span>Unlock Premium Access</span>
               <ChevronRight className="h-4.5 w-4.5" />
             </Link>
           </div>
