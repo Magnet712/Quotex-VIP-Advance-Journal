@@ -1294,8 +1294,9 @@ export async function scanLiveMarketAsset(pair: string, rowId?: string): Promise
       const lastCandle = candlesM1[candlesM1.length - 1];
       const lastCandleTime = lastCandle?.timestamp ? new Date(lastCandle.timestamp) : new Date();
       
-      const entryTime = new Date(lastCandleTime.getTime() + 60 * 1000);
-      const expiryTime = new Date(entryTime.getTime() + 60 * 1000);
+      const nowMs = Date.now();
+      const entryTime = new Date(nowMs - (nowMs % 60_000) + 60_000);
+      const expiryTime = new Date(entryTime.getTime() + 60_000);
 
       throwIfAborted();
 
