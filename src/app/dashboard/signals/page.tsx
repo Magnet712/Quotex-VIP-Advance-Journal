@@ -25,7 +25,7 @@ import { ManualScanResultCard } from './ManualScanResultCard';
 import { useForexExecution } from './useForexExecution';
 import { useOTCExecution } from './useOTCExecution';
 import OTCScanResultCard from './OTCScanResultCard';
-import type { ExecutionRecord } from '@/lib/forex-execution/types';
+import { TERMINAL_STATUSES, type ExecutionRecord } from '@/lib/forex-execution/types';
 import { OTC_TERMINAL_STATUSES } from '@/lib/otc/otc-execution-types';
 import type { OTCExecutionRecord } from '@/lib/otc/otc-execution-types';
 
@@ -212,7 +212,9 @@ export default function SignalsPage() {
         confidence: s.confidence,
         scanStartedAt: new Date(s.entry_time).getTime(),
       } as ExecutionRecord));
-    return [...engine, ...otcEngineRecords, ...historical].sort((a, b) => b.scanStartedAt - a.scanStartedAt);
+    return [...engine, ...otcEngineRecords, ...historical]
+      .filter(r => TERMINAL_STATUSES.has(r.status as any))
+      .sort((a, b) => b.scanStartedAt - a.scanStartedAt);
   }, [forex.timelineRecords, otc.timelineRecords, timelineSignals]);
 
   // ─── Manual Scanning Live Forex States (legacy) ───────────────────────────

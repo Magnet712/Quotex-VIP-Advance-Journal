@@ -1989,13 +1989,18 @@ export async function updateScanAuditStatus(
   signalId: string,
   newStatus: string,
   reason: string,
-  expectedStatus: string = 'SCANNING'
+  expectedStatus: string = 'SCANNING',
+  entryTime?: string,
+  expiryTime?: string,
 ): Promise<void> {
   try {
     const supabase = await createClient();
+    const updateData: Record<string, string> = { status: newStatus, market_bias: reason };
+    if (entryTime) updateData.entry_time = entryTime;
+    if (expiryTime) updateData.expiry_time = expiryTime;
     await supabase
       .from('manual_signal_audits')
-      .update({ status: newStatus, market_bias: reason })
+      .update(updateData)
       .eq('id', signalId)
       .eq('status', expectedStatus);
   } catch (err: unknown) {
