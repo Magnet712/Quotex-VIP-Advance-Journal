@@ -20,6 +20,7 @@ import {
   getPendingManualSignals,
   getManualSignalAudits,
   updateScanAuditStatus,
+  prepareSignalForSettlement,
   ScanResult,
 } from '@/app/actions/signals';
 
@@ -196,6 +197,14 @@ export class ExecutionEngine {
 
     if (this.settlingIds.has(record.id)) return;
     this.settlingIds.add(record.id);
+
+    prepareSignalForSettlement(
+      record.id,
+      record.officialEntryPrice || record.entryPrice,
+      record.direction,
+      record.entryTime,
+      record.expiryTime,
+    );
 
     settleManualSignal(record.id)
       .then(res => {

@@ -2003,4 +2003,36 @@ export async function updateScanAuditStatus(
   }
 }
 
+/**
+ * ACTION: prepareSignalForSettlement
+ * Ensures the DB record is in PENDING state with correct trade data
+ * before settleManualSignal runs. This prevents the case where the
+ * fire-and-forget update in scanLiveMarketAsset hasn't completed,
+ * leaving the DB as SCANNING and causing settleManualSignal to skip it.
+ */
+export async function prepareSignalForSettlement(
+  signalId: string,
+  entryPrice: number,
+  direction: string,
+  entryTime: string,
+  expiryTime: string,
+): Promise<void> {
+  try {
+    const supabase = await createClient();
+    await supabase
+      .from('manual_signal_audits')
+      .update({
+        status: 'PENDING',
+        entry_price: entryPrice,
+        direction,
+        entry_time: entryTime,
+        expiry_time: expiryTime,
+      })
+      .eq('id', signalId)
+      .eq('status', 'SCANNING');
+  } catch (err: unknown) {
+    console.error(`[prepareSignalForSettlement] Failed to prepare ${signalId}:`, err);
+  }
+}
+
 
