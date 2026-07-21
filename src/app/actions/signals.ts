@@ -2035,4 +2035,27 @@ export async function prepareSignalForSettlement(
   }
 }
 
+/**
+ * ACTION: resetForexAudits
+ * Marks all non-terminal forex audit records as NO TRADE to reset the timeline.
+ * Only affects records whose pair is in the provided forexPairs list,
+ * only non-terminal statuses (preserves WIN/LOSS/REFUND history).
+ */
+export async function resetForexAudits(forexPairs: string[]): Promise<void> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) return;
+    const { error } = await supabase
+      .from('manual_signal_audits')
+      .update({ status: 'NO TRADE', market_bias: 'Reset — manual scan restart' })
+      .in('pair', forexPairs)
+      .eq('user_id', user.id)
+      .filter('status', 'not.in', '(WIN,LOSS,REFUND,FAILED,NO TRADE)');
+    if (error) console.error('[resetForexAudits] DB error:', error);
+  } catch (err: unknown) {
+    console.error('[resetForexAudits] Failed:', err);
+  }
+}
+
 

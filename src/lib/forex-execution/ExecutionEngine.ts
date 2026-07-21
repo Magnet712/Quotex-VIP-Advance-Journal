@@ -21,6 +21,7 @@ import {
   getManualSignalAudits,
   updateScanAuditStatus,
   prepareSignalForSettlement,
+  resetForexAudits,
   ScanResult,
 } from '@/app/actions/signals';
 
@@ -33,6 +34,7 @@ export class ExecutionEngine {
   private clockAnchor = 0;
   private perfAnchor = 0;
   private settlingIds = new Set<string>();
+  private pendingEntryConfirmations = new Set<string>();
   private pendingReservations = 0;
 
   constructor(config?: Partial<EngineConfig>) {
@@ -146,11 +148,11 @@ export class ExecutionEngine {
       case 'SCANNING': {
         const entryMs = new Date(record.entryTime).getTime();
         if (now >= entryMs + 5000) {
-          record.status = 'FAILED';
-          record.noTradeReason = 'Scan timed out — entry time passed while still scanning';
-          record.removeAt = this.now();
-          updateScanAuditStatus(record.id, 'FAILED', record.noTradeReason);
-          return 'FAILED';
+          record.status = 'NO TRADE';
+          record.noTradeReason = 'Scan timed out — no signal detected within 30s';
+          record.removeAt = this.now() + this.config.autoRemoveDelayMs;
+          updateScanAuditStatus(record.id, 'NO TRADE', record.noTradeReason);
+          return 'NO TRADE';
         }
         return 'SCANNING';
       }
@@ -158,8 +160,11 @@ export class ExecutionEngine {
       case 'WAITING_FOR_ENTRY': {
         const entryMs = new Date(record.entryTime).getTime();
         if (now >= entryMs) {
-          this.transitionToPending(record, entryMs);
-          return 'PENDING';
+          if (!this.pendingEntryConfirmations.has(record.id)) {
+            this.pendingEntryConfirmations.add(record.id);
+            this.captureEntryPriceAndTransition(record, entryMs);
+          }
+          return 'WAITING_FOR_ENTRY';
         }
         return 'WAITING_FOR_ENTRY';
       }
@@ -178,18 +183,26 @@ export class ExecutionEngine {
     }
   }
 
-  private transitionToPending(record: ExecutionRecord, entryMs: number): void {
+  private async captureEntryPriceAndTransition(record: ExecutionRecord, entryMs: number): Promise<void> {
     assertValidTransition('WAITING_FOR_ENTRY', 'PENDING');
-
-    captureOfficialEntryPrice(record.id, record.pair, entryMs)
-      .then(res => {
-        if (res.success && res.officialEntryPrice) {
-          record.officialEntryPrice = res.officialEntryPrice;
-          record.entryPrice = res.officialEntryPrice;
-          this.emit();
-        }
-      })
-      .catch(() => {});
+    try {
+      const res = await captureOfficialEntryPrice(record.id, record.pair, entryMs);
+      if (res.success && res.officialEntryPrice) {
+        record.officialEntryPrice = res.officialEntryPrice;
+        record.entryPrice = res.officialEntryPrice;
+        record.status = 'PENDING';
+      } else {
+        record.status = 'FAILED';
+        record.noTradeReason = 'Entry price unavailable';
+        record.removeAt = this.now() + this.config.autoRemoveDelayMs;
+      }
+    } catch {
+      record.status = 'FAILED';
+      record.noTradeReason = 'Entry price fetch failed';
+      record.removeAt = this.now() + this.config.autoRemoveDelayMs;
+    }
+    this.pendingEntryConfirmations.delete(record.id);
+    this.emit();
   }
 
   private transitionToSettling(record: ExecutionRecord): void {
@@ -266,13 +279,13 @@ export class ExecutionEngine {
 
     const scanTimeout = setTimeout(() => {
       if (this.records.get(dbId)?.status === 'SCANNING') {
-        placeholder.status = 'FAILED';
-        placeholder.noTradeReason = 'Scan exceeded 20-second limit';
-        placeholder.removeAt = this.now();
-        updateScanAuditStatus(dbId, 'FAILED', placeholder.noTradeReason);
+        placeholder.status = 'NO TRADE';
+        placeholder.noTradeReason = 'Scan exceeded 30-second limit — no signal detected';
+        placeholder.removeAt = this.now() + this.config.autoRemoveDelayMs;
+        updateScanAuditStatus(dbId, 'NO TRADE', placeholder.noTradeReason);
         this.emit();
       }
-    }, 20000);
+    }, 30000);
 
     try {
       const res = await scanLiveMarketAsset(pair, dbId);
@@ -374,12 +387,11 @@ export class ExecutionEngine {
       placeholder.recommendationText = result.recommendationText;
       placeholder.noTradeReason = result.noTradeReason || 'No setup detected';
       placeholder.dataSource = result.dataSource;
-      placeholder.removeAt = this.now();
+      placeholder.removeAt = this.now() + this.config.autoRemoveDelayMs;
       return;
     }
 
     const entryMs = new Date(result.entryTime).getTime();
-    const isNextCandle = entryMs > this.now();
 
     Object.assign(placeholder, {
       direction: result.direction,
@@ -405,12 +417,11 @@ export class ExecutionEngine {
       entryReason: result.entryReason || '',
       cacheStatus: result.cacheStatus,
       cacheAgeSeconds: result.cacheAgeSeconds,
-      status: isNextCandle ? 'WAITING_FOR_ENTRY' : 'PENDING',
+      status: 'WAITING_FOR_ENTRY',
     });
 
-    if (!isNextCandle) {
-      this.transitionToPending(placeholder, entryMs);
-    }
+    this.pendingEntryConfirmations.add(placeholder.id);
+    this.captureEntryPriceAndTransition(placeholder, entryMs);
   }
 
   private handleScanFailure(placeholder: ExecutionRecord, error: string): void {
@@ -497,23 +508,24 @@ export class ExecutionEngine {
           if (restoreStatus === 'PENDING' && now >= expiryMs) {
             this.transitionToSettling(record);
           } else if (restoreStatus === 'WAITING_FOR_ENTRY' && now >= entryMs) {
-            this.transitionToPending(record, entryMs);
+            this.pendingEntryConfirmations.add(sig.id);
+            this.captureEntryPriceAndTransition(record, entryMs);
           } else if (restoreStatus === 'SCANNING') {
             const age = Math.max(0, now - new Date(sig.entryTime).getTime() + 60000);
-            const remaining = Math.max(0, 20000 - age);
+            const remaining = Math.max(0, 30000 - age);
             if (remaining <= 0) {
-              record.status = 'FAILED';
-              record.noTradeReason = 'Scan exceeded 20-second limit';
-              record.removeAt = this.now();
-              updateScanAuditStatus(sig.id, 'FAILED', record.noTradeReason);
+              record.status = 'NO TRADE';
+              record.noTradeReason = 'Scan exceeded 30-second limit — no signal detected';
+              record.removeAt = this.now() + this.config.autoRemoveDelayMs;
+              updateScanAuditStatus(sig.id, 'NO TRADE', record.noTradeReason);
             } else {
               setTimeout(() => {
                 const r = this.records.get(sig.id);
                 if (r && r.status === 'SCANNING') {
-                  r.status = 'FAILED';
-                  r.noTradeReason = 'Scan exceeded 20-second limit';
-                  r.removeAt = this.now();
-                  updateScanAuditStatus(sig.id, 'FAILED', r.noTradeReason);
+                  r.status = 'NO TRADE';
+                  r.noTradeReason = 'Scan exceeded 30-second limit — no signal detected';
+                  r.removeAt = this.now() + this.config.autoRemoveDelayMs;
+                  updateScanAuditStatus(sig.id, 'NO TRADE', r.noTradeReason);
                   this.emit();
                 }
               }, remaining);
@@ -566,7 +578,8 @@ export class ExecutionEngine {
           if (restoreStatus === 'PENDING' && now >= expiryMs) {
             this.transitionToSettling(record);
           } else if (restoreStatus === 'WAITING_FOR_ENTRY' && now >= entryMs) {
-            this.transitionToPending(record, entryMs);
+            this.pendingEntryConfirmations.add(audit.id);
+            this.captureEntryPriceAndTransition(record, entryMs);
           }
         }
       }
@@ -577,6 +590,17 @@ export class ExecutionEngine {
     }
   }
 
+  // ─── Reset ───────────────────────────────────────────────────────────
+
+  reset(forexPairs: string[]): void {
+    this.records.clear();
+    this.settlingIds.clear();
+    this.pendingEntryConfirmations.clear();
+    this.pendingReservations = 0;
+    this.emit();
+    resetForexAudits(forexPairs);
+  }
+
   // ─── Cleanup ─────────────────────────────────────────────────────────
 
   destroy(): void {
@@ -584,6 +608,7 @@ export class ExecutionEngine {
     this.records.clear();
     this.listeners.clear();
     this.settlingIds.clear();
+    this.pendingEntryConfirmations.clear();
   }
 }
 

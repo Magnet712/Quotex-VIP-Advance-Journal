@@ -26,8 +26,6 @@ export const TERMINAL_STATUSES: ReadonlySet<ExecutionStatus> = new Set([
 
 export const POPUP_VISIBLE_STATUSES: ReadonlySet<ExecutionStatus> = new Set([
   'SCANNING',
-  'FAILED',
-  'NO TRADE',
   'WAITING_FOR_ENTRY',
   'PENDING',
   'WIN',

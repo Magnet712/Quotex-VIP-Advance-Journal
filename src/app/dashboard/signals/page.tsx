@@ -1236,16 +1236,28 @@ export default function SignalsPage() {
                   <Activity className="h-4.5 w-4.5 text-gold-vip" />
                   <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">Signal Audit Timeline</span>
                 </div>
-                <button
-                  onClick={() => {
-                    const next = !isTimelineVisible;
-                    setIsTimelineVisible(next);
-                    localStorage.setItem('timeline_visible', String(next));
-                  }}
-                  className="px-2 py-0.5 rounded border border-glass-border bg-slate-950 text-slate-400 hover:text-slate-200 text-[8px] font-bold uppercase transition-colors cursor-pointer"
-                >
-                  {isTimelineVisible ? 'Hide' : 'Show'}
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={async () => {
+                      const forexSymbols = LIVE_MARKET_PAIRS.map(p => p.symbol);
+                      forex.reset(forexSymbols);
+                      await refreshStats();
+                    }}
+                    className="px-2 py-0.5 rounded border border-rose-500/20 bg-rose-950/20 text-rose-400 hover:text-rose-300 text-[8px] font-bold uppercase transition-colors cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={() => {
+                      const next = !isTimelineVisible;
+                      setIsTimelineVisible(next);
+                      localStorage.setItem('timeline_visible', String(next));
+                    }}
+                    className="px-2 py-0.5 rounded border border-glass-border bg-slate-950 text-slate-400 hover:text-slate-200 text-[8px] font-bold uppercase transition-colors cursor-pointer"
+                  >
+                    {isTimelineVisible ? 'Hide' : 'Show'}
+                  </button>
+                </div>
               </div>
 
               {isTimelineVisible && (

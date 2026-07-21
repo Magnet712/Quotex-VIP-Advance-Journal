@@ -23,6 +23,7 @@ export interface ForexExecutionState {
 export function useForexExecution(): ForexExecutionState & {
   scan: (pair: string) => Promise<{ success: boolean; error?: string; direction?: 'CALL' | 'PUT' | 'WAIT' }>;
   dismiss: (id: string) => void;
+  reset: (forexPairs: string[]) => void;
 } {
   const [state, setState] = useState<ForexExecutionState>(() => ({
     activeScans: engine.getActiveScans(),
@@ -68,5 +69,9 @@ export function useForexExecution(): ForexExecutionState & {
     engine.dismissScan(id);
   }, []);
 
-  return { ...state, scan, dismiss };
+  const reset = useCallback((forexPairs: string[]) => {
+    engine.reset(forexPairs);
+  }, []);
+
+  return { ...state, scan, dismiss, reset };
 }
