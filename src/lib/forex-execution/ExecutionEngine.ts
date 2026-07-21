@@ -19,6 +19,7 @@ import {
   captureOfficialEntryPrice,
   getPendingManualSignals,
   getManualSignalAudits,
+  updateScanAuditStatus,
   ScanResult,
 } from '@/app/actions/signals';
 
@@ -147,6 +148,7 @@ export class ExecutionEngine {
           record.status = 'FAILED';
           record.noTradeReason = 'Scan timed out — entry time passed while still scanning';
           record.removeAt = this.now();
+          updateScanAuditStatus(record.id, 'FAILED', record.noTradeReason);
           return 'FAILED';
         }
         return 'SCANNING';
@@ -258,6 +260,7 @@ export class ExecutionEngine {
         placeholder.status = 'FAILED';
         placeholder.noTradeReason = 'Scan exceeded 20-second limit';
         placeholder.removeAt = this.now();
+        updateScanAuditStatus(dbId, 'FAILED', placeholder.noTradeReason);
         this.emit();
       }
     }, 20000);
@@ -493,6 +496,7 @@ export class ExecutionEngine {
               record.status = 'FAILED';
               record.noTradeReason = 'Scan exceeded 20-second limit';
               record.removeAt = this.now();
+              updateScanAuditStatus(sig.id, 'FAILED', record.noTradeReason);
             } else {
               setTimeout(() => {
                 const r = this.records.get(sig.id);
@@ -500,6 +504,7 @@ export class ExecutionEngine {
                   r.status = 'FAILED';
                   r.noTradeReason = 'Scan exceeded 20-second limit';
                   r.removeAt = this.now();
+                  updateScanAuditStatus(sig.id, 'FAILED', r.noTradeReason);
                   this.emit();
                 }
               }, remaining);

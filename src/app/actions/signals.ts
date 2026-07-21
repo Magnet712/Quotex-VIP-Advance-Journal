@@ -1979,4 +1979,28 @@ export async function getActiveProviderName(): Promise<string> {
   }
 }
 
+/**
+ * ACTION: updateScanAuditStatus
+ * Fire-and-forget DB update for engine-side timeouts.
+ * Only updates if the DB record is still in the given expectedStatus
+ * (prevents overwriting a later state change).
+ */
+export async function updateScanAuditStatus(
+  signalId: string,
+  newStatus: string,
+  reason: string,
+  expectedStatus: string = 'SCANNING'
+): Promise<void> {
+  try {
+    const supabase = await createClient();
+    await supabase
+      .from('manual_signal_audits')
+      .update({ status: newStatus, market_bias: reason })
+      .eq('id', signalId)
+      .eq('status', expectedStatus);
+  } catch (err: unknown) {
+    console.error(`[updateScanAuditStatus] Failed to update ${signalId}:`, err);
+  }
+}
+
 
