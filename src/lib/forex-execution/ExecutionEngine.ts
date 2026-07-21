@@ -350,6 +350,7 @@ export class ExecutionEngine {
     dbId: string,
     serverTimeMs: number
   ): void {
+    if (placeholder.status !== 'SCANNING') return;
     const result = res.result!;
     this.syncClock(serverTimeMs);
 
@@ -401,6 +402,7 @@ export class ExecutionEngine {
   }
 
   private handleScanFailure(placeholder: ExecutionRecord, error: string): void {
+    if (placeholder.status !== 'SCANNING') return;
     placeholder.status = 'FAILED';
     placeholder.noTradeReason = error;
     placeholder.removeAt = this.now();
