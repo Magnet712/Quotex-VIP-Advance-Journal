@@ -60,7 +60,8 @@ export async function getPerformanceStats(filters: PerformanceStatsFilter = {}) 
       let sigQuery = supabase
         .from('signals')
         .select('pair, result, entry_time')
-        .eq('source', 'live_otc');
+        .eq('source', 'live_otc')
+        .eq('user_id', user.id);
 
       if (filters.dateFrom) {
         sigQuery = sigQuery.gte('entry_time', new Date(filters.dateFrom).toISOString());

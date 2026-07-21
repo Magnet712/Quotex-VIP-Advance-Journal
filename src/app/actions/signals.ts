@@ -143,6 +143,7 @@ export async function saveSignal(input: SaveSignalInput) {
         strategy_version: input.strategy_version ?? 'v1.0',
         quality_score:    input.quality_score ?? null,
         is_premium:       input.is_premium ?? true,
+        user_id:          userId,
       })
       .select('id')
       .single();
@@ -199,8 +200,8 @@ export async function updateSignalResult(
   signalId:    string,
   expiryPrice: number
 ) {
-  const { ok } = await checkApproved();
-  if (!ok) return { success: false, error: 'Unauthorized' };
+  const { ok, userId } = await checkApproved();
+  if (!ok || !userId) return { success: false, error: 'Unauthorized' };
 
   try {
     const supabase = await createClient();
@@ -210,6 +211,7 @@ export async function updateSignalResult(
       .from('signals')
       .select('direction, entry_price, result, source')
       .eq('id', signalId)
+      .eq('user_id', userId)
       .single();
 
     if (fetchError || !signal) {
@@ -302,15 +304,16 @@ export async function updateSignalStatus(
   signalId: string,
   status: string
 ) {
-  const { ok } = await checkApproved();
-  if (!ok) return { success: false, error: 'Unauthorized' };
+  const { ok, userId } = await checkApproved();
+  if (!ok || !userId) return { success: false, error: 'Unauthorized' };
 
   try {
     const supabase = await createClient();
     const { error } = await supabase
       .from('signals')
       .update({ result: status })
-      .eq('id', signalId);
+      .eq('id', signalId)
+      .eq('user_id', userId);
 
     if (error) {
       console.error('[updateSignalStatus] Error:', error.message);
@@ -420,7 +423,8 @@ export async function getSignalHistory(filters: SignalHistoryFilters = {}) {
       let sig = supabase
         .from('signals')
         .select('*')
-        .eq('source', 'live_otc');
+        .eq('source', 'live_otc')
+        .eq('user_id', userId);
 
       if (filters.pair && filters.pair !== 'ALL')    sig = sig.eq('pair', filters.pair);
       if (filters.result && filters.result !== 'ALL') {
@@ -495,8 +499,8 @@ export async function getSignalHistory(filters: SignalHistoryFilters = {}) {
 // Used by OTCExecutionEngine.loadActiveSignals() to restore state after refresh.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function getActiveOTCSignals() {
-  const { ok } = await checkPremium();
-  if (!ok) return { success: false, error: 'Unauthorized', signals: [] };
+  const { ok, userId } = await checkPremium();
+  if (!ok || !userId) return { success: false, error: 'Unauthorized', signals: [] };
 
   try {
     const supabase = await createClient();
@@ -505,6 +509,7 @@ export async function getActiveOTCSignals() {
       .from('signals')
       .select('*')
       .eq('source', 'live_otc')
+      .eq('user_id', userId)
       .in('result', ['PENDING', 'SETTLING'])
       .gte('expiry_time', twoHoursAgo);
 
@@ -527,8 +532,8 @@ export async function getActiveOTCSignals() {
 // to restore the timeline after refresh.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function getOTCTimelineSignals() {
-  const { ok } = await checkApproved();
-  if (!ok) return { success: false, error: 'Unauthorized', signals: [] };
+  const { ok, userId } = await checkApproved();
+  if (!ok || !userId) return { success: false, error: 'Unauthorized', signals: [] };
 
   try {
     const supabase = await createClient();
@@ -537,6 +542,7 @@ export async function getOTCTimelineSignals() {
       .from('signals')
       .select('*')
       .eq('source', 'live_otc')
+      .eq('user_id', userId)
       .in('result', ['WIN', 'LOSS', 'REFUND', 'FAILED'])
       .gte('entry_time', oneDayAgo)
       .order('entry_time', { ascending: false });
@@ -585,6 +591,7 @@ export async function getSignalPerformance(source?: 'simulation' | 'live_otc' | 
         .from('signals')
         .select('result, entry_time')
         .eq('source', 'live_otc')
+        .eq('user_id', userId)
         .gte('entry_time', NINETY_DAYS_AGO);
       if (!error) sigRows = data ?? [];
     }
@@ -596,23 +603,27 @@ export async function getSignalPerformance(source?: 'simulation' | 'live_otc' | 
         .from('signals')
         .select('result, entry_time')
         .eq('source', 'simulation')
+        .eq('user_id', userId)
         .gte('entry_time', NINETY_DAYS_AGO);
       if (!error) simRows = data ?? [];
     }
 
     // ── Aggregate ──────────────────────────────────────────────────────────
-    const total      = msaRows.length + sigRows.length + simRows.length;
-    const msaWins    = msaRows.filter(r => r.status === 'WIN').length;
-    const sigWins    = sigRows.filter(r => r.result === 'WIN').length;
-    const simWins    = simRows.filter(r => r.result === 'WIN').length;
-    const wins       = msaWins + sigWins + simWins;
-    const msaLosses  = msaRows.filter(r => r.status === 'LOSS').length;
-    const sigLosses  = sigRows.filter(r => r.result === 'LOSS').length;
-    const simLosses  = simRows.filter(r => r.result === 'LOSS').length;
-    const losses     = msaLosses + sigLosses + simLosses;
-    const pending    = msaRows.filter(r => r.status === 'PENDING').length + sigRows.filter(r => r.result === 'PENDING').length + simRows.filter(r => r.result === 'PENDING').length;
-    const resolved   = wins + losses;
-    const accuracy   = resolved > 0 ? Math.round((wins / resolved) * 100 * 100) / 100 : 0;
+    // Exclude SCANNING/NO TRADE/FAILED from total count (these are not real signals)
+    const signalStatuses = new Set(['WIN', 'LOSS', 'REFUND', 'PENDING']);
+    const msaFiltered   = msaRows.filter(r => signalStatuses.has(r.status));
+    const total         = msaFiltered.length + sigRows.length + simRows.length;
+    const msaWins       = msaRows.filter(r => r.status === 'WIN').length;
+    const sigWins       = sigRows.filter(r => r.result === 'WIN').length;
+    const simWins       = simRows.filter(r => r.result === 'WIN').length;
+    const wins          = msaWins + sigWins + simWins;
+    const msaLosses     = msaRows.filter(r => r.status === 'LOSS').length;
+    const sigLosses     = sigRows.filter(r => r.result === 'LOSS').length;
+    const simLosses     = simRows.filter(r => r.result === 'LOSS').length;
+    const losses        = msaLosses + sigLosses + simLosses;
+    const pending       = msaRows.filter(r => r.status === 'PENDING').length + sigRows.filter(r => r.result === 'PENDING').length + simRows.filter(r => r.result === 'PENDING').length;
+    const resolved      = wins + losses;
+    const accuracy      = resolved > 0 ? Math.round((wins / resolved) * 100 * 100) / 100 : 0;
 
     // Calculate start of today in IST for totalToday
     const now = new Date();
@@ -621,7 +632,7 @@ export async function getSignalPerformance(source?: 'simulation' | 'live_otc' | 
     const istTodayStart = new Date(Date.UTC(istNow.getUTCFullYear(), istNow.getUTCMonth(), istNow.getUTCDate(), 0, 0, 0, 0));
     const todayStartUtc = new Date(istTodayStart.getTime() - istOffset);
 
-    const msaToday = msaRows.filter(r => r.created_at && new Date(r.created_at).getTime() >= todayStartUtc.getTime()).length;
+    const msaToday = msaFiltered.filter(r => r.created_at && new Date(r.created_at).getTime() >= todayStartUtc.getTime()).length;
     const sigToday = sigRows.filter(r => r.entry_time && new Date(r.entry_time).getTime() >= todayStartUtc.getTime()).length;
     const simToday = simRows.filter(r => r.entry_time && new Date(r.entry_time).getTime() >= todayStartUtc.getTime()).length;
     const totalToday = msaToday + sigToday + simToday;
@@ -659,6 +670,7 @@ export async function getDistinctPairs() {
       .from('signals')
       .select('pair')
       .eq('source', 'live_otc')
+      .eq('user_id', userId)
       .order('pair');
 
     const allPairs = [
@@ -698,6 +710,7 @@ export async function getPairPerformanceMap() {
       .from('signals')
       .select('pair, result')
       .eq('source', 'live_otc')
+      .eq('user_id', userId)
       .neq('result', 'PENDING');
 
     const map: Record<string, { wins: number; total: number }> = {};
@@ -736,8 +749,8 @@ export async function getPairPerformanceMap() {
 // Returns active (unexpired) live market signals from the database.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function getActiveLiveMarketSignals() {
-  const { ok } = await checkPremium();
-  if (!ok) return { success: false, error: 'Unauthorized', signals: [] };
+  const { ok, userId } = await checkPremium();
+  if (!ok || !userId) return { success: false, error: 'Unauthorized', signals: [] };
 
   try {
     const supabase = await createClient();
@@ -746,6 +759,7 @@ export async function getActiveLiveMarketSignals() {
       .from('signals')
       .select('*')
       .eq('source', 'live_market')
+      .eq('user_id', userId)
       .gt('expiry_time', now)
       .order('entry_time', { ascending: false });
 
