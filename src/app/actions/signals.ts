@@ -401,7 +401,11 @@ export async function getSignalHistory(filters: SignalHistoryFilters = {}) {
         .eq('user_id', userId);
 
       if (filters.pair && filters.pair !== 'ALL')    msa = msa.eq('pair', filters.pair);
-      if (filters.result && filters.result !== 'ALL') msa = msa.eq('status', filters.result);
+      if (filters.result && filters.result !== 'ALL') {
+        msa = msa.eq('status', filters.result);
+      } else {
+        msa = msa.neq('status', 'SCANNING');
+      }
 
       msa = dateFromClause('entry_time')(msa);
       msa = dateToClause('entry_time')(msa);
@@ -419,7 +423,11 @@ export async function getSignalHistory(filters: SignalHistoryFilters = {}) {
         .eq('source', 'live_otc');
 
       if (filters.pair && filters.pair !== 'ALL')    sig = sig.eq('pair', filters.pair);
-      if (filters.result && filters.result !== 'ALL') sig = sig.eq('result', filters.result);
+      if (filters.result && filters.result !== 'ALL') {
+        sig = sig.eq('result', filters.result);
+      } else {
+        sig = sig.neq('result', 'SCANNING');
+      }
       if (filters.strategy && filters.strategy !== 'ALL') sig = sig.eq('strategy_name', filters.strategy);
 
       sig = dateFromClause('entry_time')(sig);
