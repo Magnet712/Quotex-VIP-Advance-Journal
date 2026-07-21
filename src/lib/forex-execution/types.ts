@@ -30,7 +30,6 @@ export const POPUP_VISIBLE_STATUSES: ReadonlySet<ExecutionStatus> = new Set([
   'NO TRADE',
   'WAITING_FOR_ENTRY',
   'PENDING',
-  'SETTLING',
   'WIN',
   'LOSS',
   'REFUND',

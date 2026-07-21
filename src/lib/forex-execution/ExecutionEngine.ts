@@ -141,6 +141,17 @@ export class ExecutionEngine {
 
   private processState(record: ExecutionRecord, now: number): ExecutionStatus {
     switch (record.status) {
+      case 'SCANNING': {
+        const entryMs = new Date(record.entryTime).getTime();
+        if (now >= entryMs + 5000) {
+          record.status = 'FAILED';
+          record.noTradeReason = 'Scan timed out — entry time passed while still scanning';
+          record.removeAt = this.now();
+          return 'FAILED';
+        }
+        return 'SCANNING';
+      }
+
       case 'WAITING_FOR_ENTRY': {
         const entryMs = new Date(record.entryTime).getTime();
         if (now >= entryMs) {
@@ -192,7 +203,7 @@ export class ExecutionEngine {
         } else {
           record.status = 'FAILED';
           record.noTradeReason = res.error || 'Settlement failed';
-          record.removeAt = this.now() + this.config.autoRemoveDelayMs;
+          record.removeAt = this.now();
         }
         this.settlingIds.delete(record.id);
         this.emit();
@@ -200,7 +211,7 @@ export class ExecutionEngine {
       .catch(() => {
         record.status = 'FAILED';
         record.noTradeReason = 'Settlement execution error';
-        record.removeAt = this.now() + this.config.autoRemoveDelayMs;
+        record.removeAt = this.now();
         this.settlingIds.delete(record.id);
         this.emit();
       });
@@ -231,7 +242,7 @@ export class ExecutionEngine {
     if (!createRes.success || !createRes.rowId) {
       placeholder.status = 'FAILED';
       placeholder.noTradeReason = createRes?.error || 'Failed to create scan record';
-      placeholder.removeAt = this.now() + this.config.autoRemoveDelayMs;
+      placeholder.removeAt = this.now();
       this.emit();
       return { success: false, error: placeholder.noTradeReason };
     }
@@ -246,7 +257,7 @@ export class ExecutionEngine {
       if (this.records.get(dbId)?.status === 'SCANNING') {
         placeholder.status = 'FAILED';
         placeholder.noTradeReason = 'Scan exceeded 20-second limit';
-        placeholder.removeAt = this.now() + this.config.autoRemoveDelayMs;
+        placeholder.removeAt = this.now();
         this.emit();
       }
     }, 20000);
@@ -350,7 +361,7 @@ export class ExecutionEngine {
       placeholder.recommendationText = result.recommendationText;
       placeholder.noTradeReason = result.noTradeReason || 'No setup detected';
       placeholder.dataSource = result.dataSource;
-      placeholder.removeAt = this.now() + this.config.autoRemoveDelayMs;
+      placeholder.removeAt = this.now();
       return;
     }
 
@@ -392,7 +403,7 @@ export class ExecutionEngine {
   private handleScanFailure(placeholder: ExecutionRecord, error: string): void {
     placeholder.status = 'FAILED';
     placeholder.noTradeReason = error;
-    placeholder.removeAt = this.now() + this.config.autoRemoveDelayMs;
+    placeholder.removeAt = this.now();
   }
 
   // ─── Manual dismissal ────────────────────────────────────────────────
@@ -479,14 +490,14 @@ export class ExecutionEngine {
             if (remaining <= 0) {
               record.status = 'FAILED';
               record.noTradeReason = 'Scan exceeded 20-second limit';
-              record.removeAt = now + this.config.autoRemoveDelayMs;
+              record.removeAt = this.now();
             } else {
               setTimeout(() => {
                 const r = this.records.get(sig.id);
                 if (r && r.status === 'SCANNING') {
                   r.status = 'FAILED';
                   r.noTradeReason = 'Scan exceeded 20-second limit';
-                  r.removeAt = this.now() + this.config.autoRemoveDelayMs;
+                  r.removeAt = this.now();
                   this.emit();
                 }
               }, remaining);
