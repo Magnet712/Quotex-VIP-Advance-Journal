@@ -1291,7 +1291,10 @@ export default function SignalsPage() {
                       const isTimelineWaitingEntry = sig.status === 'WAITING_FOR_ENTRY';
                       const isTimelineActive = isTimelinePending || isTimelineWaitingEntry;
                       const timelineCountdown = (() => {
-                        if (isTimelineScanning) return 'Scanning OTC market...';
+                        if (isTimelineScanning) {
+                          const isOtc = sig.dataSource?.toLowerCase().includes('otc');
+                          return isOtc ? 'Scanning OTC market...' : 'Scanning Live market...';
+                        }
                         const expiresMs = new Date(sig.expiryTime).getTime();
                         const diffSec = Math.max(0, Math.ceil((expiresMs - Date.now()) / 1000));
                         if (diffSec <= 0) return 'Updating...';
