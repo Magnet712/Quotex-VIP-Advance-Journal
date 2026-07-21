@@ -532,54 +532,32 @@ export default function Home() {
       </section>
 
       {/* Marquee: Facilities + Real-Time Signals */}
-      <div className="border-y border-slate-800/50 bg-slate-950/60 backdrop-blur-sm overflow-hidden py-3">
+      <div className="border-y border-slate-800/50 bg-slate-950/60 backdrop-blur-sm overflow-hidden py-3.5">
         <style>{`@keyframes marquee{0%{transform:translateX(0)}to{transform:translateX(-50%)}}.marquee-track{animation:marquee 40s linear infinite}.marquee-track:hover{animation-play-state:paused}`}</style>
         <div className="flex marquee-track whitespace-nowrap">
-          <div className="flex shrink-0 items-center gap-8 px-4 font-mono text-[10px] font-bold uppercase tracking-wider">
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Advanced Trading Journal</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-emerald-400">AI Signal Engine</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Trade Analytics Ledger</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Risk Calculator</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Discipline Checklist</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-emerald-400">Real-Time Signals</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Performance Tracking</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Psychology Tracker</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Signal History</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-emerald-400">VIP Trade Reviews</span>
-            <span className="text-slate-500">◆</span>
+          <div className="flex shrink-0 items-center gap-3 px-4 font-mono text-[9px] font-bold uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Advanced Trading Journal</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />AI Signal Engine</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Trade Analytics Ledger</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Risk Calculator</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Discipline Checklist</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Real-Time Signals</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Performance Tracking</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Psychology Tracker</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Signal History</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />VIP Trade Reviews</span>
           </div>
-          <div className="flex shrink-0 items-center gap-8 px-4 font-mono text-[10px] font-bold uppercase tracking-wider">
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Advanced Trading Journal</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-emerald-400">AI Signal Engine</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Trade Analytics Ledger</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Risk Calculator</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Discipline Checklist</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-emerald-400">Real-Time Signals</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Performance Tracking</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Psychology Tracker</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-slate-300">Signal History</span>
-            <span className="text-slate-500">◆</span>
-            <span className="text-emerald-400">VIP Trade Reviews</span>
-            <span className="text-slate-500">◆</span>
+          <div className="flex shrink-0 items-center gap-3 px-4 font-mono text-[9px] font-bold uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Advanced Trading Journal</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />AI Signal Engine</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Trade Analytics Ledger</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Risk Calculator</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Discipline Checklist</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Real-Time Signals</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Performance Tracking</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Psychology Tracker</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-700/50 bg-slate-800/30 text-slate-300">Signal History</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />VIP Trade Reviews</span>
           </div>
         </div>
       </div>
