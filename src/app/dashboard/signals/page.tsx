@@ -1238,16 +1238,6 @@ export default function SignalsPage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
-                    onClick={async () => {
-                      const forexSymbols = LIVE_MARKET_PAIRS.map(p => p.symbol);
-                      forex.reset(forexSymbols);
-                      await refreshStats();
-                    }}
-                    className="px-2 py-0.5 rounded border border-rose-500/20 bg-rose-950/20 text-rose-400 hover:text-rose-300 text-[8px] font-bold uppercase transition-colors cursor-pointer"
-                  >
-                    Reset
-                  </button>
-                  <button
                     onClick={() => {
                       const next = !isTimelineVisible;
                       setIsTimelineVisible(next);
