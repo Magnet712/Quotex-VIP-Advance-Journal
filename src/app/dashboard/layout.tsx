@@ -47,6 +47,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Notifications states
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -108,10 +109,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const executeLogout = async () => {
-    setShowLogoutConfirm(false);
-    await logoutUser();
-    router.push('/');
-    router.refresh();
+    setIsLoggingOut(true);
+    try {
+      await logoutUser();
+      router.push('/');
+      router.refresh();
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutConfirm(false);
+    }
   };
 
   useEffect(() => {
@@ -468,9 +474,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex gap-3 pt-2">
               <button
                 onClick={executeLogout}
-                className="flex-1 py-2 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs font-mono uppercase tracking-wider transition-colors"
+                disabled={isLoggingOut}
+                className="flex-1 py-2 rounded bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs font-mono uppercase tracking-wider transition-colors"
               >
-                Yes, Logout
+                {isLoggingOut ? 'Logging out...' : 'Yes, Logout'}
               </button>
               <button
                 onClick={() => setShowLogoutConfirm(false)}
