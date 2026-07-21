@@ -603,6 +603,151 @@ export default function AnalyticsPage() {
     return () => clearTimeout(t);
   }, [notification]);
 
+  // ── Moved calculations before any early return (hooks rule fix) ──────────
+  const isTradeWin = (t: any) => {
+    return t.profit_loss > 0 || t.results === 'Win' || t.results === 'MTG Win';
+  };
+
+  // --- STATS CALCULATIONS ---
+  const totalTrades = trades.length;
+  const wins = trades.filter(isTradeWin);
+  const losses = trades.filter((t) => !isTradeWin(t));
+  const winRate = totalTrades > 0 ? (wins.length / totalTrades) * 100 : 0;
+  const netProfit = trades.reduce((acc, t) => acc + Number(t.profit_loss), 0);
+  const avgTrade = totalTrades > 0 ? netProfit / totalTrades : 0;
+
+  const grossProfit = wins.reduce((acc, t) => acc + Number(t.profit_loss), 0);
+  const grossLoss = Math.abs(losses.reduce((acc, t) => acc + Number(t.profit_loss), 0));
+  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit;
+
+  // Consistency Score formula
+  const mean = netProfit / totalTrades;
+  const variance = trades.reduce((acc, t) => acc + Math.pow(Number(t.profit_loss) - mean, 2), 0) / totalTrades;
+  const stdDev = Math.sqrt(variance);
+  const consistencyScore = totalTrades > 1
+    ? Math.max(10, Math.min(100, Math.round(100 - (stdDev / (Math.abs(mean) || 80)) * 5)))
+    : 100;
+
+  // --- CHART DATA PREPARATION ---
+  const sortedTrades = useMemo(() => {
+    return [...trades].sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
+  }, [trades]);
+
+  // 1. Daily P&L and 4. Equity Curve
+  const initialEquity = 1000;
+  const dailyData = useMemo(() => {
+    let cumulativePL = 0;
+    return sortedTrades.map((t, index) => {
+      cumulativePL += Number(t.profit_loss);
+      return {
+        name: `Trade ${index + 1}`,
+        date: new Date(t.trade_date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+        pl: cumulativePL,
+        equity: initialEquity + cumulativePL,
+      };
+    });
+  }, [sortedTrades]);
+
+  // 2. Win/Loss Ratio
+  const winLossData = useMemo(() => [
+    { name: 'Wins', value: wins.length },
+    { name: 'Losses', value: losses.length },
+  ], [trades]);
+
+  // 3. Monthly Performance
+  const monthlyData = useMemo(() => {
+    const monthlyMap: Record<string, number> = {};
+    sortedTrades.forEach((t) => {
+      const month = new Date(t.trade_date).toLocaleDateString([], { month: 'short', year: '2-digit' });
+      monthlyMap[month] = (monthlyMap[month] || 0) + Number(t.profit_loss);
+    });
+    return Object.entries(monthlyMap).map(([month, pl]) => ({ name: month, pl }));
+  }, [sortedTrades]);
+
+  // 5. Trading Hours Analysis
+  const hourlyData = useMemo(() => {
+    const hourlyMap: Record<number, { count: number; wins: number; pl: number }> = {};
+    sortedTrades.forEach((t) => {
+      const hour = new Date(t.trade_date).getHours();
+      if (!hourlyMap[hour]) hourlyMap[hour] = { count: 0, wins: 0, pl: 0 };
+      hourlyMap[hour].count += 1;
+      hourlyMap[hour].pl += Number(t.profit_loss);
+      if (isTradeWin(t)) hourlyMap[hour].wins += 1;
+    });
+    return Array.from({ length: 24 }).map((_, h) => {
+      const data = hourlyMap[h] || { count: 0, wins: 0, pl: 0 };
+      return {
+        name: `${h}:00`,
+        pl: data.pl,
+        winRate: data.count > 0 ? Math.round((data.wins / data.count) * 100) : 0,
+      };
+    }).filter(h => h.winRate > 0 || h.pl !== 0);
+  }, [sortedTrades]);
+
+  // 6. Strategy Performance
+  const strategyData = useMemo(() => {
+    const strategyMap: Record<string, number> = {};
+    sortedTrades.forEach((t) => {
+      const strat = t.strategy || 'Unknown';
+      strategyMap[strat] = (strategyMap[strat] || 0) + Number(t.profit_loss);
+    });
+    return Object.entries(strategyMap).map(([strategy, pl]) => ({ name: strategy, pl }));
+  }, [sortedTrades]);
+
+  // 7. Risk Reward Comparison (Avg Win vs Avg Loss)
+  const avgWinAmount = wins.length > 0 ? grossProfit / wins.length : 0;
+  const avgLossAmount = losses.length > 0 ? grossLoss / losses.length : 0;
+  const riskRewardData = useMemo(() => [
+    { name: 'Avg Profit (Wins)', amount: Math.round(avgWinAmount) },
+    { name: 'Avg Loss (Losses)', amount: Math.round(avgLossAmount) },
+  ], [avgWinAmount, avgLossAmount]);
+
+  // 8. Drawdown Chart
+  const drawdownData = useMemo(() => {
+    let cum = 0;
+    let peak = initialEquity;
+    return sortedTrades.map((t, index) => {
+      cum += Number(t.profit_loss);
+      const equity = initialEquity + cum;
+      if (equity > peak) peak = equity;
+      const drawdown = peak > 0 ? ((peak - equity) / peak) * 100 : 0;
+      return {
+        name: `T ${index + 1}`,
+        drawdown: Number(drawdown.toFixed(2)),
+      };
+    });
+  }, [sortedTrades]);
+
+  // 9. Profit Factor visual stacked
+  const profitFactorData = [
+    { name: 'Performance Ratio', Profit: Math.round(grossProfit), Loss: Math.round(grossLoss) },
+  ];
+
+  // 10. Consistency Score Line Chart
+  const consistencyProgression = useMemo(() => {
+    let winSum = 0;
+    return sortedTrades.map((t, index) => {
+      if (isTradeWin(t)) winSum += 1;
+      const currentRate = (winSum / (index + 1)) * 100;
+      return {
+        name: `T ${index + 1}`,
+        rate: Number(currentRate.toFixed(1)),
+      };
+    });
+  }, [sortedTrades]);
+
+  // Daily Inspector Calculations
+  const inspectorTrades = trades.filter((t) => {
+    const tradeLocalDate = new Date(t.trade_date).toLocaleDateString('sv-SE');
+    return tradeLocalDate === inspectorDate;
+  });
+  const inspectorTotal = inspectorTrades.length;
+  const inspectorWins = inspectorTrades.filter(isTradeWin).length;
+  const inspectorLosses = inspectorTrades.filter((t) => !isTradeWin(t)).length;
+  const inspectorNetPL = inspectorTrades.reduce((acc, t) => acc + Number(t.profit_loss), 0);
+  const inspectorWinRate = inspectorTotal > 0 ? (inspectorWins / inspectorTotal) * 100 : 0;
+  // ── End of moved calculations ────────────────────────────────────────────
+
   const handleEraseData = async () => {
     setEraseConfirmStep(1);
   };
@@ -675,152 +820,6 @@ export default function AnalyticsPage() {
       </div>
     );
   }
-
-  // Helper helper to see if a trade is a Win (considers MTG Win as win)
-  const isTradeWin = (t: any) => {
-    return t.profit_loss > 0 || t.results === 'Win' || t.results === 'MTG Win';
-  };
-
-  // --- STATS CALCULATIONS ---
-  const totalTrades = trades.length;
-  const wins = trades.filter(isTradeWin);
-  const losses = trades.filter((t) => !isTradeWin(t));
-  const winRate = totalTrades > 0 ? (wins.length / totalTrades) * 100 : 0;
-  const netProfit = trades.reduce((acc, t) => acc + Number(t.profit_loss), 0);
-  const avgTrade = totalTrades > 0 ? netProfit / totalTrades : 0;
-
-  const grossProfit = wins.reduce((acc, t) => acc + Number(t.profit_loss), 0);
-  const grossLoss = Math.abs(losses.reduce((acc, t) => acc + Number(t.profit_loss), 0));
-  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit;
-
-  // Consistency Score formula
-  const mean = netProfit / totalTrades;
-  const variance = trades.reduce((acc, t) => acc + Math.pow(Number(t.profit_loss) - mean, 2), 0) / totalTrades;
-  const stdDev = Math.sqrt(variance);
-  const consistencyScore = totalTrades > 1 
-    ? Math.max(10, Math.min(100, Math.round(100 - (stdDev / (Math.abs(mean) || 80)) * 5))) 
-    : 100;
-
-  // --- CHART DATA PREPARATION ---
-
-  // Sort trades ascending for cumulative lines
-  const sortedTrades = useMemo(() => {
-    return [...trades].sort((a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime());
-  }, [trades]);
-
-  // 1. Daily P&L and 4. Equity Curve
-  const initialEquity = 1000; // base virtual account equity
-  const dailyData = useMemo(() => {
-    let cumulativePL = 0;
-    return sortedTrades.map((t, index) => {
-      cumulativePL += Number(t.profit_loss);
-      return {
-        name: `Trade ${index + 1}`,
-        date: new Date(t.trade_date).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-        pl: cumulativePL,
-        equity: initialEquity + cumulativePL,
-      };
-    });
-  }, [sortedTrades]);
-
-  // 2. Win/Loss Ratio
-  const winLossData = useMemo(() => [
-    { name: 'Wins', value: wins.length },
-    { name: 'Losses', value: losses.length },
-  ], [trades]);
-
-  // 3. Monthly Performance
-  const monthlyData = useMemo(() => {
-    const monthlyMap: Record<string, number> = {};
-    sortedTrades.forEach((t) => {
-      const month = new Date(t.trade_date).toLocaleDateString([], { month: 'short', year: '2-digit' });
-      monthlyMap[month] = (monthlyMap[month] || 0) + Number(t.profit_loss);
-    });
-    return Object.entries(monthlyMap).map(([month, pl]) => ({ name: month, pl }));
-  }, [sortedTrades]);
-
-  // 5. Trading Hours Analysis
-  const hourlyData = useMemo(() => {
-    const hourlyMap: Record<number, { count: number; wins: number; pl: number }> = {};
-    sortedTrades.forEach((t) => {
-      const hour = new Date(t.trade_date).getHours();
-      if (!hourlyMap[hour]) hourlyMap[hour] = { count: 0, wins: 0, pl: 0 };
-      hourlyMap[hour].count += 1;
-      hourlyMap[hour].pl += Number(t.profit_loss);
-      if (isTradeWin(t)) hourlyMap[hour].wins += 1;
-    });
-    return Array.from({ length: 24 }).map((_, h) => {
-      const data = hourlyMap[h] || { count: 0, wins: 0, pl: 0 };
-      return {
-        name: `${h}:00`,
-        pl: data.pl,
-        winRate: data.count > 0 ? Math.round((data.wins / data.count) * 100) : 0,
-      };
-    }).filter(h => h.winRate > 0 || h.pl !== 0); // only show hours with trades
-  }, [sortedTrades]);
-
-  // 6. Strategy Performance
-  const strategyData = useMemo(() => {
-    const strategyMap: Record<string, number> = {};
-    sortedTrades.forEach((t) => {
-      const strat = t.strategy || 'Unknown';
-      strategyMap[strat] = (strategyMap[strat] || 0) + Number(t.profit_loss);
-    });
-    return Object.entries(strategyMap).map(([strategy, pl]) => ({ name: strategy, pl }));
-  }, [sortedTrades]);
-
-  // 7. Risk Reward Comparison (Avg Win vs Avg Loss)
-  const avgWinAmount = wins.length > 0 ? grossProfit / wins.length : 0;
-  const avgLossAmount = losses.length > 0 ? grossLoss / losses.length : 0;
-  const riskRewardData = useMemo(() => [
-    { name: 'Avg Profit (Wins)', amount: Math.round(avgWinAmount) },
-    { name: 'Avg Loss (Losses)', amount: Math.round(avgLossAmount) },
-  ], [avgWinAmount, avgLossAmount]);
-
-  // 8. Drawdown Chart
-  const drawdownData = useMemo(() => {
-    let cum = 0;
-    let peak = initialEquity;
-    return sortedTrades.map((t, index) => {
-      cum += Number(t.profit_loss);
-      const equity = initialEquity + cum;
-      if (equity > peak) peak = equity;
-      const drawdown = peak > 0 ? ((peak - equity) / peak) * 100 : 0;
-      return {
-        name: `T ${index + 1}`,
-        drawdown: Number(drawdown.toFixed(2)),
-      };
-    });
-  }, [sortedTrades]);
-
-  // 9. Profit Factor visual stacked
-  const profitFactorData = [
-    { name: 'Performance Ratio', Profit: Math.round(grossProfit), Loss: Math.round(grossLoss) },
-  ];
-
-  // 10. Consistency Score Line Chart (Cumulative win rate progression)
-  const consistencyProgression = useMemo(() => {
-    let winSum = 0;
-    return sortedTrades.map((t, index) => {
-      if (isTradeWin(t)) winSum += 1;
-      const currentRate = (winSum / (index + 1)) * 100;
-      return {
-        name: `T ${index + 1}`,
-        rate: Number(currentRate.toFixed(1)),
-      };
-    });
-  }, [sortedTrades]);
-
-  // Daily Inspector Calculations
-  const inspectorTrades = trades.filter((t) => {
-    const tradeLocalDate = new Date(t.trade_date).toLocaleDateString('sv-SE');
-    return tradeLocalDate === inspectorDate;
-  });
-  const inspectorTotal = inspectorTrades.length;
-  const inspectorWins = inspectorTrades.filter(isTradeWin).length;
-  const inspectorLosses = inspectorTrades.filter((t) => !isTradeWin(t)).length;
-  const inspectorNetPL = inspectorTrades.reduce((acc, t) => acc + Number(t.profit_loss), 0);
-  const inspectorWinRate = inspectorTotal > 0 ? (inspectorWins / inspectorTotal) * 100 : 0;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 w-full max-w-7xl mx-auto animate-fadeIn">
