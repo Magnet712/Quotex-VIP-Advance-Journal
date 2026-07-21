@@ -82,7 +82,7 @@ export default function Home() {
 
         {/* Ambient Lights */}
         <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl pointer-events-none z-0" />
-        <div className="absolute top-1/3 right-1/4 translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-purple-500/10 rounded-full blur-3xl pointer-events-none z-0" />
+        <div className="absolute top-1/3 right-1/4 translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-purple-500/25 rounded-full blur-3xl pointer-events-none z-0" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
@@ -109,7 +109,7 @@ export default function Home() {
                 {flags.pricing_page && (
                   <Link
                     href="/pricing"
-                    className="px-6 py-3.5 rounded border border-purple-500/35 hover:border-purple-500 bg-purple-500/5 hover:bg-purple-500/10 text-purple-300 hover:text-purple-200 text-sm tracking-wider text-center transition-all flex items-center justify-center gap-1.5"
+                    className="px-6 py-3.5 rounded border border-purple-500/35 hover:border-purple-500 bg-purple-500/5 hover:bg-purple-500/25 text-purple-300 hover:text-purple-200 text-sm tracking-wider text-center transition-all flex items-center justify-center gap-1.5"
                   >
                     <span>⚡ Try Premium Signals</span>
                     <Zap className="h-4 w-4" />
@@ -536,28 +536,28 @@ export default function Home() {
         <style>{`@keyframes marquee{0%{transform:translateX(0)}to{transform:translateX(-50%)}}.marquee-track{animation:marquee 40s linear infinite}.marquee-track:hover{animation-play-state:paused}`}</style>
         <div className="flex marquee-track whitespace-nowrap">
           <div className="flex shrink-0 items-center gap-3 px-4 font-mono text-[9px] font-bold uppercase tracking-wider">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Advanced Trading Journal</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />AI Signal Engine</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Trade Analytics Ledger</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Risk Calculator</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Discipline Checklist</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Real-Time Signals</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />Performance Tracking</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Psychology Tracker</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Signal History</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />VIP Trade Reviews</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Advanced Trading Journal</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/25 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />AI Signal Engine</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Trade Analytics Ledger</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Risk Calculator</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Discipline Checklist</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/25 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Real-Time Signals</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/25 text-purple-400"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />Performance Tracking</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Psychology Tracker</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Signal History</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/25 text-purple-400"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />VIP Trade Reviews</span>
           </div>
           <div className="flex shrink-0 items-center gap-3 px-4 font-mono text-[9px] font-bold uppercase tracking-wider">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Advanced Trading Journal</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />AI Signal Engine</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Trade Analytics Ledger</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Risk Calculator</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Discipline Checklist</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Real-Time Signals</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />Performance Tracking</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Psychology Tracker</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Signal History</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />VIP Trade Reviews</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Advanced Trading Journal</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/25 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />AI Signal Engine</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Trade Analytics Ledger</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Risk Calculator</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Discipline Checklist</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/25 text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Real-Time Signals</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/25 text-purple-400"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />Performance Tracking</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-400"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Psychology Tracker</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-400"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Signal History</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/25 text-purple-400"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />VIP Trade Reviews</span>
           </div>
         </div>
       </div>
