@@ -63,7 +63,7 @@ export default function AdminDashboardPage() {
   const [newReferrerTraderId, setNewReferrerTraderId] = useState('');
 
   // PIPELINES TABS STATE
-  const [signalMode, setSignalModeState] = useState<string>('SIMULATION');
+  const [signalMode, setSignalModeState] = useState<string>('LIVE_OTC');
   const [modeLoading, setModeLoading] = useState(false);
   const [modeMessage, setModeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [signalVisibility, setSignalVisibilityState] = useState<string>('premium');
@@ -333,7 +333,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleSignalModeToggle = async (modeToToggle: 'SIMULATION' | 'LIVE_OTC' | 'LIVE_MARKET') => {
+  const handleSignalModeToggle = async (modeToToggle: 'LIVE_OTC' | 'LIVE_MARKET') => {
     setModeLoading(true);
     setModeMessage(null);
     try {
@@ -759,28 +759,15 @@ export default function AdminDashboardPage() {
                     {signalMode.split(',').map(m => (
                       <span key={m} className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
                         m === 'LIVE_OTC' ? 'text-neon-green border-neon-green/30 bg-neon-green/10' :
-                        m === 'LIVE_MARKET' ? 'text-rose-400 border-rose-500/30 bg-rose-500/10' :
-                        'text-amber-400 border-amber-400/30 bg-amber-500/10'
+                        'text-rose-400 border-rose-500/30 bg-rose-500/10'
                       }`}>
-                        {m === 'LIVE_OTC' ? 'OTC' : m === 'LIVE_MARKET' ? 'LIVE' : 'SIMULATION'}
+                        {m === 'LIVE_OTC' ? 'OTC' : 'FOREX'}
                       </span>
                     ))}
                   </div>
                 </div>
 
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => handleSignalModeToggle('SIMULATION')}
-                    disabled={modeLoading}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded border text-[10px] font-bold tracking-wider transition-all ${
-                      signalMode.split(',').includes('SIMULATION')
-                        ? 'bg-amber-500/15 border-amber-400/50 text-amber-400'
-                        : 'bg-slate-900/40 border-slate-700 text-slate-400 hover:border-amber-400/40 hover:text-amber-400'
-                    }`}
-                  >
-                    <Database className="h-3.5 w-3.5" />
-                    SIMULATION
-                  </button>
                   <button
                     onClick={() => handleSignalModeToggle('LIVE_OTC')}
                     disabled={modeLoading}

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 // ─── Admin Check Helper ──────────────────────────────────────────────────────
@@ -243,46 +244,108 @@ export async function getAdminSignalAnalytics(filters: AnalyticsFilters = {}) {
       .map((p: string) => p.trim())
       .filter(Boolean);
 
-    // 2. Query signals table (all signals matching general filters)
-    let query = supabase
-      .from('signals')
-      .select('*')
-      .order('entry_time', { ascending: true }); // chronological order for streak calculations
+    // 2. Determine which source(s) to query based on filter
+    const activeSource = filters.source ?? 'ALL';
 
-    if (filters.pair && filters.pair !== 'ALL') {
-      query = query.eq('pair', filters.pair);
-    }
-    if (filters.timeframe && filters.timeframe !== 'ALL') {
-      query = query.eq('timeframe', filters.timeframe);
-    }
-    if (filters.strategyVersion && filters.strategyVersion !== 'ALL') {
-      query = query.eq('strategy_version', filters.strategyVersion);
-    }
-    if (filters.result && filters.result !== 'ALL') {
-      query = query.eq('result', filters.result);
-    }
-    if (filters.source && filters.source !== 'ALL') {
-      query = query.eq('source', filters.source);
-    }
-    if (filters.confidenceMin !== undefined) {
-      query = query.gte('confidence', filters.confidenceMin);
-    }
-    if (filters.confidenceMax !== undefined) {
-      query = query.lte('confidence', filters.confidenceMax);
-    }
-    if (filters.dateFrom) {
-      query = query.gte('entry_time', new Date(filters.dateFrom).toISOString());
-    }
-    if (filters.dateTo) {
-      const endOfDay = new Date(filters.dateTo);
-      endOfDay.setHours(23, 59, 59, 999);
-      query = query.lte('entry_time', endOfDay.toISOString());
+    // 2a. Query signals table (Live OTC)
+    let signalsData: any[] = [];
+    if (activeSource === 'ALL' || activeSource === 'live_otc') {
+      let sigQuery = supabase
+        .from('signals')
+        .select('*')
+        .order('entry_time', { ascending: true });
+
+      if (filters.pair && filters.pair !== 'ALL') {
+        sigQuery = sigQuery.eq('pair', filters.pair);
+      }
+      if (filters.timeframe && filters.timeframe !== 'ALL') {
+        sigQuery = sigQuery.eq('timeframe', filters.timeframe);
+      }
+      if (filters.strategyVersion && filters.strategyVersion !== 'ALL') {
+        sigQuery = sigQuery.eq('strategy_version', filters.strategyVersion);
+      }
+      if (filters.result && filters.result !== 'ALL') {
+        sigQuery = sigQuery.eq('result', filters.result);
+      }
+      if (activeSource !== 'ALL') {
+        sigQuery = sigQuery.eq('source', activeSource);
+      }
+      if (filters.confidenceMin !== undefined) {
+        sigQuery = sigQuery.gte('confidence', filters.confidenceMin);
+      }
+      if (filters.confidenceMax !== undefined) {
+        sigQuery = sigQuery.lte('confidence', filters.confidenceMax);
+      }
+      if (filters.dateFrom) {
+        sigQuery = sigQuery.gte('entry_time', new Date(filters.dateFrom).toISOString());
+      }
+      if (filters.dateTo) {
+        const endOfDay = new Date(filters.dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        sigQuery = sigQuery.lte('entry_time', endOfDay.toISOString());
+      }
+
+      const { data, error } = await sigQuery;
+      if (!error) signalsData = data ?? [];
     }
 
-    const { data: signals, error } = await query;
-    if (error) throw error;
+    // 2b. Query manual_signal_audits table (Live Forex / TwelveData)
+    //     Use admin client to bypass RLS (msa table has no admin override policy)
+    const adminSupabase = createAdminClient();
+    let msaData: any[] = [];
+    if (activeSource === 'ALL' || activeSource === 'live_market') {
+      let msaQuery = adminSupabase
+        .from('manual_signal_audits')
+        .select('*')
+        .order('entry_time', { ascending: true });
 
-    const allSignals = signals ?? [];
+      if (filters.pair && filters.pair !== 'ALL') {
+        msaQuery = msaQuery.eq('pair', filters.pair);
+      }
+      if (filters.result && filters.result !== 'ALL') {
+        msaQuery = msaQuery.eq('status', filters.result);
+      }
+      if (filters.confidenceMin !== undefined) {
+        msaQuery = msaQuery.gte('confidence', filters.confidenceMin);
+      }
+      if (filters.confidenceMax !== undefined) {
+        msaQuery = msaQuery.lte('confidence', filters.confidenceMax);
+      }
+      if (filters.dateFrom) {
+        msaQuery = msaQuery.gte('entry_time', new Date(filters.dateFrom).toISOString());
+      }
+      if (filters.dateTo) {
+        const endOfDay = new Date(filters.dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        msaQuery = msaQuery.lte('entry_time', endOfDay.toISOString());
+      }
+
+      const { data, error } = await msaQuery;
+      if (!error) msaData = data ?? [];
+    }
+
+    // 2c. Normalize msa records to signals shape
+    const msaMapped = msaData.map((r: any) => ({
+      id: r.id,
+      pair: r.pair,
+      timeframe: '1m',
+      direction: r.direction,
+      entry_price: r.entry_price,
+      entry_time: r.entry_time,
+      expiry_time: r.expiry_time,
+      expiry_price: r.expiry_price,
+      strategy_name: r.strategy_name ?? '',
+      strategy_version: 'v1.0',
+      confidence: r.confidence,
+      risk_level: 'MEDIUM',
+      quality_score: r.confidence,
+      is_premium: true,
+      source: 'live_market',
+      result: r.status,
+    }));
+
+    // 2d. Merge both sources
+    const allSignals = [...signalsData, ...msaMapped];
 
     // Calculate core statistics
     const totalSignals = allSignals.length;

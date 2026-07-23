@@ -296,12 +296,12 @@ export default function AdminSignalAnalyticsPage() {
                       className="w-full bg-[#030812] border border-glass-border rounded px-3 py-2 text-slate-200 outline-none"
                     >
                       <option value="ALL">All Pairs</option>
-                      <optgroup label="LIVE FOREX (LIVE MARKET)" className="text-rose-400 bg-slate-950 font-bold">
+                       <optgroup label="LIVE FOREX" className="text-rose-400 bg-slate-950 font-bold">
                         {LIVE_MARKET_PAIRS.map(p => (
                           <option key={p} value={p} className="text-slate-200 font-mono font-normal">{p}</option>
                         ))}
                       </optgroup>
-                      <optgroup label="LIVE OTC & SIMULATION" className="text-neon-green bg-slate-950 font-bold">
+                       <optgroup label="LIVE OTC" className="text-neon-green bg-slate-950 font-bold">
                         {OTC_PAIRS.map(p => (
                           <option key={`${p} OTC`} value={`${p} OTC`} className="text-slate-200 font-mono font-normal">{p} OTC</option>
                         ))}
@@ -318,8 +318,7 @@ export default function AdminSignalAnalyticsPage() {
                     >
                       <option value="ALL">All Sources</option>
                       <option value="live_otc">Live OTC</option>
-                      <option value="live_market">Live Market</option>
-                      <option value="simulation">Simulation</option>
+                      <option value="live_market">Live Forex (TwelveData)</option>
                     </select>
                   </div>
 
@@ -579,7 +578,7 @@ export default function AdminSignalAnalyticsPage() {
                   </div>
                 </div>
 
-                {/* Min Confidence, OTC & Live Market Min Quality Score Sliders */}
+                {/* Min Confidence, OTC & Live Forex Quality Score Sliders */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-glass-border/30">
                   <div className="space-y-3">
                     <div className="flex justify-between">
@@ -623,7 +622,7 @@ export default function AdminSignalAnalyticsPage() {
 
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">LIVE MARKET MINIMUM QUALITY SCORE</label>
+                      <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">LIVE FOREX MINIMUM QUALITY SCORE</label>
                       <span className="text-xs text-rose-400 font-bold font-mono">{settings.min_quality_score_live || '80'}/100</span>
                     </div>
                     <input

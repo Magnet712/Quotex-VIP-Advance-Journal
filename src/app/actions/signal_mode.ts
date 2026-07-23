@@ -3,8 +3,8 @@
 /**
  * Signal Mode Actions (Admin Only)
  *
- * Controls whether the signal engine uses simulated data or
- * a live OTC feed. Reads/writes the system_settings table.
+ * Controls which live signal pipelines are active.
+ * Reads/writes the system_settings table.
  *
  * Only admin-authenticated users can change the mode.
  * All users can read the current mode (for display purposes).
@@ -35,7 +35,7 @@ async function verifyAdmin(): Promise<boolean> {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ACTION: getSignalMode
-// Returns the current signal mode. Falls back to SIMULATION on any error.
+// Returns the current signal mode. Falls back to LIVE_OTC on any error.
 // Safe to call from client components via server action.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function getSignalMode(): Promise<{
@@ -52,23 +52,19 @@ export async function getSignalMode(): Promise<{
       .single();
 
     if (error || !data) {
-      return { success: true, mode: 'SIMULATION' };
+      return { success: true, mode: 'LIVE_OTC' };
     }
 
-    const mode = (data.value as SignalMode) ?? 'SIMULATION';
+    const mode = (data.value as SignalMode) ?? 'LIVE_OTC';
     return { success: true, mode };
   } catch (err: any) {
-    // Default to safe simulation mode on any error
-    return { success: false, mode: 'SIMULATION', error: err.message };
+    return { success: false, mode: 'LIVE_OTC', error: err.message };
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ACTION: setSignalMode
-// Admin-only. Switches signal engine between SIMULATION and LIVE_OTC.
-// When LIVE_OTC is selected and the live feed is unavailable, the
-// data router in src/lib/otc/index.ts will automatically fallback
-// to simulation and show "Data Source Offline" in the UI.
+// Admin-only. Toggles active signal pipelines (LIVE_OTC, LIVE_MARKET).
 // ─────────────────────────────────────────────────────────────────────────────
 export async function setSignalMode(mode: SignalMode): Promise<{
   success: boolean;
@@ -80,7 +76,7 @@ export async function setSignalMode(mode: SignalMode): Promise<{
   }
 
   const modes = mode.split(',').map(m => m.trim()).filter(Boolean);
-  const invalid = modes.some(m => m !== 'SIMULATION' && m !== 'LIVE_OTC' && m !== 'LIVE_MARKET');
+  const invalid = modes.some(m => m !== 'LIVE_OTC' && m !== 'LIVE_MARKET');
   if (invalid || modes.length === 0) {
     return { success: false, error: 'Invalid signal mode selection.' };
   }
