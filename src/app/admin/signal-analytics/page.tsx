@@ -25,8 +25,9 @@ const OTC_PAIRS = [
 ];
 
 const LIVE_MARKET_PAIRS = [
-  'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'EUR/GBP', 'EUR/JPY',
-  'CAD/JPY', 'GBP/JPY', 'AUD/CAD', 'AUD/CHF', 'GBP/AUD', 'EUR/CHF'
+  'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'EUR/JPY', 'GBP/JPY',
+  'AUD/JPY', 'USD/CHF', 'EUR/GBP', 'NZD/USD', 'USD/INR', 'USD/SGD', 'EUR/AUD',
+  'USD/MXN', 'USD/ZAR', 'AUD/CAD', 'GBP/CHF', 'AUD/CHF', 'GBP/AUD', 'EUR/CHF'
 ];
 
 export default function AdminSignalAnalyticsPage() {
