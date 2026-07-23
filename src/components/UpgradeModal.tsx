@@ -14,7 +14,7 @@ export default function UpgradeModal() {
     sixMonths: '$99',
     lifetime: '$199'
   });
-  const [discount, setDiscount] = useState(0);
+  const [planDiscounts, setPlanDiscounts] = useState<Record<string, number>>({});
   const [discountedPrices, setDiscountedPrices] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -50,17 +50,16 @@ export default function UpgradeModal() {
         });
       }
       if (plansRes.success && plansRes.plans) {
-        const firstPlan = plansRes.plans.find(p => p.discount > 0);
-        const d = firstPlan?.discount ?? 0;
-        setDiscount(d);
+        const pd: Record<string, number> = {};
         const discounted: Record<string, string> = {};
         plansRes.plans.forEach(plan => {
+          const d = plan.discount ?? 0;
+          const key = plan.id === 'premium_monthly' ? 'monthly' : plan.id === 'premium_6months' ? 'sixMonths' : 'lifetime';
+          pd[key] = d;
           const disc = Math.max(0, plan.price - (plan.price * (d / 100)));
-          const formatted = Number.isInteger(disc) ? `$${disc}` : `$${disc.toFixed(2)}`;
-          if (plan.id === 'premium_monthly') discounted.monthly = formatted;
-          else if (plan.id === 'premium_6months') discounted.sixMonths = formatted;
-          else if (plan.id === 'premium_lifetime') discounted.lifetime = formatted;
+          discounted[key] = Number.isInteger(disc) ? `$${disc}` : `$${disc.toFixed(2)}`;
         });
+        setPlanDiscounts(pd);
         setDiscountedPrices(discounted);
       }
     } catch (err) {
@@ -170,19 +169,12 @@ export default function UpgradeModal() {
                 <p className="text-xs text-slate-500 font-mono mt-1">FULL SIGNAL SYSTEM & LOGS</p>
               </div>
 
-              {discount > 0 && (
-                <div className="flex items-center justify-center">
-                  <span className="text-[9px] text-rose-400 font-bold border border-rose-500/30 px-2 py-0.5 rounded bg-rose-500/10">
-                    {discount}% DISCOUNT ACTIVE
-                  </span>
-                </div>
-              )}
               {/* Pricing Cards */}
               <div className="grid grid-cols-3 gap-2 bg-[#02050b]/80 border border-glass-border/40 p-2.5 rounded-lg text-center font-mono">
                 <div>
                   <div className="text-[8px] text-slate-500 uppercase tracking-wider">Monthly</div>
                   <div className="text-sm font-bold text-slate-200 mt-0.5">
-                    {discount > 0 && discountedPrices.monthly ? (
+                    {planDiscounts.monthly > 0 && discountedPrices.monthly ? (
                       <><span className="text-[9px] text-slate-600 line-through mr-1">{prices.monthly}</span><span className="text-rose-300">{discountedPrices.monthly}</span></>
                     ) : (
                       <span className="text-slate-200">{prices.monthly}</span>
@@ -192,7 +184,7 @@ export default function UpgradeModal() {
                 <div className="border-x border-glass-border/40">
                   <div className="text-[8px] text-slate-500 uppercase tracking-wider">6-Months</div>
                   <div className="text-sm font-bold text-slate-200 mt-0.5">
-                    {discount > 0 && discountedPrices.sixMonths ? (
+                    {planDiscounts.sixMonths > 0 && discountedPrices.sixMonths ? (
                       <><span className="text-[9px] text-slate-600 line-through mr-1">{prices.sixMonths}</span><span className="text-rose-300">{discountedPrices.sixMonths}</span></>
                     ) : (
                       <span className="text-slate-200">{prices.sixMonths}</span>
@@ -202,7 +194,7 @@ export default function UpgradeModal() {
                 <div>
                   <div className="text-[8px] text-slate-500 uppercase tracking-wider">Lifetime</div>
                   <div className="text-sm font-bold text-slate-200 mt-0.5">
-                    {discount > 0 && discountedPrices.lifetime ? (
+                    {planDiscounts.lifetime > 0 && discountedPrices.lifetime ? (
                       <><span className="text-[9px] text-slate-600 line-through mr-1">{prices.lifetime}</span><span className="text-rose-300">{discountedPrices.lifetime}</span></>
                     ) : (
                       <span className="text-slate-200">{prices.lifetime}</span>

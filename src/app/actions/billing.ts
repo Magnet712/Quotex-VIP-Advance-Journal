@@ -128,6 +128,7 @@ export async function updateBillingPlan(id: string, price: number, enabled: bool
 
     if (error) throw error;
     revalidatePath('/dashboard/subscription');
+    revalidatePath('/pricing');
     return { success: true };
   } catch {
     return { success: false, error: 'Failed to update billing plan' };

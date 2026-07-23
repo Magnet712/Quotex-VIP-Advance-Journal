@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { getFeatureFlag } from '@/app/actions/feature_flags';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Pricing Plans - Quotex VIP Advance Journal',
   description: 'Choose your access tier for Quotex Advanced Journaling and AI signal engines. Free community access, VIP journal tools, and Premium Signals.',
@@ -37,28 +39,27 @@ async function getPricingConfig() {
       .select('id, price, discount')
       .in('id', ['premium_monthly', 'premium_6months', 'premium_lifetime']);
 
-    let discount = 0;
+    const planDiscounts: Record<string, number> = {};
     const discountedPrices: Record<string, string> = {};
 
     if (pricingData && pricingData.length > 0) {
-      discount = pricingData[0]?.discount ?? 0;
       pricingData.forEach(plan => {
-        const discounted = Math.max(0, plan.price - (plan.price * (discount / 100)));
-        const formatted = Number.isInteger(discounted) ? `$${discounted}` : `$${discounted.toFixed(2)}`;
-        if (plan.id === 'premium_monthly') discountedPrices.monthly = formatted;
-        else if (plan.id === 'premium_6months') discountedPrices.sixMonths = formatted;
-        else if (plan.id === 'premium_lifetime') discountedPrices.lifetime = formatted;
+        const d = plan.discount ?? 0;
+        const key = plan.id === 'premium_monthly' ? 'monthly' : plan.id === 'premium_6months' ? 'sixMonths' : 'lifetime';
+        planDiscounts[key] = d;
+        const discounted = Math.max(0, plan.price - (plan.price * (d / 100)));
+        discountedPrices[key] = Number.isInteger(discounted) ? `$${discounted}` : `$${discounted.toFixed(2)}`;
       });
     }
 
-    return { ...config, discount, discountedPrices };
+    return { ...config, planDiscounts, discountedPrices };
   } catch (err) {
     return {
       price_premium_monthly: '$19',
       price_premium_6months: '$99',
       price_premium_lifetime: '$199',
-      discount: 0,
-      discountedPrices: {}
+      planDiscounts: {} as Record<string, number>,
+      discountedPrices: {} as Record<string, string>
     };
   }
 }
@@ -239,18 +240,12 @@ export default async function PricingPage() {
 
               {/* Multiple Plan Options */}
               <div className="py-4 border-y border-glass-border space-y-3">
-                {prices.discount > 0 && (
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-[10px] text-rose-400 font-bold border border-rose-500/30 px-2 py-0.5 rounded bg-rose-500/10">
-                      {prices.discount}% DISCOUNT ACTIVE
-                    </span>
-                  </div>
-                )}
                 <div className="flex justify-between items-baseline">
                   <span className="text-xs font-mono text-slate-400 uppercase">Monthly:</span>
                   <div className="flex items-center gap-2">
-                    {prices.discount > 0 && prices.discountedPrices?.monthly ? (
+                    {(prices.planDiscounts?.monthly ?? 0) > 0 && prices.discountedPrices?.monthly ? (
                       <>
+                        <span className="text-[9px] text-rose-400 font-bold border border-rose-500/30 px-1.5 py-0.5 rounded bg-rose-500/10 mr-1">{prices.planDiscounts.monthly}% OFF</span>
                         <span className="text-xs text-slate-600 line-through">{prices.price_premium_monthly}</span>
                         <span className="text-2xl font-extrabold font-mono text-rose-300">{prices.discountedPrices.monthly}</span>
                       </>
@@ -263,8 +258,9 @@ export default async function PricingPage() {
                 <div className="flex justify-between items-baseline">
                   <span className="text-xs font-mono text-slate-400 uppercase">6 Months:</span>
                   <div className="flex items-center gap-2">
-                    {prices.discount > 0 && prices.discountedPrices?.sixMonths ? (
+                    {(prices.planDiscounts?.sixMonths ?? 0) > 0 && prices.discountedPrices?.sixMonths ? (
                       <>
+                        <span className="text-[9px] text-rose-400 font-bold border border-rose-500/30 px-1.5 py-0.5 rounded bg-rose-500/10 mr-1">{prices.planDiscounts.sixMonths}% OFF</span>
                         <span className="text-xs text-slate-600 line-through">{prices.price_premium_6months}</span>
                         <span className="text-2xl font-extrabold font-mono text-rose-300">{prices.discountedPrices.sixMonths}</span>
                       </>
@@ -277,8 +273,9 @@ export default async function PricingPage() {
                 <div className="flex justify-between items-baseline">
                   <span className="text-xs font-mono text-slate-400 uppercase">Lifetime:</span>
                   <div className="flex items-center gap-2">
-                    {prices.discount > 0 && prices.discountedPrices?.lifetime ? (
+                    {(prices.planDiscounts?.lifetime ?? 0) > 0 && prices.discountedPrices?.lifetime ? (
                       <>
+                        <span className="text-[9px] text-rose-400 font-bold border border-rose-500/30 px-1.5 py-0.5 rounded bg-rose-500/10 mr-1">{prices.planDiscounts.lifetime}% OFF</span>
                         <span className="text-xs text-slate-600 line-through">{prices.price_premium_lifetime}</span>
                         <span className="text-2xl font-extrabold font-mono text-rose-300">{prices.discountedPrices.lifetime}</span>
                       </>
