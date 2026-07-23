@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Check, Award, Zap, Send, ShieldAlert, ArrowRight, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { getPublicOptimizationSettings } from '@/app/actions/admin_optimization';
+import { getPublicPricingPlans } from '@/app/actions/billing';
 
 export default function UpgradeModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +14,8 @@ export default function UpgradeModal() {
     sixMonths: '$99',
     lifetime: '$199'
   });
+  const [discount, setDiscount] = useState(0);
+  const [discountedPrices, setDiscountedPrices] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -35,13 +38,30 @@ export default function UpgradeModal() {
   const fetchPrices = async () => {
     setLoading(true);
     try {
-      const res = await getPublicOptimizationSettings();
-      if (res.success && res.settings) {
+      const [settingsRes, plansRes] = await Promise.all([
+        getPublicOptimizationSettings(),
+        getPublicPricingPlans()
+      ]);
+      if (settingsRes.success && settingsRes.settings) {
         setPrices({
-          monthly: res.settings['price_premium_monthly'] || '$19',
-          sixMonths: res.settings['price_premium_6months'] || '$99',
-          lifetime: res.settings['price_premium_lifetime'] || '$199'
+          monthly: settingsRes.settings['price_premium_monthly'] || '$19',
+          sixMonths: settingsRes.settings['price_premium_6months'] || '$99',
+          lifetime: settingsRes.settings['price_premium_lifetime'] || '$199'
         });
+      }
+      if (plansRes.success && plansRes.plans) {
+        const firstPlan = plansRes.plans.find(p => p.discount > 0);
+        const d = firstPlan?.discount ?? 0;
+        setDiscount(d);
+        const discounted: Record<string, string> = {};
+        plansRes.plans.forEach(plan => {
+          const disc = Math.max(0, plan.price - (plan.price * (d / 100)));
+          const formatted = Number.isInteger(disc) ? `$${disc}` : `$${disc.toFixed(2)}`;
+          if (plan.id === 'premium_monthly') discounted.monthly = formatted;
+          else if (plan.id === 'premium_6months') discounted.sixMonths = formatted;
+          else if (plan.id === 'premium_lifetime') discounted.lifetime = formatted;
+        });
+        setDiscountedPrices(discounted);
       }
     } catch (err) {
       console.error('Failed to load prices dynamically:', err);
@@ -150,19 +170,44 @@ export default function UpgradeModal() {
                 <p className="text-xs text-slate-500 font-mono mt-1">FULL SIGNAL SYSTEM & LOGS</p>
               </div>
 
+              {discount > 0 && (
+                <div className="flex items-center justify-center">
+                  <span className="text-[9px] text-rose-400 font-bold border border-rose-500/30 px-2 py-0.5 rounded bg-rose-500/10">
+                    {discount}% DISCOUNT ACTIVE
+                  </span>
+                </div>
+              )}
               {/* Pricing Cards */}
               <div className="grid grid-cols-3 gap-2 bg-[#02050b]/80 border border-glass-border/40 p-2.5 rounded-lg text-center font-mono">
                 <div>
                   <div className="text-[8px] text-slate-500 uppercase tracking-wider">Monthly</div>
-                  <div className="text-sm font-bold text-slate-200 mt-0.5">{prices.monthly}</div>
+                  <div className="text-sm font-bold text-slate-200 mt-0.5">
+                    {discount > 0 && discountedPrices.monthly ? (
+                      <><span className="text-[9px] text-slate-600 line-through mr-1">{prices.monthly}</span><span className="text-rose-300">{discountedPrices.monthly}</span></>
+                    ) : (
+                      <span className="text-slate-200">{prices.monthly}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="border-x border-glass-border/40">
                   <div className="text-[8px] text-slate-500 uppercase tracking-wider">6-Months</div>
-                  <div className="text-sm font-bold text-slate-200 mt-0.5">{prices.sixMonths}</div>
+                  <div className="text-sm font-bold text-slate-200 mt-0.5">
+                    {discount > 0 && discountedPrices.sixMonths ? (
+                      <><span className="text-[9px] text-slate-600 line-through mr-1">{prices.sixMonths}</span><span className="text-rose-300">{discountedPrices.sixMonths}</span></>
+                    ) : (
+                      <span className="text-slate-200">{prices.sixMonths}</span>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <div className="text-[8px] text-slate-500 uppercase tracking-wider">Lifetime</div>
-                  <div className="text-sm font-bold text-slate-200 mt-0.5">{prices.lifetime}</div>
+                  <div className="text-sm font-bold text-slate-200 mt-0.5">
+                    {discount > 0 && discountedPrices.lifetime ? (
+                      <><span className="text-[9px] text-slate-600 line-through mr-1">{prices.lifetime}</span><span className="text-rose-300">{discountedPrices.lifetime}</span></>
+                    ) : (
+                      <span className="text-slate-200">{prices.lifetime}</span>
+                    )}
+                  </div>
                 </div>
               </div>
 

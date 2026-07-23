@@ -74,6 +74,24 @@ export async function getBillingPlans() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Action: getPublicPricingPlans (no auth required — for landing pages)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getPublicPricingPlans() {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from('pricing_settings')
+      .select('*')
+      .order('price', { ascending: true });
+
+    if (error) throw error;
+    return { success: true, plans: data as PlanSetting[] };
+  } catch {
+    return { success: false, error: 'Failed to fetch pricing plans' };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Action: getWalletSettings
 // ─────────────────────────────────────────────────────────────────────────────
 export async function getWalletSettings() {

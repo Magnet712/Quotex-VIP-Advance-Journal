@@ -16,27 +16,49 @@ export const metadata = {
 async function getPricingConfig() {
   try {
     const supabase = createAdminClient();
-    const { data } = await supabase
+
+    const { data: settingsData } = await supabase
       .from('system_settings')
       .select('key, value')
       .in('key', ['price_premium_monthly', 'price_premium_6months', 'price_premium_lifetime']);
-    
+
     const config: Record<string, string> = {
       price_premium_monthly: '$19',
       price_premium_6months: '$99',
       price_premium_lifetime: '$199'
     };
 
-    (data ?? []).forEach(row => {
+    (settingsData ?? []).forEach(row => {
       config[row.key] = row.value;
     });
 
-    return config;
+    const { data: pricingData } = await supabase
+      .from('pricing_settings')
+      .select('id, price, discount')
+      .in('id', ['premium_monthly', 'premium_6months', 'premium_lifetime']);
+
+    let discount = 0;
+    const discountedPrices: Record<string, string> = {};
+
+    if (pricingData && pricingData.length > 0) {
+      discount = pricingData[0]?.discount ?? 0;
+      pricingData.forEach(plan => {
+        const discounted = Math.max(0, plan.price - (plan.price * (discount / 100)));
+        const formatted = Number.isInteger(discounted) ? `$${discounted}` : `$${discounted.toFixed(2)}`;
+        if (plan.id === 'premium_monthly') discountedPrices.monthly = formatted;
+        else if (plan.id === 'premium_6months') discountedPrices.sixMonths = formatted;
+        else if (plan.id === 'premium_lifetime') discountedPrices.lifetime = formatted;
+      });
+    }
+
+    return { ...config, discount, discountedPrices };
   } catch (err) {
     return {
       price_premium_monthly: '$19',
       price_premium_6months: '$99',
-      price_premium_lifetime: '$199'
+      price_premium_lifetime: '$199',
+      discount: 0,
+      discountedPrices: {}
     };
   }
 }
@@ -217,24 +239,52 @@ export default async function PricingPage() {
 
               {/* Multiple Plan Options */}
               <div className="py-4 border-y border-glass-border space-y-3">
+                {prices.discount > 0 && (
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-[10px] text-rose-400 font-bold border border-rose-500/30 px-2 py-0.5 rounded bg-rose-500/10">
+                      {prices.discount}% DISCOUNT ACTIVE
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-baseline">
                   <span className="text-xs font-mono text-slate-400 uppercase">Monthly:</span>
-                  <div>
-                    <span className="text-2xl font-extrabold font-mono text-purple-300">{prices.price_premium_monthly}</span>
+                  <div className="flex items-center gap-2">
+                    {prices.discount > 0 && prices.discountedPrices?.monthly ? (
+                      <>
+                        <span className="text-xs text-slate-600 line-through">{prices.price_premium_monthly}</span>
+                        <span className="text-2xl font-extrabold font-mono text-rose-300">{prices.discountedPrices.monthly}</span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-extrabold font-mono text-purple-300">{prices.price_premium_monthly}</span>
+                    )}
                     <span className="text-[10px] text-slate-500 font-mono"> / MO</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-baseline">
                   <span className="text-xs font-mono text-slate-400 uppercase">6 Months:</span>
-                  <div>
-                    <span className="text-2xl font-extrabold font-mono text-purple-300">{prices.price_premium_6months}</span>
+                  <div className="flex items-center gap-2">
+                    {prices.discount > 0 && prices.discountedPrices?.sixMonths ? (
+                      <>
+                        <span className="text-xs text-slate-600 line-through">{prices.price_premium_6months}</span>
+                        <span className="text-2xl font-extrabold font-mono text-rose-300">{prices.discountedPrices.sixMonths}</span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-extrabold font-mono text-purple-300">{prices.price_premium_6months}</span>
+                    )}
                     <span className="text-[10px] text-slate-500 font-mono"> / 6-MO</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-baseline">
                   <span className="text-xs font-mono text-slate-400 uppercase">Lifetime:</span>
-                  <div>
-                    <span className="text-2xl font-extrabold font-mono text-purple-300">{prices.price_premium_lifetime}</span>
+                  <div className="flex items-center gap-2">
+                    {prices.discount > 0 && prices.discountedPrices?.lifetime ? (
+                      <>
+                        <span className="text-xs text-slate-600 line-through">{prices.price_premium_lifetime}</span>
+                        <span className="text-2xl font-extrabold font-mono text-rose-300">{prices.discountedPrices.lifetime}</span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-extrabold font-mono text-purple-300">{prices.price_premium_lifetime}</span>
+                    )}
                     <span className="text-[10px] text-slate-500 font-mono"> / LIFETIME</span>
                   </div>
                 </div>
