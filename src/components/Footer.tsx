@@ -75,7 +75,7 @@ export default function Footer() {
       {/* Disclaimers & Copyright */}
       <div className="max-w-7xl mx-auto text-xs text-slate-600 space-y-4">
         <p className="leading-relaxed">
-          <strong className="text-slate-500">Risk Warning:</strong> Trading binary options, Forex, and other financial instruments involves significant risk of loss and is not suitable for all investors. The high degree of leverage can work against you as well as for you. Before deciding to trade, you should carefully consider your investment objectives, level of experience, and risk appetite. Under no circumstances shall Quotex Advance Journal have any liability to any person or entity for any loss or damage in whole or part caused by, resulting from, or relating to any transactions.
+           <strong className="text-slate-500">Risk Warning:</strong> Trading binary options, Forex, and other financial instruments involves significant risk of loss and is not suitable for all investors. The high degree of leverage can work against you as well as for you. Before deciding to trade, you should carefully consider your investment objectives, level of experience, and risk appetite. Under no circumstances shall Quotex Advance Journal have any liability to any person or entity for any loss or damage in whole or part caused by, resulting from, or relating to any transactions. It&apos;s just a tool to build your edge, it&apos;s not a trading platform.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-between pt-2">
           <span>&copy; {new Date().getFullYear()} Quotex Advance Journal. All rights reserved.</span>
