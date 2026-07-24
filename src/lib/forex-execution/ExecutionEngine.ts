@@ -290,7 +290,7 @@ export class ExecutionEngine {
     }, 60000);
 
     try {
-      const res = await scanLiveMarketAsset(pair, dbId);
+      const res = await scanLiveMarketAsset(pair, dbId, placeholder.scanStartedAt);
 
       clearTimeout(scanTimeout);
 

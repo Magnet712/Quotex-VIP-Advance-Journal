@@ -1104,7 +1104,7 @@ export interface ScanResult {
  * Implements request coalescing, user session limits, global pair caching,
  * market hours guards, and SignalEngine evaluation.
  */
-export async function scanLiveMarketAsset(pair: string, rowId?: string): Promise<ScanResult> {
+export async function scanLiveMarketAsset(pair: string, rowId?: string, scanStartedAt?: number): Promise<ScanResult> {
   const t_entry = Date.now();
 
   const { ok } = await checkApproved();
@@ -1421,6 +1421,11 @@ export async function scanLiveMarketAsset(pair: string, rowId?: string): Promise
         serverTime: new Date().toISOString(),
         id: rowIdToUse
       };
+
+      if (engineRes.direction === 'WAIT' && scanStartedAt) {
+        scanResultData.entryTime = new Date(scanStartedAt).toISOString();
+        scanResultData.expiryTime = new Date(scanStartedAt + 60_000).toISOString();
+      }
 
       globalScanCache.set(pair, {
         pair,
