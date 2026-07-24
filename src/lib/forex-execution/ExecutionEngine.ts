@@ -145,6 +145,18 @@ export class ExecutionEngine {
 
   private processState(record: ExecutionRecord, now: number): ExecutionStatus {
     switch (record.status) {
+      case 'SCANNING': {
+        const entryMs = new Date(record.entryTime).getTime();
+        if (now >= entryMs) {
+          record.status = 'NO TRADE';
+          record.noTradeReason = 'Entry time passed while scanning — no signal detected';
+          record.removeAt = null;
+          updateScanAuditStatus(record.id, 'NO TRADE', record.noTradeReason, 'SCANNING', record.entryTime, record.expiryTime);
+          return 'NO TRADE';
+        }
+        return 'SCANNING';
+      }
+
       case 'WAITING_FOR_ENTRY': {
         const entryMs = new Date(record.entryTime).getTime();
         if (now >= entryMs) {
@@ -365,7 +377,6 @@ export class ExecutionEngine {
     dbId: string,
     serverTimeMs: number
   ): void {
-    if (placeholder.status !== 'SCANNING') return;
     const result = res.result!;
     this.syncClock(serverTimeMs);
 
@@ -409,8 +420,10 @@ export class ExecutionEngine {
       entryReason: result.entryReason || '',
       cacheStatus: result.cacheStatus,
       cacheAgeSeconds: result.cacheAgeSeconds,
-      status: 'WAITING_FOR_ENTRY',
     });
+    if (placeholder.status === 'SCANNING') {
+      placeholder.status = 'WAITING_FOR_ENTRY';
+    }
 
     this.pendingEntryConfirmations.add(placeholder.id);
     this.captureEntryPriceAndTransition(placeholder, entryMs);
