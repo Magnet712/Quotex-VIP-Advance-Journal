@@ -61,7 +61,7 @@ export interface SignalHistoryFilters {
   date_to?:      string;
   pair?:         string;
   strategy?:     string;
-  result?:       'ALL' | 'PENDING' | 'WIN' | 'LOSS' | 'FAILED' | 'NO TRADE' | 'SCANNING';
+  result?:       'ALL' | 'PENDING' | 'WIN' | 'LOSS' | 'REFUND' | 'FAILED' | 'NO TRADE' | 'SCANNING';
   source?:       DataPipeline;
   page?:         number;
   page_size?:    number;

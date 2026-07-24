@@ -46,7 +46,7 @@ interface Signal {
   confidence:    number;
   risk_level:    string;
   source:        string;
-  result:        'PENDING' | 'WIN' | 'LOSS' | 'FAILED' | 'NO TRADE' | 'SCANNING';
+  result:        'PENDING' | 'WIN' | 'LOSS' | 'REFUND' | 'FAILED' | 'NO TRADE' | 'SCANNING';
 }
 
 function shortId(id: string) {
@@ -89,7 +89,7 @@ export default function SignalHistoryPage() {
   const [dateTo,     setDateTo]     = useState('');
   const [selPair,    setSelPair]    = useState('ALL');
   const [selStrategy, setSelStrategy] = useState('ALL');
-  const [selResult,  setSelResult]  = useState<'ALL' | 'PENDING' | 'WIN' | 'LOSS' | 'FAILED' | 'NO TRADE' | 'SCANNING'>('ALL');
+  const [selResult,  setSelResult]  = useState<'ALL' | 'PENDING' | 'WIN' | 'LOSS' | 'REFUND' | 'FAILED' | 'NO TRADE' | 'SCANNING'>('ALL');
   const [selSource,  setSelSource]  = useState<'ALL' | 'live_otc' | 'live_market'>('ALL');
   const [page,       setPage]       = useState(1);
   const PAGE_SIZE = 50;
@@ -273,6 +273,7 @@ export default function SignalHistoryPage() {
                     <option value="LOSS">LOSS</option>
                     <option value="PENDING">PENDING</option>
                     <option value="FAILED">FAILED</option>
+                    <option value="REFUND">REFUND</option>
                     <option value="NO TRADE">NO TRADE</option>
                     <option value="SCANNING">SCANNING</option>
                   </select>
