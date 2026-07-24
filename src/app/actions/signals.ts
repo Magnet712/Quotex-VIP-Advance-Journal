@@ -1429,7 +1429,7 @@ export async function scanLiveMarketAsset(pair: string, rowId?: string): Promise
       });
 
       // Blocking DB update — ensures DB is committed before response
-      const { error: dbError } = await supabase
+      const { data: updatedData, error: dbError } = await supabase
         .from('manual_signal_audits')
         .update({
           direction: engineRes.direction,
@@ -1443,8 +1443,9 @@ export async function scanLiveMarketAsset(pair: string, rowId?: string): Promise
           status: (engineRes.direction === 'WAIT') ? 'NO TRADE' : 'PENDING'
         })
         .eq('id', rowIdToUse)
-        .eq('status', 'SCANNING');
+        .select();
       if (dbError) console.error(`[DB Update Error] ${rowIdToUse}:`, dbError);
+      if (!updatedData?.length) console.warn(`[DB Update Zero Rows] ${rowIdToUse}: no matching row!`);
 
       const t5 = Date.now();
       const dProvider = t1 - t0;
