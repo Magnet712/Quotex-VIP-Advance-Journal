@@ -431,10 +431,11 @@ export class ExecutionEngine {
 
   private handleScanFailure(placeholder: ExecutionRecord, error: string): void {
     if (placeholder.status !== 'SCANNING') return;
-    placeholder.status = 'FAILED';
-    placeholder.noTradeReason = error;
+    placeholder.status = 'NO TRADE';
+    placeholder.noTradeReason = error || 'No signal detected within 60s';
+    placeholder.direction = 'WAIT';
     placeholder.removeAt = null;
-    updateScanAuditStatus(placeholder.id, 'FAILED', error, 'SCANNING', placeholder.entryTime, placeholder.expiryTime);
+    updateScanAuditStatus(placeholder.id, 'NO TRADE', placeholder.noTradeReason, 'SCANNING', placeholder.entryTime, placeholder.expiryTime);
   }
 
   // ─── Manual dismissal ────────────────────────────────────────────────
