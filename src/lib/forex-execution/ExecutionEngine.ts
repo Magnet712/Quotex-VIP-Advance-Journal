@@ -145,17 +145,8 @@ export class ExecutionEngine {
 
   private processState(record: ExecutionRecord, now: number): ExecutionStatus {
     switch (record.status) {
-      case 'SCANNING': {
-        const entryMs = new Date(record.entryTime).getTime();
-        if (now >= entryMs) {
-          record.status = 'NO TRADE';
-          record.noTradeReason = 'Entry time passed while scanning — no signal detected';
-          record.removeAt = null;
-          updateScanAuditStatus(record.id, 'NO TRADE', record.noTradeReason, 'SCANNING', record.entryTime, record.expiryTime);
-          return 'NO TRADE';
-        }
+      case 'SCANNING':
         return 'SCANNING';
-      }
 
       case 'WAITING_FOR_ENTRY': {
         const entryMs = new Date(record.entryTime).getTime();
