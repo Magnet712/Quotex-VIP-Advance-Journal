@@ -515,10 +515,12 @@ export function evaluateSignal(pair: string, minQualityScore = 83, cacheKey = pa
   const isVolatilityHealthy = atrInPips >= 1.2 && currentAtr > currentAtrSma * 0.9;
 
   // 3. Volume Profile Filter (tick volume confirmation)
-  const volumeSma = calculateSMA(history.map(c => c.volume), 20);
-  const currentVolume = history[idx].volume;
+  const volumeSeries = history.map(c => c.volume);
+  const hasVolumeData = volumeSeries.some(v => v > 0);
+  const volumeSma = calculateSMA(volumeSeries, 20);
+  const currentVolume = volumeSeries[idx];
   const currentVolumeSma = volumeSma[idx] || 0;
-  const isVolumeHealthy = currentVolume >= currentVolumeSma * 0.8;
+  const isVolumeHealthy = !hasVolumeData || currentVolume >= currentVolumeSma * 0.8;
 
   // 3. Decisive RSI Ranges: (rising/falling and bounds)
   const prevRsi = rsi[idx - 1] || currentRsi;
