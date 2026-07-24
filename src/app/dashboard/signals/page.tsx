@@ -26,6 +26,7 @@ import { useForexExecution } from './useForexExecution';
 import { useOTCExecution } from './useOTCExecution';
 import OTCScanResultCard from './OTCScanResultCard';
 import { TERMINAL_STATUSES, type ExecutionRecord } from '@/lib/forex-execution/types';
+import { sourceLabel } from '@/lib/pipeline';
 import { OTC_TERMINAL_STATUSES } from '@/lib/otc/otc-execution-types';
 import type { OTCExecutionRecord } from '@/lib/otc/otc-execution-types';
 
@@ -1334,7 +1335,7 @@ export default function SignalsPage() {
                             <div className="font-mono text-xs">
                               <div className="font-bold text-slate-200">{sig.pair}</div>
                               <div className="text-[9px] text-slate-500 mt-0.5">
-                                {timestampStr} · {sig.dataSource.toUpperCase()}
+                                {timestampStr} · {sourceLabel(sig.dataSource)}
                               </div>
                               {isActive && (
                                 <div className={`text-[8px] font-bold mt-1 flex items-center gap-0.5 ${isTimelineScanning ? 'text-amber-400' : 'text-amber-400 animate-pulse'}`}>
