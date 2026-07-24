@@ -225,7 +225,7 @@ export class ExecutionEngine {
       .then(res => {
         if (res.success && (res.status === 'WIN' || res.status === 'LOSS' || res.status === 'REFUND')) {
           record.status = res.status as ExecutionStatus;
-          record.removeAt = this.now() + this.config.autoRemoveDelayMs;
+          record.removeAt = null;
         } else {
           record.status = 'FAILED';
           record.noTradeReason = res.error || 'Settlement failed';
