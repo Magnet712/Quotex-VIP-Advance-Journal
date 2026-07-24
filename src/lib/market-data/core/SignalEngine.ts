@@ -702,6 +702,8 @@ export function evaluateSignal(pair: string, minQualityScore = 83, cacheKey = pa
     }
   }
 
+  console.log(`[SIGNAL_DEBUG] ${pair} | dir=${direction} reason=${noTradeReason ?? 'TRADE'} callScore=${callScore.toFixed(1)} putScore=${putScore.toFixed(1)} volScore=${volScore} volume=${currentVolume.toFixed(0)}/${currentVolumeSma.toFixed(0)} roc3=${roc3.toFixed(5)} roc10=${roc10.toFixed(5)} callMomOk=${isCallMomentumOk} putMomOk=${isPutMomentumOk} volOk=${isVolumeHealthy} rsi=${currentRsi.toFixed(1)} cci=${currentCci.toFixed(1)} supTrend=${currentSuperTrendDir} adx=${currentAdx.toFixed(1)}`);
+
   const isCallSelected = direction === "CALL" || (direction === "WAIT" && callScore >= putScore);
 
   reasons = [
