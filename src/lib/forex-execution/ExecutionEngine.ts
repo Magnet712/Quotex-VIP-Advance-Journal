@@ -267,9 +267,20 @@ export class ExecutionEngine {
     if (tempId !== dbId) this.records.delete(tempId);
     this.emit();
 
+    const scanTimeout = setTimeout(() => {
+      if (this.records.get(dbId)?.status === 'SCANNING') {
+        placeholder.status = 'NO TRADE';
+        placeholder.noTradeReason = 'Scan timed out — no signal detected within 60s';
+        placeholder.removeAt = null;
+        updateScanAuditStatus(dbId, 'NO TRADE', placeholder.noTradeReason, 'SCANNING', placeholder.entryTime, placeholder.expiryTime);
+        this.emit();
+      }
+    }, 60000);
+
     try {
       const res = await scanLiveMarketAsset(pair, dbId);
 
+      clearTimeout(scanTimeout);
 
       if (!res.success) {
         this.handleScanFailure(placeholder, res.error || 'Scan failed');
@@ -287,6 +298,7 @@ export class ExecutionEngine {
       this.emit();
       return { success: true, direction: placeholder.direction };
     } catch (err) {
+      clearTimeout(scanTimeout);
       const msg = err instanceof Error ? err.message : 'Execution error';
       this.handleScanFailure(placeholder, msg);
       this.emit();

@@ -28,9 +28,6 @@ export const POPUP_VISIBLE_STATUSES: ReadonlySet<ExecutionStatus> = new Set([
   'SCANNING',
   'WAITING_FOR_ENTRY',
   'PENDING',
-  'WIN',
-  'LOSS',
-  'REFUND',
 ]);
 
 const VALID_TRANSITIONS: Record<ExecutionStatus, ExecutionStatus[]> = {
