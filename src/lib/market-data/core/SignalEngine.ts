@@ -514,6 +514,12 @@ export function evaluateSignal(pair: string, minQualityScore = 83, cacheKey = pa
   // Delta: +22.7 pp. Cost: 9 fewer signals globally (−12%). No regression on high-ATR pairs.
   const isVolatilityHealthy = atrInPips >= 1.2 && currentAtr > currentAtrSma * 0.9;
 
+  // 3. Volume Profile Filter (tick volume confirmation)
+  const volumeSma = calculateSMA(history.map(c => c.volume), 20);
+  const currentVolume = history[idx].volume;
+  const currentVolumeSma = volumeSma[idx] || 0;
+  const isVolumeHealthy = currentVolume >= currentVolumeSma * 0.8;
+
   // 3. Decisive RSI Ranges: (rising/falling and bounds)
   const prevRsi = rsi[idx - 1] || currentRsi;
   const isRsiRising = currentRsi > prevRsi;
@@ -536,6 +542,12 @@ export function evaluateSignal(pair: string, minQualityScore = 83, cacheKey = pa
   const bodySma = calculateSMA(bodySizes, 20);
   const currentBodySma = bodySma[idx] || 0.0001;
   const isBodyExpanding = bodySize > currentBodySma * 0.85;
+
+  // 6. Momentum Acceleration (3 vs 10 candle rate of change)
+  const roc3 = currentPrice - closes[idx - 3];
+  const roc10 = currentPrice - closes[idx - 10];
+  const isCallMomentumOk = roc10 <= 0 || (roc3 / 3) >= (roc10 / 10) * 0.7;
+  const isPutMomentumOk = roc10 >= 0 || (roc3 / 3) <= (roc10 / 10) * 0.7;
 
   // Evaluate CALL setup checks
   const isCallStoch = currentStochK > currentStochD && currentStochK < 70;
@@ -661,15 +673,27 @@ export function evaluateSignal(pair: string, minQualityScore = 83, cacheKey = pa
   if (volScore < MIN_VOL_FOR_SIGNAL) {
     noTradeReason = "Volatility too low";
   } else if (callScore >= CALL_THRESHOLD && callScore >= putScore && callScore >= putScore * 1.05) {
-    direction = "CALL";
-    confidence = Math.min(99, Math.round(callScore));
-    qScore = qualityScoreVal;
-    strategy = isTrending ? "Trend Corridor Breakout" : "Range Extreme Reversion";
+    if (!isCallMomentumOk) {
+      noTradeReason = "Momentum decelerating in CALL direction";
+    } else if (!isVolumeHealthy) {
+      noTradeReason = "Volume too low for CALL confirmation";
+    } else {
+      direction = "CALL";
+      confidence = Math.min(99, Math.round(callScore));
+      qScore = qualityScoreVal;
+      strategy = isTrending ? "Trend Corridor Breakout" : "Range Extreme Reversion";
+    }
   } else if (putScore >= PUT_THRESHOLD && putScore > callScore && putScore >= callScore * 1.05) {
-    direction = "PUT";
-    confidence = Math.min(99, Math.round(putScore));
-    qScore = qualityScoreVal;
-    strategy = isTrending ? "Trend Corridor Breakout" : "Range Extreme Reversion";
+    if (!isPutMomentumOk) {
+      noTradeReason = "Momentum decelerating in PUT direction";
+    } else if (!isVolumeHealthy) {
+      noTradeReason = "Volume too low for PUT confirmation";
+    } else {
+      direction = "PUT";
+      confidence = Math.min(99, Math.round(putScore));
+      qScore = qualityScoreVal;
+      strategy = isTrending ? "Trend Corridor Breakout" : "Range Extreme Reversion";
+    }
   } else {
     if (callScore >= CALL_THRESHOLD || putScore >= PUT_THRESHOLD) {
       noTradeReason = "Directional confidence too balanced";
