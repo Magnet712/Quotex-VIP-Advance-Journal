@@ -150,7 +150,7 @@ export class ExecutionEngine {
         if (now >= entryMs + 5000) {
           record.status = 'NO TRADE';
           record.noTradeReason = 'Scan timed out — no signal detected within 30s';
-          record.removeAt = this.now() + this.config.autoRemoveDelayMs;
+          record.removeAt = null;
           updateScanAuditStatus(record.id, 'NO TRADE', record.noTradeReason, 'SCANNING', record.entryTime, record.expiryTime);
           return 'NO TRADE';
         }
@@ -194,13 +194,13 @@ export class ExecutionEngine {
       } else {
         record.status = 'FAILED';
         record.noTradeReason = 'Entry price unavailable';
-        record.removeAt = this.now() + this.config.autoRemoveDelayMs;
+        record.removeAt = null;
         await updateScanAuditStatus(record.id, 'FAILED', 'Entry price unavailable', 'SCANNING', record.entryTime, record.expiryTime);
       }
     } catch {
       record.status = 'FAILED';
       record.noTradeReason = 'Entry price fetch failed';
-      record.removeAt = this.now() + this.config.autoRemoveDelayMs;
+      record.removeAt = null;
       await updateScanAuditStatus(record.id, 'FAILED', 'Entry price fetch failed', 'SCANNING', record.entryTime, record.expiryTime);
     }
     this.pendingEntryConfirmations.delete(record.id);
@@ -229,7 +229,7 @@ export class ExecutionEngine {
         } else {
           record.status = 'FAILED';
           record.noTradeReason = res.error || 'Settlement failed';
-          record.removeAt = this.now();
+          record.removeAt = null;
         }
         this.settlingIds.delete(record.id);
         this.emit();
@@ -237,7 +237,7 @@ export class ExecutionEngine {
       .catch(() => {
         record.status = 'FAILED';
         record.noTradeReason = 'Settlement execution error';
-        record.removeAt = this.now();
+        record.removeAt = null;
         this.settlingIds.delete(record.id);
         this.emit();
       });
@@ -268,7 +268,7 @@ export class ExecutionEngine {
     if (!createRes.success || !createRes.rowId) {
       placeholder.status = 'FAILED';
       placeholder.noTradeReason = createRes?.error || 'Failed to create scan record';
-      placeholder.removeAt = this.now();
+      placeholder.removeAt = null;
       this.emit();
       return { success: false, error: placeholder.noTradeReason };
     }
@@ -283,7 +283,7 @@ export class ExecutionEngine {
       if (this.records.get(dbId)?.status === 'SCANNING') {
         placeholder.status = 'NO TRADE';
         placeholder.noTradeReason = 'Scan exceeded 30-second limit — no signal detected';
-        placeholder.removeAt = this.now() + this.config.autoRemoveDelayMs;
+        placeholder.removeAt = null;
         updateScanAuditStatus(dbId, 'NO TRADE', placeholder.noTradeReason, 'SCANNING', placeholder.entryTime, placeholder.expiryTime);
         this.emit();
       }
@@ -389,7 +389,7 @@ export class ExecutionEngine {
       placeholder.recommendationText = result.recommendationText;
       placeholder.noTradeReason = result.noTradeReason || 'No setup detected';
       placeholder.dataSource = result.dataSource;
-      placeholder.removeAt = this.now() + this.config.autoRemoveDelayMs;
+      placeholder.removeAt = null;
       return;
     }
 
@@ -430,7 +430,7 @@ export class ExecutionEngine {
     if (placeholder.status !== 'SCANNING') return;
     placeholder.status = 'FAILED';
     placeholder.noTradeReason = error;
-    placeholder.removeAt = this.now();
+    placeholder.removeAt = null;
     updateScanAuditStatus(placeholder.id, 'FAILED', error, 'SCANNING', placeholder.entryTime, placeholder.expiryTime);
   }
 
@@ -519,7 +519,7 @@ export class ExecutionEngine {
             if (remaining <= 0) {
               record.status = 'NO TRADE';
               record.noTradeReason = 'Scan exceeded 30-second limit — no signal detected';
-              record.removeAt = this.now() + this.config.autoRemoveDelayMs;
+              record.removeAt = null;
               updateScanAuditStatus(sig.id, 'NO TRADE', record.noTradeReason, 'SCANNING', record.entryTime, record.expiryTime);
             } else {
               setTimeout(() => {
@@ -527,7 +527,7 @@ export class ExecutionEngine {
                 if (r && r.status === 'SCANNING') {
                   r.status = 'NO TRADE';
                   r.noTradeReason = 'Scan exceeded 30-second limit — no signal detected';
-                  r.removeAt = this.now() + this.config.autoRemoveDelayMs;
+                  r.removeAt = null;
                   updateScanAuditStatus(sig.id, 'NO TRADE', r.noTradeReason, 'SCANNING', r.entryTime, r.expiryTime);
                   this.emit();
                 }
