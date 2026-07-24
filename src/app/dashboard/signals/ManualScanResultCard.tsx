@@ -282,11 +282,11 @@ export const ManualScanResultCard = React.memo(function ManualScanResultCard({
           <div className={`bg-[#020617]/50 border border-slate-900 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 ${decisionParamsDimmed ? 'opacity-40 select-none pointer-events-none' : ''}`}>
             <div>
               <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">ENTRY CANDLE</span>
-              <span className="text-xs font-extrabold text-slate-200 mt-1.5 block">{formattedTimes.entry}</span>
+              <span className={`text-xs font-extrabold mt-1.5 block ${isRunning ? 'text-amber-400 animate-pulse' : 'text-slate-200'}`}>{isRunning ? 'Awaiting...' : formattedTimes.entry}</span>
             </div>
             <div>
               <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">EXPIRY TIME</span>
-              <span className="text-xs font-extrabold text-rose-400 mt-1.5 block">{formattedTimes.expiry}</span>
+              <span className={`text-xs font-extrabold mt-1.5 block ${isRunning ? 'text-amber-400 animate-pulse' : 'text-rose-400'}`}>{isRunning ? 'Awaiting...' : formattedTimes.expiry}</span>
             </div>
             <div>
               <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">VALID FOR</span>
