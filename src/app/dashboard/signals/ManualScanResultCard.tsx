@@ -50,7 +50,6 @@ export const ManualScanResultCard = React.memo(function ManualScanResultCard({
   const expiryMs = new Date(result.expiryTime).getTime();
 
   const isRunning = result.status === 'SCANNING';
-  const isScanTimedOut = isRunning && clockTime > entryMs;
   const isWaitingEntry = result.status === 'WAITING_FOR_ENTRY';
   const isPending = result.status === 'PENDING';
   const isSettling = result.status === 'SETTLING';
@@ -132,7 +131,7 @@ export const ManualScanResultCard = React.memo(function ManualScanResultCard({
       </div>
 
       {/* Status Banner */}
-      {isRunning && !isScanTimedOut ? (
+      {isRunning ? (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-[11px] font-bold transition-all duration-300">
           <div className="flex items-center gap-2 mb-3">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block animate-ping" />
@@ -152,13 +151,6 @@ export const ManualScanResultCard = React.memo(function ManualScanResultCard({
               );
             })}
           </div>
-        </div>
-      ) : isScanTimedOut ? (
-        <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 text-[11px] font-bold flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block animate-pulse" />
-            SCAN TIMED OUT — ENTRY TIME PASSED WHILE SCANNING
-          </span>
         </div>
       ) : isWaitingEntry ? (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-[11px] text-amber-400 font-bold flex items-center justify-between animate-pulse">
@@ -266,13 +258,11 @@ export const ManualScanResultCard = React.memo(function ManualScanResultCard({
                 }`}>
                 {isWaitingEntry
                   ? `Starts in ${countdownStr}`
-                  : isScanTimedOut
-                    ? 'Scanning timed out'
-                    : isRunning
-                      ? 'Awaiting entry...'
-                      : (diffSec > 0 && isEntryActive)
-                      ? `Remaining ${countdownStr}`
-                      : 'EXPIRED'}
+                  : isRunning
+                  ? 'Awaiting entry...'
+                  : (diffSec > 0 && isEntryActive)
+                  ? `Remaining ${countdownStr}`
+                  : 'EXPIRED'}
               </span>
               <span className="text-[8px] text-slate-400 font-bold mt-1.5 block">NEXT CANDLE LIMIT</span>
             </div>
