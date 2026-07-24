@@ -385,6 +385,8 @@ export class ExecutionEngine {
       placeholder.status = 'NO TRADE';
       placeholder.direction = 'WAIT';
       placeholder.confidence = 0;
+      placeholder.entryTime = result.entryTime;
+      placeholder.expiryTime = result.expiryTime;
       placeholder.marketBias = result.noTradeReason || 'No setup detected';
       placeholder.recommendationText = result.recommendationText;
       placeholder.noTradeReason = result.noTradeReason || 'No setup detected';

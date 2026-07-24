@@ -1428,8 +1428,8 @@ export async function scanLiveMarketAsset(pair: string, rowId?: string): Promise
         expiresAt: expiryTime.getTime()
       });
 
-      // Fire-and-forget DB update (non-blocking — response returns immediately)
-      supabase
+      // Blocking DB update — ensures DB is committed before response
+      const { error: dbError } = await supabase
         .from('manual_signal_audits')
         .update({
           direction: engineRes.direction,
@@ -1443,12 +1443,8 @@ export async function scanLiveMarketAsset(pair: string, rowId?: string): Promise
           status: (engineRes.direction === 'WAIT') ? 'NO TRADE' : 'PENDING'
         })
         .eq('id', rowIdToUse)
-        .eq('status', 'SCANNING')
-        .then(({ error }) => {
-          if (error) console.error(`[DB BG Update Error] ${rowIdToUse}:`, error);
-        }, (dbErr: unknown) => {
-          console.error(`[DB BG Update Fatal] ${rowIdToUse}:`, dbErr);
-        });
+        .eq('status', 'SCANNING');
+      if (dbError) console.error(`[DB Update Error] ${rowIdToUse}:`, dbError);
 
       const t5 = Date.now();
       const dProvider = t1 - t0;
