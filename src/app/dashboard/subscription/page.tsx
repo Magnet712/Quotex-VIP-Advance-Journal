@@ -1,18 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { 
   Award, RefreshCw, Zap, CheckCircle2,
   Copy, Check, AlertCircle, Loader, X
 } from 'lucide-react';
 import { 
   getUserSubscriptionState, getBillingPlans, getWalletSettings,
-  createPaymentRequest, submitPaymentTxnHash
+  createPaymentRequest, submitPaymentTxnHash,
+  createRazorpayOrder, verifyRazorpayPayment, getRazorpayExchangeRate
 } from '@/app/actions/billing';
 
 export default function SubscriptionPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [subState, setSubState] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
@@ -28,6 +27,12 @@ export default function SubscriptionPage() {
   const [statusMsg, setStatusMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successActivated, setSuccessActivated] = useState(false);
+
+  // Razorpay states
+  const [razorpayLoading, setRazorpayLoading] = useState(false);
+  const [showMethodChooser, setShowMethodChooser] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'crypto' | 'razorpay' | null>(null);
+  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
 
   const loadSubscription = useCallback(async () => {
     setLoading(true);
@@ -61,6 +66,99 @@ export default function SubscriptionPage() {
     loadSubscription();
   }, [loadSubscription]);
 
+  const startCryptoPayment = async () => {
+    setPaymentMethod('crypto');
+    setShowMethodChooser(false);
+    if (wallets.length > 0) {
+      const defaultNet = wallets[0].network;
+      setSelectedNetwork(defaultNet);
+      await createRequestRecord(selectedPlan.id, defaultNet);
+    }
+  };
+
+  const startRazorpayPayment = async () => {
+    setPaymentMethod('razorpay');
+    setShowMethodChooser(false);
+    setRazorpayLoading(true);
+    setErrorMsg('');
+    try {
+      const res = await createRazorpayOrder(selectedPlan.id);
+      if (!res.success || !res.order) {
+        setErrorMsg(res.error || 'Failed to create Razorpay order');
+        setRazorpayLoading(false);
+        return;
+      }
+
+      const { order, paymentRequestId } = res;
+
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => {
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'Quotex Intelligence Journal',
+          description: selectedPlan.name,
+          order_id: order.id,
+          handler: async function (response: any) {
+            setRazorpayLoading(true);
+            try {
+              const verifyRes = await verifyRazorpayPayment(
+                response.razorpay_order_id,
+                response.razorpay_payment_id,
+                response.razorpay_signature,
+                paymentRequestId,
+              );
+              if (verifyRes.success) {
+                setSuccessActivated(true);
+                setStatusMsg('Success! Your account has been upgraded to Premium.');
+                setTimeout(() => {
+                  setSuccessActivated(false);
+                  setSelectedPlan(null);
+                  setPaymentMethod(null);
+                  loadSubscription();
+                }, 3000);
+              } else {
+                setErrorMsg(verifyRes.error || 'Payment verification failed');
+              }
+            } catch {
+              setErrorMsg('Payment verification error');
+            } finally {
+              setRazorpayLoading(false);
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              setRazorpayLoading(false);
+            },
+          },
+          prefill: {
+            contact: '',
+            email: '',
+          },
+          theme: {
+            color: '#7c3aed',
+          },
+        };
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (response: any) {
+          setErrorMsg(response.error?.description || 'Payment failed');
+          setRazorpayLoading(false);
+        });
+        rzp.open();
+      };
+      script.onerror = () => {
+        setErrorMsg('Failed to load Razorpay checkout SDK');
+        setRazorpayLoading(false);
+      };
+      document.body.appendChild(script);
+    } catch {
+      setErrorMsg('Failed to initiate Razorpay payment');
+      setRazorpayLoading(false);
+    }
+  };
+
   const copyAddress = (addr: string) => {
     navigator.clipboard.writeText(addr);
     setCopied(true);
@@ -72,13 +170,10 @@ export default function SubscriptionPage() {
     setErrorMsg('');
     setStatusMsg('');
     setTxnHash('');
-    
-    // Auto initiate request for the default network
-    if (wallets.length > 0) {
-      const defaultNet = wallets[0].network;
-      setSelectedNetwork(defaultNet);
-      await createRequestRecord(plan.id, defaultNet);
-    }
+    setPaymentMethod(null);
+    setShowMethodChooser(true);
+    const rateRes = await getRazorpayExchangeRate();
+    if (rateRes.success && rateRes.rate) setExchangeRate(rateRes.rate);
   };
 
   const createRequestRecord = async (planId: string, network: string) => {
@@ -118,6 +213,7 @@ export default function SubscriptionPage() {
         setTimeout(() => {
           setSuccessActivated(false);
           setSelectedPlan(null);
+          setPaymentMethod(null);
           loadSubscription();
         }, 3000);
       } else {
@@ -342,8 +438,130 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
+      {/* Payment Method Chooser */}
+      {selectedPlan && showMethodChooser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-md glass-panel p-6 rounded-xl border border-glass-border space-y-5 text-left relative overflow-hidden">
+            <button
+              onClick={() => { setSelectedPlan(null); setShowMethodChooser(false); }}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-500 hover:text-slate-200 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex items-center gap-2 border-b border-glass-border/40 pb-3">
+              <Zap className="h-5 w-5 text-neon-green" />
+              <span className="font-mono font-bold text-slate-200 text-sm uppercase">Choose Payment Method</span>
+            </div>
+
+            <div className="space-y-3">
+              {(() => {
+                const usdPrice = Math.max(0, selectedPlan.price - (selectedPlan.price * (selectedPlan.discount / 100)));
+                const rate = exchangeRate || 84;
+                const inrPrice = usdPrice * rate;
+                return (
+                  <div className="flex justify-between items-center bg-[#020617]/50 p-3 rounded border border-glass-border/40">
+                    <div>
+                      <span className="text-[8px] text-slate-500 uppercase block">PLAN</span>
+                      <span className="font-bold text-slate-200 uppercase text-sm">{selectedPlan.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[8px] text-slate-500 uppercase block">PRICE</span>
+                      <span className="font-bold text-neon-green">${usdPrice}</span>
+                      <span className="text-[10px] text-slate-400 block">≈ ₹{inrPrice.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <button
+                onClick={startCryptoPayment}
+                className="w-full py-3 px-4 rounded-lg border border-glass-border bg-slate-900/50 hover:bg-slate-900/80 text-left transition-all flex items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center shrink-0">
+                  <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg" alt="USDT" className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                  <span className="block font-bold text-slate-200 text-sm">Pay with Crypto (USDT)</span>
+                  <span className="text-[10px] text-slate-500">USDT on TRC-20 or BEP-20 network</span>
+                </div>
+              </button>
+
+              <button
+                onClick={startRazorpayPayment}
+                disabled={razorpayLoading}
+                className="w-full py-3 px-4 rounded-lg border border-glass-border bg-slate-900/50 hover:bg-slate-900/80 text-left transition-all flex items-center gap-3 disabled:opacity-50"
+              >
+                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                  <img src="https://razorpay.com/favicon.png" alt="Razorpay" className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                  <span className="block font-bold text-slate-200 text-sm">Pay with Razorpay (INR)</span>
+                  <span className="text-[10px] text-slate-500">Credit/Debit card, UPI, Net Banking, Wallet</span>
+                </div>
+                {razorpayLoading && <Loader className="h-5 w-5 animate-spin text-blue-400 shrink-0" />}
+              </button>
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={() => { setSelectedPlan(null); setShowMethodChooser(false); }}
+                disabled={razorpayLoading}
+                className="w-full py-2.5 rounded bg-slate-900 border border-glass-border text-slate-400 hover:text-slate-200 text-xs font-bold uppercase transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Razorpay Loading / Error Overlay */}
+      {(razorpayLoading || errorMsg) && paymentMethod === 'razorpay' && !successActivated && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-sm glass-panel p-6 rounded-xl border border-glass-border space-y-4">
+            {razorpayLoading && !errorMsg && (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <Loader className="h-8 w-8 animate-spin text-blue-400" />
+                <span className="text-sm font-mono text-slate-400">Opening Razorpay checkout...</span>
+              </div>
+            )}
+            {errorMsg && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-rose-400 text-xs bg-rose-500/5 p-3.5 rounded border border-rose-500/20">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setErrorMsg('');
+                    setRazorpayLoading(false);
+                    setPaymentMethod(null);
+                    setShowMethodChooser(true);
+                  }}
+                  className="w-full py-2.5 rounded bg-slate-900 border border-glass-border text-slate-400 hover:text-slate-200 text-xs font-bold uppercase transition-colors"
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={() => {
+                    setErrorMsg('');
+                    setRazorpayLoading(false);
+                    setSelectedPlan(null);
+                    setPaymentMethod(null);
+                  }}
+                  className="w-full py-2 rounded text-slate-500 hover:text-slate-400 text-[10px] uppercase transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Crypto Checkout Modal */}
-      {selectedPlan && activePayment && (
+      {selectedPlan && activePayment && paymentMethod === 'crypto' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
           <div className="w-full max-w-lg glass-panel p-6 rounded-xl border border-glass-border space-y-5 text-left relative overflow-hidden">
             <button
@@ -454,7 +672,7 @@ export default function SubscriptionPage() {
             {/* Modal Actions */}
             <div className="pt-2 grid grid-cols-2 gap-3 font-mono">
               <button
-                onClick={() => setSelectedPlan(null)}
+              onClick={() => { setSelectedPlan(null); setPaymentMethod(null); }}
                 disabled={verifying}
                 className="py-2.5 rounded bg-slate-900 border border-glass-border text-slate-400 hover:text-slate-200 text-xs font-bold uppercase transition-colors"
               >

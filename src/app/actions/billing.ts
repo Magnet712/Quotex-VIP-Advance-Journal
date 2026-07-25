@@ -1,9 +1,11 @@
 'use server';
 
+import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { PaymentVerificationService } from '@/lib/payments/verification';
+import { RazorpayHelpers } from '@/lib/payments/razorpay';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 export interface PlanSetting {
@@ -213,6 +215,167 @@ export async function createPaymentRequest(planId: string, network: string) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helper: fetch live USD→INR rate (Frankfurter API, ECB data, free + no key)
+// ─────────────────────────────────────────────────────────────────────────────
+async function getUSDToINR(): Promise<number> {
+  try {
+    const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=INR', {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const rate = data?.rates?.INR;
+    if (typeof rate !== 'number' || rate <= 0) throw new Error('Invalid rate');
+    return rate;
+  } catch {
+    console.warn('[getUSDToINR] API failed, falling back to 84');
+    return 84;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Action: createRazorpayOrder
+// Creates a Razorpay order + payment_request record
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createRazorpayOrder(planId: string) {
+  const { ok, user } = await getAuthProfile();
+  if (!ok || !user) return { success: false, error: 'Unauthorized trader status' };
+
+  try {
+    const supabase = await createClient();
+
+    const { data: plan, error: planErr } = await supabase
+      .from('pricing_settings')
+      .select('*')
+      .eq('id', planId)
+      .single();
+
+    if (planErr || !plan) return { success: false, error: 'Selected plan not found' };
+    if (!plan.enabled) return { success: false, error: 'Selected plan is currently inactive' };
+
+    const finalAmountUSD = Math.max(0, plan.price - (plan.price * (plan.discount / 100)));
+    const usdToInr = await getUSDToINR();
+    const amountINR = Math.round(finalAmountUSD * usdToInr);
+    const amountInPaise = amountINR * 100;
+
+    const razorpay = await RazorpayHelpers.createInstance();
+    const rzpOrder = await razorpay.orders.create({
+      amount: amountInPaise,
+      currency: 'INR',
+      receipt: `plan_${planId}_${Date.now()}`,
+      notes: {
+        user_id: user.id,
+        plan_id: planId,
+      },
+    });
+
+    const { data: payment, error: insertErr } = await supabase
+      .from('payment_requests')
+      .insert({
+        user_id: user.id,
+        plan_id: planId,
+        amount: amountINR,
+        currency: 'INR',
+        network: 'RAZORPAY',
+        wallet_address: '',
+        status: 'PENDING',
+        razorpay_order_id: rzpOrder.id,
+        expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      })
+      .select()
+      .single();
+
+    if (insertErr) return { success: false, error: 'Failed to create payment record' };
+
+    return {
+      success: true,
+      order: {
+        id: rzpOrder.id,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+      },
+      paymentRequestId: payment.id,
+      planName: plan.name,
+    };
+  } catch (err: any) {
+    console.error('[createRazorpayOrder]', err?.error?.description || err?.message || err);
+    return { success: false, error: 'Failed to create Razorpay order' };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Action: getRazorpayExchangeRate (for frontend INR display)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function getRazorpayExchangeRate() {
+  return { success: true, rate: await getUSDToINR() };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Action: verifyRazorpayPayment
+// Verifies Razorpay payment signature and activates subscription
+// ─────────────────────────────────────────────────────────────────────────────
+export async function verifyRazorpayPayment(
+  razorpayOrderId: string,
+  razorpayPaymentId: string,
+  razorpaySignature: string,
+  paymentRequestId: string,
+) {
+  const { ok, user } = await getAuthProfile();
+  if (!ok || !user) return { success: false, error: 'Unauthorized trader status' };
+
+  try {
+    const secret = process.env.RAZORPAY_KEY_SECRET!;
+    const body = razorpayOrderId + '|' + razorpayPaymentId;
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(body)
+      .digest('hex');
+
+    if (expectedSignature !== razorpaySignature) {
+      return { success: false, error: 'Payment signature verification failed' };
+    }
+
+    const supabase = await createClient();
+    const admin = createAdminClient();
+
+    const { data: request } = await supabase
+      .from('payment_requests')
+      .select('*')
+      .eq('id', paymentRequestId)
+      .single();
+
+    if (!request) return { success: false, error: 'Payment request not found' };
+    if (request.status === 'CONFIRMED') {
+      return { success: true, alreadyConfirmed: true };
+    }
+
+    await admin
+      .from('payment_requests')
+      .update({
+        status: 'CONFIRMED',
+        razorpay_payment_id: razorpayPaymentId,
+        razorpay_signature: razorpaySignature,
+        confirmed_at: new Date().toISOString(),
+      })
+      .eq('id', paymentRequestId);
+
+    const actRes = await activateSubscriptionInternal(user.id, request.plan_id);
+    if (!actRes.success) return { success: false, error: 'Subscription activation failed' };
+
+    await admin.from('notification_logs').insert({
+      user_id: user.id,
+      title: 'Payment Confirmed',
+      message: `Your Razorpay payment was successful. ${request.plan_id.replace('_', ' ').toUpperCase()} activated!`,
+    });
+
+    return { success: true };
+  } catch {
+    return { success: false, error: 'Payment verification failed' };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Action: submitPaymentTxnHash (Auto Payment Verification & Auto-Activation)
 // ─────────────────────────────────────────────────────────────────────────────
 export async function submitPaymentTxnHash(paymentRequestId: string, txnHash: string) {
@@ -331,7 +494,7 @@ export async function submitPaymentTxnHash(paymentRequestId: string, txnHash: st
         .eq('id', paymentRequestId);
 
       // Activate Subscription
-      const actRes = await activateSubscription(user.id, request.plan_id);
+      const actRes = await activateSubscriptionInternal(user.id, request.plan_id);
       if (!actRes.success) throw new Error(actRes.error || 'Failed to bind subscription plans');
 
       // Add notification alert
@@ -475,7 +638,7 @@ export async function retryAdminPaymentVerification(paymentRequestId: string) {
         .eq('id', paymentRequestId);
 
       // Activate plan subscription
-      await activateSubscription(request.user_id, request.plan_id);
+      await activateSubscriptionInternal(request.user_id, request.plan_id);
 
       // Log notifications
       await admin.from('notification_logs').insert({
@@ -512,7 +675,7 @@ export async function retryAdminPaymentVerification(paymentRequestId: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Action: activateSubscription (Idempotent subscription binder)
 // ─────────────────────────────────────────────────────────────────────────────
-async function activateSubscription(userId: string, planId: string) {
+export async function activateSubscriptionInternal(userId: string, planId: string) {
   const admin = await createAdminClient();
 
   try {

@@ -6,7 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Anchored Summary
 
-**Objective:** Complete all remaining Manual Scan production-readiness layers — latency optimization, terminal-state lifecycle fix, and independent settlement verification — without modifying any trading strategy, SignalEngine, providers, or thresholds.
+**Objective:** Implemented user's complete Live Forex scan specification (NO TRADE/CALL/PUT flows, popup behavior, data consistency, 60s scan window). OTC frozen. All changes deployed to Vercel.
 
 **Zero trading logic modified:** SignalEngine, evaluateSignal, confidence, QS, thresholds, CALL/PUT/WAIT, strategy, providers, OTC, simulation, replay, backtesting — all frozen across ALL phases.
 
@@ -112,6 +112,53 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Google Search Console verification via `NEXT_PUBLIC_GOOGLE_VERIFICATION` env var
 - Microsoft Clarity via `NEXT_PUBLIC_CLARITY_ID` env var (already built into layout.tsx)
 
+## Session History (25 Jul 2026) — Full Live Forex Scan Specification
+
+### Objective
+Build a reliable Live Forex scan engine with correct entry_time sync between Timeline/Signal History, auto-dismissing popups, and proper handling of NO TRADE vs CALL/PUT scans — without modifying OTC, SignalEngine, or trading strategies.
+
+### Changes Made (8 commits)
+
+1. **NO TRADE entry_time = scan start time** — `scanStartedAt` passed from engine → `scanLiveMarketAsset(pair, dbId, scanStartedAt)`. Server overrides `scanResultData.entryTime/expiryTime` for WAIT direction only. (`signals.ts:1425-1428`, `ExecutionEngine.ts:293`)
+
+2. **SCANNING popup shows "Awaiting..." for entry/expiry** — During SCANNING, ENTRY CANDLE and EXPIRY TIME show "Awaiting..." (amber pulse) instead of pre-computed next-candle times. (`ManualScanResultCard.tsx:285,289`)
+
+3. **REFUND added to Signal History** — Added to `Signal.result` type union, filter dropdown, and `SignalHistoryFilters` type. (`signal-history/page.tsx:49,92,276`, `signals.ts:64`)
+
+4. **Scan failures → NO TRADE instead of FAILED** — `handleScanFailure` transitions to NO TRADE with WAIT direction. All scan-phase errors produce NO TRADE. (`ExecutionEngine.ts:432-439`)
+
+5. **Removed SCAN TIMED OUT flash banner** — Removed `isScanTimedOut` check that caused brief flash between engine transition and React re-render. (`ManualScanResultCard.tsx`)
+
+6. **SCANNING no longer auto-cancels at candle boundary** — Removed `processState` SCANNING → NO TRADE transition at `now >= entryMs`. Now SCANNING persists full 60s. (`ExecutionEngine.ts:148`)
+
+### Verified State Machine
+
+```
+SCANNING (up to 60s)
+  ├── handleScanSuccess(WAIT)  → NO TRADE  → popup gone, stays in timeline
+  ├── handleScanSuccess(CALL/PUT) → WAITING_FOR_ENTRY
+  │     └── entry time reached → PENDING
+  │           └── expiry reached → SETTLING → WIN/LOSS/REFUND
+  ├── handleScanFailure → NO TRADE
+  └── 60s safety timeout → NO TRADE
+```
+
+### POPUP_VISIBLE_STATUSES
+`{SCANNING, WAITING_FOR_ENTRY, PENDING}` — NO TRADE and all post-expiry statuses auto-dismiss popup.
+
+### TERMINAL_STATUSES (Timeline)
+`{WIN, LOSS, REFUND, FAILED, NO TRADE}` — all terminal states shown in timeline permanently.
+
+### Key Files Modified
+- `src/lib/forex-execution/ExecutionEngine.ts` — scan(), processState, handleScanSuccess/Failure, computeNextCandleTime
+- `src/lib/forex-execution/types.ts` — POPUP_VISIBLE_STATUSES, TERMINAL_STATUSES, config
+- `src/app/actions/signals.ts` — scanLiveMarketAsset() 3rd param, WAIT entry_time override, SignalHistoryFilters type
+- `src/app/dashboard/signals/ManualScanResultCard.tsx` — "Awaiting..." during SCANNING, removed isScanTimedOut
+- `src/app/dashboard/signal-history/page.tsx` — REFUND type + filter
+
+### Last Commit
+`c196065` — SCANNING no longer auto-cancels at candle boundary (25 Jul 2026)
+
 ### Key Notes for Future
 - **Zero trading logic modified**: SignalEngine, evaluateSignal, providers, thresholds all frozen
 - 2FA is admin-only, regular users unaffected
@@ -120,5 +167,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Sentry configured with DSN + auth token from `.env.sentry-build-plugin`
 
 ### Next
-- Begin localhost testing: verify 1-2s latency, correct state transitions, no FAILED overwrite
+- User to test on Vercel: scan late in minute (e.g. :45) — verify full 60s window, correct entry_time, popup behavior
 - Continue daily Phase 12 collection toward 50k-100k windows for statistical certainty
