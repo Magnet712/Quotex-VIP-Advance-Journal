@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { sendNewUserNotification } from '@/lib/email';
 
 /**
  * Maps a Trader ID to a virtual email address for Supabase Auth.
@@ -110,6 +111,16 @@ export async function registerTrader(traderId: string, username: string, passwor
     if (loginError) {
       console.error('Auto-login error after registration:', loginError);
     }
+
+    sendNewUserNotification({
+      name: username.trim(),
+      traderId: traderId.trim(),
+      submittedDate: new Date().toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }),
+    });
 
     return { success: true };
   } catch (err: any) {
