@@ -264,9 +264,6 @@ export async function getAdminSignalAnalytics(filters: AnalyticsFilters = {}) {
       if (filters.strategyVersion && filters.strategyVersion !== 'ALL') {
         sigQuery = sigQuery.eq('strategy_version', filters.strategyVersion);
       }
-      if (filters.result && filters.result !== 'ALL') {
-        sigQuery = sigQuery.eq('result', filters.result);
-      }
       if (activeSource !== 'ALL') {
         sigQuery = sigQuery.eq('source', activeSource);
       }
@@ -302,9 +299,6 @@ export async function getAdminSignalAnalytics(filters: AnalyticsFilters = {}) {
       if (filters.pair && filters.pair !== 'ALL') {
         msaQuery = msaQuery.eq('pair', filters.pair);
       }
-      if (filters.result && filters.result !== 'ALL') {
-        msaQuery = msaQuery.eq('status', filters.result);
-      }
       if (filters.confidenceMin !== undefined) {
         msaQuery = msaQuery.gte('confidence', filters.confidenceMin);
       }
@@ -324,7 +318,10 @@ export async function getAdminSignalAnalytics(filters: AnalyticsFilters = {}) {
       if (!error) msaData = data ?? [];
     }
 
-    // 2c. Normalize msa records to signals shape
+    // 2c. Helper: effective result with override
+    const effectiveResult = (r: any, col: string) => r.override_result ?? r[col];
+
+    // 2d. Normalize msa records to signals shape with override support
     const msaMapped = msaData.map((r: any) => ({
       id: r.id,
       pair: r.pair,
@@ -341,11 +338,22 @@ export async function getAdminSignalAnalytics(filters: AnalyticsFilters = {}) {
       quality_score: r.confidence,
       is_premium: true,
       source: 'live_market',
-      result: r.status,
+      result: effectiveResult(r, 'status'),
     }));
 
-    // 2d. Merge both sources
-    const allSignals = [...signalsData, ...msaMapped];
+    // 2e. Apply override to signals data result
+    const signalsOverridden = signalsData.map((r: any) => ({
+      ...r,
+      result: effectiveResult(r, 'result'),
+    }));
+
+    // 2f. Merge both sources
+    let allSignals = [...signalsOverridden, ...msaMapped];
+
+    // 2g. Apply result filter in-memory (after override)
+    if (filters.result && filters.result !== 'ALL') {
+      allSignals = allSignals.filter((s: any) => s.result === filters.result);
+    }
 
     // Calculate core statistics
     const totalSignals = allSignals.length;

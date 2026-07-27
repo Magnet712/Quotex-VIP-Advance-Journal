@@ -12,7 +12,8 @@ import {
   getSignalPerformance,
   getPairPerformanceMap,
   getServerTime, getMarketStatus,
-  getManualSignalAudits
+  getManualSignalAudits,
+  overrideSignalResult,
 } from '@/app/actions/signals';
 import { getSignalMode } from '@/app/actions/signal_mode';
 import { getPublicOptimizationSettings, getUserAccessState } from '@/app/actions/admin_optimization';
@@ -70,6 +71,7 @@ interface SignalRecord {
   strategy_name?: string;
   risk_level?: string;
   noTradeReason?: string;
+  override_result?: string | null;
 }
 
 type SignalStatus = 'ACTIVE' | 'SCANNING' | 'NO_SIGNAL' | 'LOADING_NEXT';
@@ -159,6 +161,8 @@ export default function SignalsPage() {
 
   // Timeline list state
   const [timelineSignals, setTimelineSignals] = useState<SignalRecord[]>([]);
+  const [overridingId, setOverridingId] = useState<string | null>(null);
+  const [overriddenIds, setOverriddenIds] = useState<Set<string>>(new Set());
 
   const [winRate, setWinRate] = useState<number | null>(null);
   const [activeStats, setActiveStats] = useState<{ winRate: number | null; totalToday: number }>({ winRate: null, totalToday: 0 });
@@ -174,45 +178,40 @@ export default function SignalsPage() {
   const [otcSearchFilter, setOtcSearchFilter] = useState('');
 
   // ─── Merged timeline: engine live records + API historical records ──────────
+  // timelineSignals (refreshed from DB with override_result) always take priority
+  // over in-memory engine records so overrides persist across page refresh.
   const mergedTimeline = useMemo(() => {
-    const engineIds = new Set<string>();
-    const engine = forex.timelineRecords.map(r => {
-      engineIds.add(r.id);
-      return r;
-    });
+    const tsMap = new Map(timelineSignals.map(s => [s.id, s]));
+    const engine = forex.timelineRecords.filter(r => !tsMap.has(r.id));
     const otcEngineRecords = otc.timelineRecords
-      .filter(r => !engineIds.has(r.id))
-      .map(r => {
-        engineIds.add(r.id);
-        return {
-          id: r.id,
-          pair: r.pair,
-          direction: r.direction,
-          status: r.status === 'NO_TRADE' ? 'NO TRADE' as const : r.status,
-          entryTime: r.entryTime,
-          expiryTime: r.expiryTime,
-          dataSource: 'live_otc' as string,
-          noTradeReason: r.noTradeReason,
-          entryPrice: r.entryPrice || 0,
-          confidence: r.confidence,
-          scanStartedAt: r.scanStartedAt,
-        } as ExecutionRecord;
-      });
-    const historical = timelineSignals
-      .filter(s => !engineIds.has(s.id))
-      .map(s => ({
-        id: s.id,
-        pair: s.pair,
-        direction: s.direction,
-        status: s.result,
-        entryTime: s.entry_time,
-        expiryTime: s.expiry_time,
-        dataSource: s.source,
-        noTradeReason: s.noTradeReason,
-        entryPrice: (s as any).entryPrice || 0,
-        confidence: s.confidence,
-        scanStartedAt: new Date(s.entry_time).getTime(),
+      .filter(r => !tsMap.has(r.id))
+      .map(r => ({
+        id: r.id,
+        pair: r.pair,
+        direction: r.direction,
+        status: r.status === 'NO_TRADE' ? 'NO TRADE' as const : r.status,
+        entryTime: r.entryTime,
+        expiryTime: r.expiryTime,
+        dataSource: 'live_otc' as string,
+        noTradeReason: r.noTradeReason,
+        entryPrice: r.entryPrice || 0,
+        confidence: r.confidence,
+        scanStartedAt: r.scanStartedAt,
       } as ExecutionRecord));
+    const historical = timelineSignals.map(s => ({
+      id: s.id,
+      pair: s.pair,
+      direction: s.direction,
+      status: s.result,
+      entryTime: s.entry_time,
+      expiryTime: s.expiry_time,
+      dataSource: s.source,
+      noTradeReason: s.noTradeReason,
+      entryPrice: (s as any).entryPrice || 0,
+      confidence: s.confidence,
+      scanStartedAt: new Date(s.entry_time).getTime(),
+      override_result: s.override_result || null,
+    } as ExecutionRecord & { override_result?: string | null }));
     return [...engine, ...otcEngineRecords, ...historical]
       .filter(r => TERMINAL_STATUSES.has(r.status as any))
       .sort((a, b) => b.scanStartedAt - a.scanStartedAt);
@@ -380,24 +379,17 @@ export default function SignalsPage() {
         setOptSettings(settingsRes.settings);
       }
       if (timelineRes.success) {
-        const mapped = (timelineRes.audits || []).map((a: {
-          id: string; pair: string; direction: string;
-          entry_time: string; expiry_time: string;
-          confidence: number; status: string; provider: string;
-          market_bias?: string; noTradeReason?: string;
-          entry_price?: number; exit_price?: number;
-        }) => ({
-          id: a.id,
-          pair: a.pair,
+        const mapped = (timelineRes.audits || []).map((a: any) => ({
+          id: a.id as string,
+          pair: a.pair as string,
           direction: a.direction as 'CALL' | 'PUT' | 'WAIT',
-          entry_time: a.entry_time,
-          expiry_time: a.expiry_time,
-          confidence: a.confidence,
-          result: a.status,
-          source: a.provider,
-          noTradeReason: a.noTradeReason || a.market_bias || undefined,
-          entryPrice: a.entry_price,
-          exitPrice: a.exit_price
+          entry_time: a.entry_time as string,
+          expiry_time: a.expiry_time as string,
+          confidence: a.confidence as number,
+          result: a.status as string,
+          source: a.provider as string,
+          noTradeReason: (a.noTradeReason as string) || (a.market_bias as string) || undefined,
+          override_result: (a.override_result as string | null) || null,
         }));
         setTimelineSignals(mapped);
       }
@@ -444,6 +436,23 @@ export default function SignalsPage() {
       triggerNewSignalChime(pairToScan, res.direction);
     } else if (res.error && res.error !== 'Maximum 3 concurrent scans reached') {
       triggerErrorToast(res.error);
+    }
+  };
+
+  const handleOverrideResult = async (recordId: string, dataSource: string) => {
+    setOverridingId(recordId);
+    setOverriddenIds(prev => new Set(prev).add(recordId));
+    setTimelineSignals(prev => prev.map(s =>
+      s.id === recordId ? { ...s, result: 'WIN' } : s
+    ));
+    try {
+      const table = dataSource?.toLowerCase().includes('otc')
+        ? 'signals' as const
+        : 'manual_signal_audits' as const;
+      await overrideSignalResult(recordId, table);
+      await refreshStats();
+    } finally {
+      setOverridingId(null);
     }
   };
 
@@ -1308,11 +1317,12 @@ export default function SignalsPage() {
                         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} remaining`;
                       })();
 
-                      const resultLabel = sig.status;
-                      const isWin = sig.status === 'WIN';
-                      const isLoss = sig.status === 'LOSS';
-                      const isRefund = sig.status === 'REFUND';
-                      const isNoTrade = sig.status === 'NO TRADE';
+                      const effectiveStatus = overriddenIds.has(sig.id) ? 'WIN' : sig.status;
+                      const resultLabel = effectiveStatus;
+                      const isWin = effectiveStatus === 'WIN';
+                      const isLoss = effectiveStatus === 'LOSS';
+                      const isRefund = effectiveStatus === 'REFUND';
+                      const isNoTrade = effectiveStatus === 'NO TRADE';
                       const isActive = isTimelinePending || isTimelineWaitingEntry || isTimelineScanning;
 
                       return (
@@ -1364,6 +1374,32 @@ export default function SignalsPage() {
                               }`}>
                               {resultLabel}
                             </span>
+                            {!overriddenIds.has(sig.id) && sig.status === 'LOSS' && !isActive && (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleOverrideResult(sig.id, sig.dataSource); }}
+                                  disabled={overridingId === sig.id}
+                                  className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border transition-all ${
+                                    overridingId === sig.id
+                                      ? 'text-slate-500 border-slate-700 bg-slate-900/40 cursor-wait'
+                                      : 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 cursor-pointer'
+                                  }`}
+                                >
+                                  {overridingId === sig.id ? '...' : 'ST'}
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleOverrideResult(sig.id, sig.dataSource); }}
+                                  disabled={overridingId === sig.id}
+                                  className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border transition-all ${
+                                    overridingId === sig.id
+                                      ? 'text-slate-500 border-slate-700 bg-slate-900/40 cursor-wait'
+                                      : 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 cursor-pointer'
+                                  }`}
+                                >
+                                  {overridingId === sig.id ? '...' : 'MTG'}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );

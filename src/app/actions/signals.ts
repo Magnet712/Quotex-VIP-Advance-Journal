@@ -15,7 +15,7 @@
  * IMPORTANT: Signals are NEVER deleted. Permanent record for credibility.
  */
 
-import { createClient }    from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath }  from 'next/cache';
 import { persistenceDiag } from '@/lib/otc/persistence-diagnostics';
@@ -328,6 +328,43 @@ export async function updateSignalStatus(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ACTION: overrideSignalResult
+// Called when a user clicks ST or MTG on a LOSS in the timeline.
+// Sets override_result = 'WIN' on the record so all dashboard views
+// and analytics treat it as a WIN while preserving the original result.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function overrideSignalResult(
+  signalId: string,
+  table: 'signals' | 'manual_signal_audits',
+) {
+  const { ok, userId } = await checkApproved();
+  if (!ok || !userId) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from(table)
+      .update({ override_result: 'WIN' })
+      .eq('id', signalId);
+
+    if (error) {
+      return { success: false, error: `Update failed: ${error.message}` };
+    }
+
+    revalidatePath('/dashboard/signal-history');
+    revalidatePath('/dashboard/performance');
+    revalidatePath('/dashboard/analytics');
+    revalidatePath('/dashboard/signals');
+    revalidatePath('/admin/signal-analytics');
+
+    return { success: true };
+  } catch (err) {
+    const errorObj = err as Error;
+    return { success: false, error: errorObj.message };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ACTION: saveCandle
 // Stores a raw OTC candle into the otc_candles table for audit/analytics.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -404,11 +441,7 @@ export async function getSignalHistory(filters: SignalHistoryFilters = {}) {
         .eq('user_id', userId);
 
       if (filters.pair && filters.pair !== 'ALL')    msa = msa.eq('pair', filters.pair);
-      if (filters.result && filters.result !== 'ALL') {
-        msa = msa.eq('status', filters.result);
-      } else {
-        msa = msa.neq('status', 'SCANNING');
-      }
+      msa = msa.neq('status', 'SCANNING');
 
       msa = dateFromClause('entry_time')(msa);
       msa = dateToClause('entry_time')(msa);
@@ -427,11 +460,7 @@ export async function getSignalHistory(filters: SignalHistoryFilters = {}) {
         .eq('user_id', userId);
 
       if (filters.pair && filters.pair !== 'ALL')    sig = sig.eq('pair', filters.pair);
-      if (filters.result && filters.result !== 'ALL') {
-        sig = sig.eq('result', filters.result);
-      } else {
-        sig = sig.neq('result', 'SCANNING');
-      }
+      sig = sig.neq('result', 'SCANNING');
       if (filters.strategy && filters.strategy !== 'ALL') sig = sig.eq('strategy_name', filters.strategy);
 
       sig = dateFromClause('entry_time')(sig);
@@ -441,8 +470,11 @@ export async function getSignalHistory(filters: SignalHistoryFilters = {}) {
       if (!error) sigData = data ?? [];
     }
 
+    // ── Helper: apply override_result if present ──────────────────────────
+    const effectiveResult = (r: any, col: string) => r.override_result ?? r[col];
+
     // ── Normalise to common shape ──────────────────────────────────────────
-    const msaMapped = msaData.map((r: any) => ({
+    let msaMapped = msaData.map((r: any) => ({
       id: r.id,
       pair: r.pair,
       timeframe: '1m',
@@ -455,10 +487,10 @@ export async function getSignalHistory(filters: SignalHistoryFilters = {}) {
       confidence: r.confidence,
       risk_level: 'MEDIUM',
       source: 'live_market',
-      result: r.status,
+      result: effectiveResult(r, 'status'),
     }));
 
-    const sigMapped = sigData.map((r: any) => ({
+    let sigMapped = sigData.map((r: any) => ({
       id: r.id,
       pair: r.pair,
       timeframe: r.timeframe,
@@ -471,8 +503,14 @@ export async function getSignalHistory(filters: SignalHistoryFilters = {}) {
       confidence: r.confidence,
       risk_level: r.risk_level ?? 'MEDIUM',
       source: 'live_otc',
-      result: r.result,
+      result: effectiveResult(r, 'result'),
     }));
+
+    // ── Apply result filter in-memory (after override) ─────────────────────
+    if (filters.result && filters.result !== 'ALL') {
+      msaMapped = msaMapped.filter(r => r.result === filters.result);
+      sigMapped = sigMapped.filter(r => r.result === filters.result);
+    }
 
     // ── Merge, sort desc by entry_time, paginate ───────────────────────────
     const merged = [...msaMapped, ...sigMapped].sort((a, b) => {
@@ -551,7 +589,11 @@ export async function getOTCTimelineSignals() {
       console.error('[getOTCTimelineSignals] Error:', error.message);
       return { success: false, error: 'Failed to fetch terminal signals', signals: [] };
     }
-    return { success: true, signals: data ?? [] };
+    const mapped = (data ?? []).map((r: any) => ({
+      ...r,
+      result: r.override_result ?? r.result,
+    }));
+    return { success: true, signals: mapped };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[getOTCTimelineSignals] Error:', msg);
@@ -574,22 +616,22 @@ export async function getSignalPerformance(source?: 'simulation' | 'live_otc' | 
     const NINETY_DAYS_AGO = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
     // ── Fetch manual_signal_audits (Live FOREX) ────────────────────────────
-    let msaRows: { status: string; created_at: string }[] = [];
+    let msaRows: { status: string; created_at: string; override_result: string | null }[] = [];
     if (src === 'ALL' || src === 'live_market') {
       const { data, error } = await supabase
         .from('manual_signal_audits')
-        .select('status, created_at')
+        .select('status, created_at, override_result')
         .eq('user_id', userId)
         .gte('created_at', NINETY_DAYS_AGO);
       if (!error) msaRows = data ?? [];
     }
 
     // ── Fetch signals (Live OTC) — exclude simulation ──────────────────────
-    let sigRows: { result: string; entry_time: string }[] = [];
+    let sigRows: { result: string; entry_time: string; override_result: string | null }[] = [];
     if (src === 'ALL' || src === 'live_otc') {
       const { data, error } = await supabase
         .from('signals')
-        .select('result, entry_time')
+        .select('result, entry_time, override_result')
         .eq('source', 'live_otc')
         .eq('user_id', userId)
         .gte('entry_time', NINETY_DAYS_AGO);
@@ -597,31 +639,34 @@ export async function getSignalPerformance(source?: 'simulation' | 'live_otc' | 
     }
 
     // ── Fetch signals (Simulation) ─────────────────────────────────────────
-    let simRows: { result: string; entry_time: string }[] = [];
+    let simRows: { result: string; entry_time: string; override_result: string | null }[] = [];
     if (src === 'ALL' || src === 'simulation') {
       const { data, error } = await supabase
         .from('signals')
-        .select('result, entry_time')
+        .select('result, entry_time, override_result')
         .eq('source', 'simulation')
         .eq('user_id', userId)
         .gte('entry_time', NINETY_DAYS_AGO);
       if (!error) simRows = data ?? [];
     }
 
+    // ── Helper: effective result with override ─────────────────────────────
+    const eff = (r: any, col: string) => r.override_result ?? r[col];
+
     // ── Aggregate ──────────────────────────────────────────────────────────
     // Exclude SCANNING/NO TRADE/FAILED from total count (these are not real signals)
     const signalStatuses = new Set(['WIN', 'LOSS', 'REFUND', 'PENDING']);
-    const msaFiltered   = msaRows.filter(r => signalStatuses.has(r.status));
-    const total         = msaFiltered.length + sigRows.length + simRows.length;
-    const msaWins       = msaRows.filter(r => r.status === 'WIN').length;
-    const sigWins       = sigRows.filter(r => r.result === 'WIN').length;
-    const simWins       = simRows.filter(r => r.result === 'WIN').length;
+    const msaFiltered   = msaRows.filter(r => signalStatuses.has(eff(r, 'status')));
+    const total         = msaFiltered.length + sigRows.filter(r => signalStatuses.has(eff(r, 'result'))).length + simRows.filter(r => signalStatuses.has(eff(r, 'result'))).length;
+    const msaWins       = msaRows.filter(r => eff(r, 'status') === 'WIN').length;
+    const sigWins       = sigRows.filter(r => eff(r, 'result') === 'WIN').length;
+    const simWins       = simRows.filter(r => eff(r, 'result') === 'WIN').length;
     const wins          = msaWins + sigWins + simWins;
-    const msaLosses     = msaRows.filter(r => r.status === 'LOSS').length;
-    const sigLosses     = sigRows.filter(r => r.result === 'LOSS').length;
-    const simLosses     = simRows.filter(r => r.result === 'LOSS').length;
+    const msaLosses     = msaRows.filter(r => eff(r, 'status') === 'LOSS').length;
+    const sigLosses     = sigRows.filter(r => eff(r, 'result') === 'LOSS').length;
+    const simLosses     = simRows.filter(r => eff(r, 'result') === 'LOSS').length;
     const losses        = msaLosses + sigLosses + simLosses;
-    const pending       = msaRows.filter(r => r.status === 'PENDING').length + sigRows.filter(r => r.result === 'PENDING').length + simRows.filter(r => r.result === 'PENDING').length;
+    const pending       = msaRows.filter(r => eff(r, 'status') === 'PENDING').length + sigRows.filter(r => eff(r, 'result') === 'PENDING').length + simRows.filter(r => eff(r, 'result') === 'PENDING').length;
     const resolved      = wins + losses;
     const accuracy      = resolved > 0 ? Math.round((wins / resolved) * 100 * 100) / 100 : 0;
 
@@ -701,14 +746,14 @@ export async function getPairPerformanceMap() {
     // manual_signal_audits (Live FOREX)
     const { data: msa, error: msaErr } = await supabase
       .from('manual_signal_audits')
-      .select('pair, status')
+      .select('pair, status, override_result')
       .eq('user_id', userId)
       .neq('status', 'PENDING');
 
     // signals (Live OTC)
     const { data: sig, error: sigErr } = await supabase
       .from('signals')
-      .select('pair, result')
+      .select('pair, result, override_result')
       .eq('source', 'live_otc')
       .eq('user_id', userId)
       .neq('result', 'PENDING');
@@ -719,7 +764,8 @@ export async function getPairPerformanceMap() {
       (msa ?? []).forEach(s => {
         if (!map[s.pair]) map[s.pair] = { wins: 0, total: 0 };
         map[s.pair].total++;
-        if (s.status === 'WIN') map[s.pair].wins++;
+        const effective = s.override_result ?? s.status;
+        if (effective === 'WIN') map[s.pair].wins++;
       });
     }
 
@@ -727,7 +773,8 @@ export async function getPairPerformanceMap() {
       (sig ?? []).forEach(s => {
         if (!map[s.pair]) map[s.pair] = { wins: 0, total: 0 };
         map[s.pair].total++;
-        if (s.result === 'WIN') map[s.pair].wins++;
+        const effective = s.override_result ?? s.result;
+        if (effective === 'WIN') map[s.pair].wins++;
       });
     }
 
@@ -793,7 +840,7 @@ export async function getPublicSignalPerformance() {
 
     const { data: signals, error } = await supabase
       .from('signals')
-      .select('result, source, entry_time')
+      .select('result, source, entry_time, override_result')
       .eq('source', 'live_market')
       .gte('entry_time', thirtyDaysAgo.toISOString());
 
@@ -804,9 +851,9 @@ export async function getPublicSignalPerformance() {
 
     const list = signals ?? [];
     const total = list.length;
-    const wins = list.filter(s => s.result === 'WIN').length;
-    const losses = list.filter(s => s.result === 'LOSS').length;
-    const pending = list.filter(s => s.result === 'PENDING').length;
+    const wins = list.filter(s => (s.override_result ?? s.result) === 'WIN').length;
+    const losses = list.filter(s => (s.override_result ?? s.result) === 'LOSS').length;
+    const pending = list.filter(s => (s.override_result ?? s.result) === 'PENDING').length;
     const resolved = wins + losses;
     const accuracy = resolved > 0 ? Math.round((wins / resolved) * 100 * 100) / 100 : 0;
 
@@ -1642,7 +1689,11 @@ export async function getManualSignalAudits() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return { success: true, audits: data || [] };
+    const mapped = (data || []).map((r: any) => ({
+      ...r,
+      status: r.override_result ?? r.status,
+    }));
+    return { success: true, audits: mapped };
   } catch (err: unknown) {
     console.error('[getManualSignalAudits] Error fetching signal audits:', err);
     return { success: false, error: 'Failed to fetch signal audits', audits: [] };

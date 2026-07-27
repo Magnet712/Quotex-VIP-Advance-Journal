@@ -32,7 +32,7 @@ export async function getPerformanceStats(filters: PerformanceStatsFilter = {}) 
     if (src === 'ALL' || src === 'live_market') {
       let msaQuery = supabase
         .from('manual_signal_audits')
-        .select('pair, status, entry_time, created_at')
+        .select('pair, status, entry_time, created_at, override_result')
         .eq('user_id', user.id);
 
       if (filters.dateFrom) {
@@ -50,7 +50,7 @@ export async function getPerformanceStats(filters: PerformanceStatsFilter = {}) 
       msaNormalised = (msaRows ?? []).map((r: any) => ({
         pair: r.pair || 'Unknown',
         ts: r.entry_time || r.created_at || '',
-        result: r.status as 'WIN' | 'LOSS' | 'PENDING',
+        result: (r.override_result ?? r.status) as 'WIN' | 'LOSS' | 'PENDING',
       }));
     }
 
@@ -59,7 +59,7 @@ export async function getPerformanceStats(filters: PerformanceStatsFilter = {}) 
     if (src === 'ALL' || src === 'live_otc') {
       let sigQuery = supabase
         .from('signals')
-        .select('pair, result, entry_time')
+        .select('pair, result, entry_time, override_result')
         .eq('source', 'live_otc')
         .eq('user_id', user.id);
 
@@ -78,7 +78,7 @@ export async function getPerformanceStats(filters: PerformanceStatsFilter = {}) 
       sigNormalised = (sigRows ?? []).map((r: any) => ({
         pair: r.pair || 'Unknown',
         ts: r.entry_time || '',
-        result: r.result as 'WIN' | 'LOSS' | 'PENDING',
+        result: (r.override_result ?? r.result) as 'WIN' | 'LOSS' | 'PENDING',
       }));
     }
 
