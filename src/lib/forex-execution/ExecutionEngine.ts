@@ -368,6 +368,8 @@ export class ExecutionEngine {
     dbId: string,
     serverTimeMs: number
   ): void {
+    if (placeholder.status !== 'SCANNING') return;
+
     const result = res.result!;
     this.syncClock(serverTimeMs);
 
