@@ -13,6 +13,7 @@ import {
   getPairPerformanceMap,
   getServerTime, getMarketStatus,
   getManualSignalAudits,
+  getOTCTimelineSignals,
   overrideSignalResult,
 } from '@/app/actions/signals';
 import { getSignalMode } from '@/app/actions/signal_mode';
@@ -364,10 +365,11 @@ export default function SignalsPage() {
 
   const refreshStats = useCallback(async () => {
     try {
-      const [perfRes, settingsRes, timelineRes] = await Promise.all([
+      const [perfRes, settingsRes, msaRes, otcRes] = await Promise.all([
         getSignalPerformance('ALL'),
         getPublicOptimizationSettings(),
-        getManualSignalAudits()
+        getManualSignalAudits(),
+        getOTCTimelineSignals(),
       ]);
       if (perfRes.success && perfRes.stats) {
         const winDefault = subTab === 'live_market' ? 82.3 : 84.5;
@@ -378,21 +380,40 @@ export default function SignalsPage() {
       if (settingsRes.success && settingsRes.settings) {
         setOptSettings(settingsRes.settings);
       }
-      if (timelineRes.success) {
-        const mapped = (timelineRes.audits || []).map((a: any) => ({
-          id: a.id as string,
-          pair: a.pair as string,
-          direction: a.direction as 'CALL' | 'PUT' | 'WAIT',
-          entry_time: a.entry_time as string,
-          expiry_time: a.expiry_time as string,
-          confidence: a.confidence as number,
-          result: a.status as string,
-          source: a.provider as string,
-          noTradeReason: (a.noTradeReason as string) || (a.market_bias as string) || undefined,
-          override_result: (a.override_result as string | null) || null,
-        }));
-        setTimelineSignals(mapped);
+      const allSignals: SignalRecord[] = [];
+      if (msaRes.success) {
+        for (const a of (msaRes.audits || [])) {
+          allSignals.push({
+            id: a.id as string,
+            pair: a.pair as string,
+            direction: a.direction as 'CALL' | 'PUT' | 'WAIT',
+            entry_time: a.entry_time as string,
+            expiry_time: a.expiry_time as string,
+            confidence: a.confidence as number,
+            result: a.status as string,
+            source: a.provider as string,
+            noTradeReason: (a.noTradeReason as string) || (a.market_bias as string) || undefined,
+            override_result: (a.override_result as string | null) || null,
+          });
+        }
       }
+      if (otcRes.success) {
+        for (const a of (otcRes.signals || [])) {
+          allSignals.push({
+            id: a.id as string,
+            pair: a.pair as string,
+            direction: a.direction as 'CALL' | 'PUT' | 'WAIT',
+            entry_time: a.entry_time as string,
+            expiry_time: a.expiry_time as string,
+            confidence: (a.confidence as number) ?? 0,
+            result: a.result as string,
+            source: a.source as string,
+            noTradeReason: undefined,
+            override_result: (a.override_result as string | null) || null,
+          });
+        }
+      }
+      setTimelineSignals(allSignals);
     } catch (err) {
       console.error('Error refreshing stats:', err);
     }
