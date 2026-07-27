@@ -1282,7 +1282,7 @@ export default function SignalsPage() {
                   )}
 
                   <div className={!hasAccess && !accessLoading ? 'blur-[4.5px] select-none pointer-events-none space-y-3.5' : 'space-y-3.5'}>
-                    {mergedTimeline.map((sig) => {
+                    {mergedTimeline.map((sig: ExecutionRecord & { override_result?: string | null }) => {
                       const isCall = sig.direction === 'CALL';
                       const isPut = sig.direction === 'PUT';
 
@@ -1317,7 +1317,7 @@ export default function SignalsPage() {
                         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} remaining`;
                       })();
 
-                      const effectiveStatus = overriddenIds.has(sig.id) ? 'WIN' : sig.status;
+                      const effectiveStatus = overriddenIds.has(sig.id) || sig.override_result === 'WIN' ? 'WIN' : sig.status;
                       const resultLabel = effectiveStatus;
                       const isWin = effectiveStatus === 'WIN';
                       const isLoss = effectiveStatus === 'LOSS';
@@ -1374,7 +1374,7 @@ export default function SignalsPage() {
                               }`}>
                               {resultLabel}
                             </span>
-                            {!overriddenIds.has(sig.id) && sig.status === 'LOSS' && !isActive && (
+                            {!overriddenIds.has(sig.id) && sig.status === 'LOSS' && !sig.override_result && !isActive && (
                               <div className="flex gap-1">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleOverrideResult(sig.id, sig.dataSource); }}
