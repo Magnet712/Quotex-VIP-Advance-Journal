@@ -342,13 +342,17 @@ export async function overrideSignalResult(
 
   try {
     const supabase = createAdminClient();
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from(table)
       .update({ override_result: 'WIN' })
-      .eq('id', signalId);
+      .eq('id', signalId)
+      .select();
 
     if (error) {
       return { success: false, error: `Update failed: ${error.message}` };
+    }
+    if (!data || data.length === 0) {
+      return { success: false, error: 'Override failed: signal not found in database' };
     }
 
     revalidatePath('/dashboard/signal-history');

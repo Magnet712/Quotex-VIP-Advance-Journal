@@ -442,6 +442,7 @@ export default function SignalsPage() {
   const handleOverrideResult = async (recordId: string, dataSource: string) => {
     setOverridingId(recordId);
     setOverriddenIds(prev => new Set(prev).add(recordId));
+    const originalResult = timelineSignals.find(s => s.id === recordId)?.result || 'LOSS';
     setTimelineSignals(prev => prev.map(s =>
       s.id === recordId ? { ...s, result: 'WIN' } : s
     ));
@@ -449,7 +450,19 @@ export default function SignalsPage() {
       const table = dataSource?.toLowerCase().includes('otc')
         ? 'signals' as const
         : 'manual_signal_audits' as const;
-      await overrideSignalResult(recordId, table);
+      const res = await overrideSignalResult(recordId, table);
+      if (!res.success) {
+        setOverriddenIds(prev => {
+          const next = new Set(prev);
+          next.delete(recordId);
+          return next;
+        });
+        setTimelineSignals(prev => prev.map(s =>
+          s.id === recordId ? { ...s, result: originalResult } : s
+        ));
+        triggerErrorToast(res.error || 'Override failed');
+        return;
+      }
       await refreshStats();
     } finally {
       setOverridingId(null);
