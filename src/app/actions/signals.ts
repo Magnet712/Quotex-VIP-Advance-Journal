@@ -342,24 +342,17 @@ export async function overrideSignalResult(
 
   try {
     const supabase = createAdminClient();
-    const { count } = await supabase
-      .from(table)
-      .select('id', { count: 'exact', head: true })
-      .eq('id', signalId);
-
-    if (count === 0) {
-      return { success: false, error: 'Override failed: signal not found in database' };
-    }
-
-    const { error } = await supabase
+    const { error: updateErr } = await supabase
       .from(table)
       .update({ override_result: 'WIN' })
       .eq('id', signalId);
 
-    if (error) {
-      return { success: false, error: `Update failed: ${error.message}` };
+    if (updateErr) {
+      console.error('[overrideSignalResult] updateErr', updateErr);
+      return { success: false, error: 'Override failed' };
     }
 
+    console.log('[overrideSignalResult] SUCCESS', { table, signalId });
     revalidatePath('/dashboard/signal-history');
     revalidatePath('/dashboard/performance');
     revalidatePath('/dashboard/analytics');
@@ -368,8 +361,8 @@ export async function overrideSignalResult(
 
     return { success: true };
   } catch (err) {
-    const errorObj = err as Error;
-    return { success: false, error: errorObj.message };
+    console.error('[overrideSignalResult] exception', err);
+    return { success: false, error: 'An unexpected error occurred' };
   }
 }
 
@@ -602,6 +595,11 @@ export async function getOTCTimelineSignals() {
       ...r,
       result: r.override_result ?? r.result,
     }));
+    if (mapped.length > 0) {
+      console.log('[getOTCTimelineSignals] returning signals', mapped.map((r: any) => ({
+        id: r.id, res: r.result, or: r.override_result
+      })).slice(0, 5));
+    }
     return { success: true, signals: mapped };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

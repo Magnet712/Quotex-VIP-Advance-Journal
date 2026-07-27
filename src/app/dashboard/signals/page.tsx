@@ -163,7 +163,21 @@ export default function SignalsPage() {
   // Timeline list state
   const [timelineSignals, setTimelineSignals] = useState<SignalRecord[]>([]);
   const [overridingId, setOverridingId] = useState<string | null>(null);
-  const [overriddenIds, setOverriddenIds] = useState<Set<string>>(new Set());
+  const [overriddenIds, setOverriddenIds] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const stored = localStorage.getItem('override_ids');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+  const persistOverrideId = useCallback((id: string) => {
+    try {
+      const stored = localStorage.getItem('override_ids');
+      const arr: string[] = stored ? JSON.parse(stored) : [];
+      if (!arr.includes(id)) arr.push(id);
+      localStorage.setItem('override_ids', JSON.stringify(arr));
+    } catch { /* ignore */ }
+  }, []);
 
   const [winRate, setWinRate] = useState<number | null>(null);
   const [activeStats, setActiveStats] = useState<{ winRate: number | null; totalToday: number }>({ winRate: null, totalToday: 0 });
@@ -371,6 +385,15 @@ export default function SignalsPage() {
         getManualSignalAudits(),
         getOTCTimelineSignals(),
       ]);
+      console.log('[DIAG] refreshStats results', {
+        msaSuccess: msaRes.success,
+        msaCount: msaRes.audits?.length ?? 0,
+        otcSuccess: otcRes.success,
+        otcCount: otcRes.signals?.length ?? 0,
+        otcFirstFew: (otcRes.signals || []).slice(0, 3).map((s: any) => ({
+          id: s.id, result: s.result, override_result: s.override_result
+        })),
+      });
       if (perfRes.success && perfRes.stats) {
         const winDefault = subTab === 'live_market' ? 82.3 : 84.5;
         const win = perfRes.stats.accuracy > 0 ? perfRes.stats.accuracy : winDefault;
@@ -461,6 +484,7 @@ export default function SignalsPage() {
   };
 
   const handleOverrideResult = async (recordId: string, dataSource: string) => {
+    console.log('[DIAG] handleOverrideResult called', { recordId, dataSource });
     setOverridingId(recordId);
     setOverriddenIds(prev => new Set(prev).add(recordId));
     const originalResult = timelineSignals.find(s => s.id === recordId)?.result || 'LOSS';
@@ -473,7 +497,9 @@ export default function SignalsPage() {
         ? 'signals' as const
         : 'manual_signal_audits' as const;
       const res = await overrideSignalResult(recordId, table);
+      console.log('[DIAG] overrideSignalResult response', res, { table, recordId });
       if (!res.success) {
+        console.log('[DIAG] Override FAILED', res.error);
         setOverriddenIds(prev => {
           const next = new Set(prev);
           next.delete(recordId);
@@ -485,7 +511,10 @@ export default function SignalsPage() {
         triggerErrorToast(res.error || 'Override failed');
         return;
       }
+      console.log('[DIAG] Override SUCCESS, calling refreshStats');
+      persistOverrideId(recordId);
       await refreshStats();
+      console.log('[DIAG] refreshStats complete');
     } catch (err) {
       setOverriddenIds(prev => {
         const next = new Set(prev);
