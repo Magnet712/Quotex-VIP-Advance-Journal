@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { PaymentVerificationService } from '@/lib/payments/verification';
 import { RazorpayHelpers } from '@/lib/payments/razorpay';
+import { notifyTelegramNewMember } from '@/lib/telegram';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 export interface PlanSetting {
@@ -726,6 +727,9 @@ export async function activateSubscriptionInternal(userId: string, planId: strin
         action: 'ACTIVATED',
         details: `Activated plan ${planId} expiring on ${expiresAtStr || 'NEVER'}`,
       });
+
+    // Fire-and-forget: Telegram social proof (never blocks or throws)
+    notifyTelegramNewMember(planId).catch(() => {});
 
     return { success: true };
   } catch {
