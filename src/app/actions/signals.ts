@@ -28,6 +28,37 @@ import { NormalizedCandle } from '@/lib/market-data/types';
 import { getUserAccessState } from '@/app/actions/admin_optimization';
 import type { DataPipeline } from '@/lib/pipeline';
 
+// ─── Admin Check Helper ──────────────────────────────────────────────────────
+async function verifyAdmin(): Promise<boolean> {
+  try {
+    const supabase = await createClient();
+    let user: any = null;
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data.user ?? null;
+    } catch {
+      // getUser() threw (network error / Auth API unreachable); fall through to getSession()
+    }
+
+    if (!user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      user = session?.user ?? null;
+    }
+
+    if (!user) return false;
+
+    const { data: adminRecord } = await supabase
+      .from('admins')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    return !!adminRecord;
+  } catch {
+    return false;
+  }
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 export interface SaveSignalInput {
   pair:              string;
@@ -1160,6 +1191,12 @@ export interface ScanResult {
  */
 export async function scanLiveMarketAsset(pair: string, rowId?: string, scanStartedAt?: number): Promise<ScanResult> {
   const t_entry = Date.now();
+
+  // LIVE FOREX is admin-only while under testing
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   const { ok } = await checkApproved();
   if (!ok) {

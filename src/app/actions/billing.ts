@@ -910,7 +910,7 @@ export async function getSaaSStatistics() {
     // Concurrently fetch stats count
     const [usersRes, paymentsRes] = await Promise.all([
       supabase.from('users').select('vip_access, premium_access'),
-      supabase.from('payment_requests').select('status, amount')
+      supabase.from('payment_requests').select('status, amount, currency')
     ]);
 
     const users = usersRes.data || [];
@@ -924,25 +924,45 @@ export async function getSaaSStatistics() {
     const successPayments = payments.filter(p => p.status === 'CONFIRMED');
     const successCount = successPayments.length;
 
-    const totalRevenue = successPayments.reduce((acc, curr) => acc + Number(curr.amount), 0);
-    
+    // Split confirmed revenue by payment currency (USDT crypto vs INR Razorpay)
+    const totalRevenueUSDT = successPayments
+      .filter(p => p.currency !== 'INR')
+      .reduce((acc, curr) => acc + Number(curr.amount), 0);
+    const totalRevenueINR = successPayments
+      .filter(p => p.currency === 'INR')
+      .reduce((acc, curr) => acc + Number(curr.amount), 0);
+
     // Estimate monthly revenue (confirmed in last 30 days)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const { data: monthlyPayments } = await supabase
       .from('payment_requests')
-      .select('amount')
+      .select('amount, currency')
       .eq('status', 'CONFIRMED')
       .gte('confirmed_at', thirtyDaysAgo.toISOString());
     
-    const monthlyRevenue = (monthlyPayments || []).reduce((acc, curr) => acc + Number(curr.amount), 0);
+    const monthlyRevenueUSDT = (monthlyPayments || [])
+      .filter((curr) => curr.currency !== 'INR')
+      .reduce((acc, curr) => acc + Number(curr.amount), 0);
+    const monthlyRevenueINR = (monthlyPayments || [])
+      .filter((curr) => curr.currency === 'INR')
+      .reduce((acc, curr) => acc + Number(curr.amount), 0);
+
+    // USDT equivalent (INR converted via live USD→INR rate, USDT ≈ USD)
+    const usdToInr = await getUSDToINR();
+    const totalRevenueUSDTEquivalent = Math.round(totalRevenueUSDT + (totalRevenueINR / usdToInr) * 100) / 100;
+    const monthlyRevenueUSDTEquivalent = Math.round(monthlyRevenueUSDT + (monthlyRevenueINR / usdToInr) * 100) / 100;
 
     const conversionRate = users.length > 0 ? Number(((premiumCount / users.length) * 100).toFixed(1)) : 0;
 
     return {
       success: true,
       stats: {
-        totalRevenue,
-        monthlyRevenue,
+        totalRevenueUSDT,
+        totalRevenueINR,
+        totalRevenueUSDTEquivalent,
+        monthlyRevenueUSDT,
+        monthlyRevenueINR,
+        monthlyRevenueUSDTEquivalent,
         premiumCount,
         vipCount,
         freeCount,

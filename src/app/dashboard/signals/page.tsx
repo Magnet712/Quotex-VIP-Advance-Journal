@@ -582,6 +582,15 @@ export default function SignalsPage() {
     };
   }, [refreshStats, buildStates, subTab]);
 
+  // LIVE FOREX is admin-only while under testing: reset a stale live_market
+  // sub-tab for regular users when the LIVE_MARKET pipeline is disabled
+  useEffect(() => {
+    if (subTab === 'live_market' && !userAccess.isAdmin && !signalMode.includes('LIVE_MARKET')) {
+      const timer = setTimeout(() => setSubTab('live_otc'), 0);
+      return () => clearTimeout(timer);
+    }
+  }, [subTab, userAccess.isAdmin, signalMode]);
+
   // Reset selected pairs when subTab changes to match current active assets
   useEffect(() => {
     const list = subTab !== 'live_market' ? OTC_PAIRS : LIVE_MARKET_PAIRS;
@@ -909,7 +918,7 @@ export default function SignalsPage() {
                 </button>
               )}
 
-              {signalMode.includes('LIVE_MARKET') && (
+              {(signalMode.includes('LIVE_MARKET') || userAccess.isAdmin) && (
                 <button
                   onClick={() => setSubTab('live_market')}
                   className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-mono font-bold tracking-widest border transition-all ${subTab === 'live_market'

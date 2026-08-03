@@ -78,8 +78,12 @@ export default function AdminDashboardPage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [wallets, setWallets] = useState<any[]>([]);
   const [saasStats, setSaasStats] = useState<any>({
-    totalRevenue: 0,
-    monthlyRevenue: 0,
+    totalRevenueUSDT: 0,
+    totalRevenueINR: 0,
+    totalRevenueUSDTEquivalent: 0,
+    monthlyRevenueUSDT: 0,
+    monthlyRevenueINR: 0,
+    monthlyRevenueUSDTEquivalent: 0,
     premiumCount: 0,
     vipCount: 0,
     freeCount: 0,
@@ -924,7 +928,7 @@ export default function AdminDashboardPage() {
                   {/* OTC Metric Cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                     {[
-                      { label: 'SIGNALS TODAY', value: otcAnalytics.summary.totalSignals, color: 'text-slate-200' },
+                      { label: 'SIGNALS TODAY', value: otcAnalytics.summary.signalsToday ?? 0, color: 'text-slate-200' },
                       { label: 'TOTAL SIGNALS', value: otcAnalytics.summary.totalSignals, color: 'text-slate-200' },
                       { label: 'WINS', value: otcAnalytics.summary.wins, color: 'text-neon-green' },
                       { label: 'LOSSES', value: otcAnalytics.summary.losses, color: 'text-rose-400' },
@@ -997,8 +1001,11 @@ export default function AdminDashboardPage() {
             {/* SaaS Metrics Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { label: 'TOTAL REVENUE', value: `$${saasStats.totalRevenue} USDT`, icon: DollarSign, color: 'text-neon-green glow-text-green' },
-                { label: 'LAST 30 DAYS REVENUE', value: `$${saasStats.monthlyRevenue} USDT`, icon: DollarSign, color: 'text-slate-200' },
+                { label: 'TOTAL REVENUE (USDT)', value: `$${saasStats.totalRevenueUSDT} USDT`, icon: DollarSign, color: 'text-neon-green glow-text-green' },
+                { label: 'TOTAL REVENUE (INR)', value: `₹${saasStats.totalRevenueINR}`, icon: DollarSign, color: 'text-emerald-400' },
+                { label: '≈ USDT EQUIVALENT', value: `≈ $${saasStats.totalRevenueUSDTEquivalent} USDT`, icon: TrendingUp, color: 'text-slate-200' },
+                { label: 'LAST 30 DAYS (USDT)', value: `$${saasStats.monthlyRevenueUSDT} USDT`, icon: DollarSign, color: 'text-slate-200' },
+                { label: 'LAST 30 DAYS (INR)', value: `₹${saasStats.monthlyRevenueINR}`, icon: DollarSign, color: 'text-emerald-400' },
                 { label: 'PREMIUM ACTIVE USERS', value: String(saasStats.premiumCount), icon: Award, color: 'text-purple-400' },
                 { label: 'VIP ACTIVE MEMBERS', value: String(saasStats.vipCount), icon: Star, color: 'text-gold-vip' },
                 { label: 'FREE LOADED TRADERS', value: String(saasStats.freeCount), icon: Users, color: 'text-slate-500' },
@@ -1128,7 +1135,7 @@ export default function AdminDashboardPage() {
                               {new Date(p.created_at).toLocaleDateString()} {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </td>
                             <td className="p-3 uppercase font-bold text-slate-300">{p.plan_id.replace('_', ' ')}</td>
-                            <td className="p-3 text-slate-200 font-bold">${p.amount}</td>
+                            <td className="p-3 text-slate-200 font-bold">{p.currency === 'INR' ? `₹${p.amount}` : `$${p.amount}`}</td>
                             <td className="p-3 text-slate-400">{p.network.replace('_', '-')}</td>
                             <td className="p-3 max-w-[120px] truncate select-all font-bold" title={p.txn_hash || ''}>
                               {p.txn_hash || '—'}

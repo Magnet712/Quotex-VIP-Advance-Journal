@@ -365,6 +365,15 @@ export async function getAdminSignalAnalytics(filters: AnalyticsFilters = {}) {
       ? Math.round(allSignals.reduce((acc: number, s: any) => acc + s.confidence, 0) / totalSignals * 10) / 10
       : 0;
 
+    // Signals recorded since IST midnight today (matches the IST convention
+    // used for hourly performance below)
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(Date.now() + IST_OFFSET_MS);
+    const istTodayStart = new Date(
+      Date.UTC(istNow.getUTCFullYear(), istNow.getUTCMonth(), istNow.getUTCDate()) - IST_OFFSET_MS
+    ).getTime();
+    const signalsToday = allSignals.filter((s: any) => new Date(s.entry_time).getTime() >= istTodayStart).length;
+
     // Streaks calculation
     const signalResults = allSignals.map((s: any) => s.result);
     const { maxLossStreak, avgWinStreak } = calculateStreaks(signalResults);
@@ -473,6 +482,7 @@ export async function getAdminSignalAnalytics(filters: AnalyticsFilters = {}) {
       success: true,
       summary: {
         totalSignals,
+        signalsToday,
         wins,
         losses,
         accuracy,
