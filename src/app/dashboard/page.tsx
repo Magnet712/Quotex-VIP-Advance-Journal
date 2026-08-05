@@ -8,8 +8,11 @@ import { getSignalPerformance } from '@/app/actions/signals';
 import { getUserAccessState, getPublicOptimizationSettings } from '@/app/actions/admin_optimization';
 import { canAccess, getMembershipRole, FEATURES_LIST } from '@/lib/permissions';
 import { getAverageRating, getUserRating, submitRating } from '@/app/actions/ratings';
+import PairLeaderboard from '@/components/signals/PairLeaderboard';
+import DailyReportStrip from '@/components/signals/DailyReportStrip';
+import StreakCard from '@/components/signals/StreakCard';
 import { 
-  User, Award, Zap, Calendar, Activity, Bell, ArrowRight, ShieldCheck, TrendingUp, Star
+  User, Award, Zap, Calendar, Activity, Bell, ArrowRight, ShieldCheck, TrendingUp, Star, BrainCircuit
 } from 'lucide-react';
 
 export default function DashboardHome() {
@@ -213,6 +216,29 @@ export default function DashboardHome() {
         </div>
       </div>
 
+      {/* Magnet AI Intelligence Teaser */}
+      <Link
+        href="/dashboard/magnet"
+        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-purple-500/25 bg-gradient-to-r from-purple-950/30 via-[#030b17] to-[#030b17] transition-all duration-300 hover:border-purple-400/50 hover:shadow-glow-purple"
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="h-10 w-10 shrink-0 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shadow-glow-purple">
+            <BrainCircuit className="h-5 w-5 text-purple-300" />
+          </div>
+          <div className="space-y-0.5 text-left">
+            <span className="text-[10px] font-mono text-purple-300 font-bold uppercase tracking-wider block">
+              🧠 Magnet AI — Today&apos;s Intelligence
+            </span>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Market activity, best pair, AI signal strength &amp; your personal performance — in one glance.
+            </p>
+          </div>
+        </div>
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider group-hover:gap-2.5 transition-all shrink-0">
+          Open <ArrowRight className="h-3 w-3" />
+        </span>
+      </Link>
+
       {/* Dismissible Announcements Widget */}
       {systemNotifications.length > 0 && (
         <div className="space-y-3">
@@ -318,6 +344,15 @@ export default function DashboardHome() {
         </div>
 
       </div>
+
+      {/* Trader Streak System — personal discipline reward */}
+      <StreakCard />
+
+      {/* Daily AI Market Report — reason to visit every day */}
+      <DailyReportStrip />
+
+      {/* AI Signal Leaderboard — top performing OTC pairs */}
+      <PairLeaderboard isPremium={isPremium} />
 
       {/* Feature Access Center */}
       <div className="space-y-4">

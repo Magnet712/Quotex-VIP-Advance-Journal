@@ -6,6 +6,8 @@ import {
   ChevronUp, ChevronDown, Minus, CheckCircle2, XCircle,
   Clock, Loader, Activity, Zap
 } from 'lucide-react';
+import AIScorecard from '@/components/signals/AIScorecard';
+import WhyThisSignal from '@/components/signals/WhyThisSignal';
 
 interface OTCScanResultCardProps {
   result: OTCExecutionRecord;
@@ -184,6 +186,36 @@ const OTCScanResultCard: React.FC<OTCScanResultCardProps> = React.memo(({ result
             REFUND — INSUFFICIENT DATA FOR SETTLEMENT
           </span>
         </div>
+      )}
+
+      {/* AI Trade Scorecard — live signals (waiting/active) and completed signals */}
+      {!isScanning && !isFailed && !isNoTrade && (
+        <AIScorecard
+          input={{
+            pair: result.pair,
+            confidence: result.confidence,
+            risk: result.risk,
+            strategy: result.strategy,
+            entryTime: result.entryTime,
+            qualityScore: result.qualityScore,
+            result: result.status,
+          }}
+        />
+      )}
+
+      {/* Why This Signal — real engine pattern + derived reasons */}
+      {!isScanning && !isFailed && !isNoTrade && (
+        <WhyThisSignal
+          input={{
+            pair: result.pair,
+            direction: result.direction,
+            confidence: result.confidence,
+            risk: result.risk,
+            strategy: result.strategy,
+            ofPattern: result.signalData?.ofPattern ?? null,
+            entryTime: result.entryTime,
+          }}
+        />
       )}
 
       {/* Decision Parameters (non-terminal) */}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp, Target, Activity, Filter,
@@ -18,6 +18,8 @@ import { getUserAccessState, getPublicOptimizationSettings } from '@/app/actions
 import { canAccess } from '@/lib/permissions';
 import { sourceLabel } from '@/lib/pipeline';
 import LockedFeature from '@/components/LockedFeature';
+import AIScorecard, { computeAIScore } from '@/components/signals/AIScorecard';
+import WhyThisSignal from '@/components/signals/WhyThisSignal';
 
 const STRATEGY_TAGS = [
   'RSI Reversal + EMA50',
@@ -92,6 +94,7 @@ export default function SignalHistoryPage() {
   const [selResult,  setSelResult]  = useState<'ALL' | 'PENDING' | 'WIN' | 'LOSS' | 'REFUND' | 'FAILED' | 'NO TRADE' | 'SCANNING'>('ALL');
   const [selSource,  setSelSource]  = useState<'ALL' | 'live_otc' | 'live_market'>('ALL');
   const [page,       setPage]       = useState(1);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const PAGE_SIZE = 50;
 
   // Load data
@@ -132,6 +135,22 @@ export default function SignalHistoryPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Per-pair win rates from the currently loaded history rows (user's own results)
+  const pairWinRates = useMemo(() => {
+    const map: Record<string, { wins: number; resolved: number }> = {};
+    signals.forEach(s => {
+      if (s.result !== 'WIN' && s.result !== 'LOSS') return;
+      if (!map[s.pair]) map[s.pair] = { wins: 0, resolved: 0 };
+      map[s.pair].resolved++;
+      if (s.result === 'WIN') map[s.pair].wins++;
+    });
+    const out: Record<string, number> = {};
+    Object.entries(map).forEach(([pair, st]) => {
+      out[pair] = st.resolved > 0 ? Math.round((st.wins / st.resolved) * 100) : 0;
+    });
+    return out;
+  }, [signals]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -307,6 +326,7 @@ export default function SignalHistoryPage() {
                     <th className="p-4">ENTRY / CLOSE</th>
                     <th className="p-4">STRATEGY</th>
                     <th className="p-4">PIPELINE</th>
+                    <th className="p-4 text-center">AI SCORE</th>
                     <th className="p-4 text-right">OUTCOME</th>
                   </tr>
                 </thead>
@@ -318,7 +338,8 @@ export default function SignalHistoryPage() {
                     const isCall = !isInvalid && sig.direction === 'CALL';
 
                     return (
-                      <tr key={sig.id} className="hover:bg-slate-900/10 transition-all duration-150" style={{ animationDelay: `${idx * 0.02}s` }}>
+                      <React.Fragment key={sig.id}>
+                      <tr className="hover:bg-slate-900/10 transition-all duration-150" style={{ animationDelay: `${idx * 0.02}s` }}>
                         <td className="p-4 text-slate-500 font-bold">{shortId(sig.id)}</td>
                         <td className="p-4 text-slate-400">
                           {new Date(sig.entry_time).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
@@ -348,6 +369,36 @@ export default function SignalHistoryPage() {
                           {isInvalid ? <span className="text-slate-600">—</span> : sig.strategy_name}
                         </td>
                         <td className="p-4 uppercase text-[9px] text-slate-500">{sourceLabel(sig.source)}</td>
+                        <td className="p-4 text-center">
+                          {!isInvalid && sig.confidence > 0 ? (
+                            (() => {
+                              const overall = computeAIScore({
+                                pair: sig.pair,
+                                confidence: sig.confidence,
+                                risk: sig.risk_level,
+                                strategy: sig.strategy_name,
+                                entryTime: sig.entry_time,
+                                pairWinRate: pairWinRates[sig.pair] ?? null,
+                              }).overall;
+                              const isExpanded = expandedId === sig.id;
+                              return (
+                                <button
+                                  onClick={() => setExpandedId(isExpanded ? null : sig.id)}
+                                  title={isExpanded ? 'Hide AI breakdown' : 'View AI trade breakdown'}
+                                  className={`px-2.5 py-1 rounded border font-mono font-extrabold text-[10px] transition-all hover:scale-105 ${
+                                    overall >= 85 ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10' :
+                                    overall >= 70 ? 'text-amber-400 border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10' :
+                                    'text-rose-400 border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10'
+                                  }`}
+                                >
+                                  {overall}/100 {isExpanded ? '▲' : '▼'}
+                                </button>
+                              );
+                            })()
+                          ) : (
+                            <span className="text-slate-700">—</span>
+                          )}
+                        </td>
                         <td className="p-4 text-right font-bold">
                           <span className={`px-2 py-0.5 rounded border text-[10px] ${
                             isWin ? 'text-neon-green border-neon-green/30 bg-neon-green/5' :
@@ -358,12 +409,43 @@ export default function SignalHistoryPage() {
                           </span>
                         </td>
                       </tr>
+                      {!isInvalid && sig.confidence > 0 && expandedId === sig.id && (
+                        <tr className="bg-slate-950/60 border-b border-glass-border/30">
+                          <td colSpan={9} className="p-4">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                              <AIScorecard
+                                input={{
+                                  pair: sig.pair,
+                                  confidence: sig.confidence,
+                                  risk: sig.risk_level,
+                                  strategy: sig.strategy_name,
+                                  entryTime: sig.entry_time,
+                                  pairWinRate: pairWinRates[sig.pair] ?? null,
+                                  result: sig.result,
+                                }}
+                              />
+                              <WhyThisSignal
+                                input={{
+                                  pair: sig.pair,
+                                  direction: sig.direction,
+                                  confidence: sig.confidence,
+                                  risk: sig.risk_level,
+                                  strategy: sig.strategy_name,
+                                  entryTime: sig.entry_time,
+                                  pairWinRate: pairWinRates[sig.pair] ?? null,
+                                }}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      </React.Fragment>
                     );
                   })}
 
                   {signals.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-slate-500 uppercase">
+                      <td colSpan={9} className="p-8 text-center text-slate-500 uppercase">
                         No signal records found in database.
                       </td>
                     </tr>

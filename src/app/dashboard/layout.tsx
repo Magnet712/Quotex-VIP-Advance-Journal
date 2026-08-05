@@ -11,12 +11,13 @@ import {
   BarChart3, BookOpen, Award, Settings, LogOut, 
   TrendingUp, Shield, Menu, X, Loader2, User, Radio, History,
   Calculator, Send, CheckSquare, LineChart, Video, Zap, CreditCard, Bell,
-  Lock
+  Lock, Brain, BrainCircuit
 } from 'lucide-react';
 import { getUserNotifications, markNotificationsRead } from '@/app/actions/billing';
 
 const NAV_ACCOUNT = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+  { name: 'Magnet AI', href: '/dashboard/magnet', icon: BrainCircuit },
   { name: 'Membership', href: '/dashboard/membership', icon: Award },
   { name: 'Subscription', href: '/dashboard/subscription', icon: CreditCard },
   { name: 'Payments', href: '/dashboard/payments', icon: History },
@@ -26,6 +27,7 @@ const NAV_ACCOUNT = [
 const NAV_TRADING = [
   { name: 'Journal', href: '/dashboard/journal', icon: BookOpen },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { name: 'Trader Profile', href: '/dashboard/trader-profile', icon: Brain },
   { name: 'Checklist', href: '/dashboard/checklist', icon: CheckSquare },
   { name: 'Risk Calculator', href: '/dashboard/risk-calculator', icon: Calculator }
 ];
