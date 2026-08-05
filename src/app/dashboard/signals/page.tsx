@@ -773,10 +773,6 @@ export default function SignalsPage() {
     return true;
   });
 
-  const activeCount = subTab !== 'live_market'
-    ? pairStates.filter(p => p.status === 'ACTIVE').length
-    : forex.activeScans.length;
-
   const handleCardClick = (sig: PairSignal | ExecutionRecord | null, pair: { symbol: string;[key: string]: unknown } | null, type: string) => {
     if (!hasAccess) {
       window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: { requestedPlan: 'premium' } }));
@@ -856,9 +852,8 @@ export default function SignalsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
 
         {/* ── Stats Row ──────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {[
-            { label: 'ACTIVE SIGNALS', value: activeCount.toString(), icon: Radio, color: 'text-neon-green', glow: 'glow-shadow-green' },
             { label: "TODAY'S SIGNALS", value: activeStats.totalToday.toString(), icon: Signal, color: 'text-slate-300' },
             { label: 'WIN RATE (ALL)', value: activeStats.winRate !== null ? `${activeStats.winRate}%` : (subTab === 'live_market' ? '82.3%' : '84.5%'), icon: Target, color: 'text-gold-vip', glow: 'glow-shadow-gold' },
             { label: 'ASSETS LOADED', value: subTab !== 'live_market' ? `${selectedPairs.size}/${OTC_PAIRS.length}` : `${Array.from(selectedPairs).filter(s => LIVE_MARKET_PAIRS.some(lp => lp.short === s)).length}/${LIVE_MARKET_PAIRS.length}`, icon: BarChart2, color: 'text-slate-300' },
