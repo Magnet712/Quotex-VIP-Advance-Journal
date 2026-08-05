@@ -169,3 +169,82 @@ SCANNING (up to 60s)
 ### Next
 - User to test on Vercel: scan late in minute (e.g. :45) — verify full 60s window, correct entry_time, popup behavior
 - Continue daily Phase 12 collection toward 50k-100k windows for statistical certainty
+
+## Session History (05 Aug 2026) — Features 1–9 "Magnet of Trade" Premium Suite
+
+### Objective
+Implement the numbered premium-curiosity features (F1–F9), culminating in F9 = CENTRAL FEATURE. Rules honored: read spec → duplicate-check → PM placement plan → explicit user approval → implement; new files only (no changes to existing non-presentational code); no commits/deploys without approval. Zero trading logic touched (SignalEngine/evaluateSignal/providers/thresholds frozen).
+
+### Commits (both pushed to `main` → Vercel AUTO-DEPLOY)
+- `84e3116` — feat: Magnet AI intelligence - premium modules F1-F9 (21 files, +4524/-5)
+- `c7da7c9` — Remove ACTIVE SIGNALS simulated counter from signal dashboard stats row (1 file, -6/+1)
+
+### Deploy Workflow (IMPORTANT)
+- Live site: `https://quotex-intelligence-journal.vercel.app` (Vercel Git integration on GitHub `Magnet712/Quotex-VIP-Advance-Journal`, branch `main`)
+- **Push to main = auto-deploy to LIVE.** User asks for commit+deploy explicitly when wanted.
+- Left UNTRACKED on purpose (marketing assets, NOT feature code): `public/instagram-carousel/`, `public/final-instagram-carousel/`, `public/signal-landing.html`
+
+### Features Delivered
+1. **F1 AI Scorecard** — `src/components/signals/AIScorecard.tsx` (+ `computeAIScore`). Integrated into `signal-history/page.tsx` (expandable AI SCORE column) + `OTCScanResultCard.tsx` (live/terminal cards).
+2. **F2 Why This Signal** — `src/components/signals/WhyThisSignal.tsx`; same integration points as F1.
+3. **F3 Pair Leaderboard** — `src/app/actions/leaderboard.ts` + `src/components/signals/PairLeaderboard.tsx` (dashboard). **Manual-scans-only filter: `.not('user_id','is',null)`** added for data consistency.
+4. **F4 Daily AI Market Report** — `src/app/actions/daily_report.ts` + `src/app/dashboard/daily-report/page.tsx` + `src/components/signals/DailyReportStrip.tsx` (dashboard). IST today, Morning/Evening sessions, best pair, windows, high-risk, 90d fallbacks, confidence STRONG≥70/MODERATE≥50/WEAK. Also `.not('user_id','is',null)`.
+5. **F5 Trader Streaks** — `src/app/actions/streaks.ts` + `src/components/signals/StreakCard.tsx` (dashboard). IST day keys, current/best streaks, 6 badges, next-badge progress.
+6. **F6 AI Trader Profile** — `src/app/actions/trader_profile.ts` + `src/app/dashboard/trader-profile/page.tsx` (AI Coach Hub: PerformanceComparison → metrics → BestPairTool → AI Recommendation). VIP via `canAccess('journal')` → LockedFeature. Nav item in layout.tsx NAV_TRADING.
+7. **F7 Find My Best Pair** — `src/app/actions/best_pair.ts` + `src/components/signals/BestPairTool.tsx` (podium 🥇🥈🥉, HIGH≥15/MED≥5 sample tiers). Embedded in trader-profile page.
+8. **F8 Performance vs AI** — `src/app/actions/performance_vs_ai.ts` + `src/components/signals/PerformanceComparison.tsx`. Three disjoint metrics: You = journal trades; AI = **other users' manual scans only** (`live_otc` + `user_id IS NOT NULL` + `neq(user_id, self)`); Combined = own scans. Insight + methodology footer.
+9. **F9 🧠 MAGNET AI TRADING INTELLIGENCE (CENTRAL)** — `src/app/actions/magnet.ts` + `src/app/dashboard/magnet/page.tsx`:
+   - TODAY'S AI INTELLIGENCE: Market Activity (today scans vs 90d avg → QUIET/NORMAL/ELEVATED/HIGH), Best Performing Pair (today≥3 / 90d≥10 fallback), AI Signal Strength (90d community win-rate bar), Trader Risk Status (journal avg risk ≤1.5/≤3 tiers), Your Personal Performance (journal win rate).
+   - AI Insight: best IST hour (≥3 trades) + endurance (win rate 6+ trade days vs ≤5, gap≥8) + risk guidance. Personal insight unlocks at ≥10 trades (warm-up prompts below).
+   - TODAY'S ACTION: 4 cards → /journal, /trader-profile, /signals, /trader-profile.
+   - Explore the Brain: 8 connector tiles to F1–F8 modules.
+   - **NOT gated by LockedFeature** — open to all approved users (flagship); personal cards show soft "log journal trades" prompts.
+   - Placement: nav "Magnet AI" = Account group #2 (under Dashboard) in `layout.tsx`; compact teaser banner in `dashboard/page.tsx` right below welcome banner (above announcements).
+
+### ACTIVE SIGNALS Removal (user-requested, 05 Aug 2026)
+- `signals/page.tsx`: deleted the "ACTIVE SIGNALS" stats tile + `activeCount` const; stats row `md:grid-cols-4` → `md:grid-cols-3`.
+- Verified safe: `activeCount` was the ONLY consumer of seeded `pairStates` count in the stats row; manual-scan engine (`otc.scan` → ExecutionEngine → providers) and LIVE FOREX path never reference it. The seeded grid (`generateSignal.ts`, `buildStates`) STILL powers the SIMULATION subtab + chime — untouched, harmless (pure client-side seeded random, zero DB writes).
+
+### Data Reality (critical for all community numbers)
+- Old auto engine produced ~90% of `signals` rows with `user_id = NULL`. Engine is now manual-only; every manual scan saves with `user_id` (`signals.ts:177`).
+- Discriminator: `source='live_otc' AND user_id IS NOT NULL` = manual scans only; `user_id IS NULL` = legacy auto rows (excluded everywhere).
+- Win logic everywhere: journal's exact `profit_loss > 0 || results === 'WIN' || 'MTG WIN'`.
+- Honesty rule: footers say "derived from… / historical performance only"; LOW SAMPLE tags always shown.
+
+### Pre-existing lint baseline (NOT ours, do not "fix" casually)
+- `dashboard/page.tsx` + `dashboard/layout.tsx`: `any` types, ref-in-render (`supabaseRef.current` in render), unused imports (getUserAccessState, useCallback). Present before F1–F9; left untouched.
+
+### Key Files (F1–F9)
+- Actions: `src/app/actions/{magnet,daily_report,leaderboard,performance_vs_ai,streaks,trader_profile,best_pair}.ts`
+- Pages: `src/app/dashboard/{magnet,daily-report,trader-profile}/page.tsx`
+- Components: `src/components/signals/{AIScorecard,WhyThisSignal,PairLeaderboard,DailyReportStrip,StreakCard,BestPairTool,PerformanceComparison}.tsx`
+- Integrations: `signal-history/page.tsx` (AI SCORE column), `OTCScanResultCard.tsx` (scorecard+why), `dashboard/page.tsx` (teaser), `layout.tsx` (nav)
+
+### Verification
+- `npx tsc --noEmit` clean; `npx eslint` clean on all new files. Page lint pattern for new pages: inline async IIFE inside useEffect with `cancelled` flag (avoids react-hooks/set-state-in-effect).
+
+## Session History (05 Aug 2026, cont.) — Feature 10 Trader Performance Cards
+
+### Objective
+Shareable branded weekly/monthly performance cards (Spotify-Wrapped style) with glowing design, badges, QR → live site, 3 privacy modes, 5 social sizes, one-click Share/Download. Pure presentation layer over journal data — zero trading logic, zero existing-code change (only nav +1 line).
+
+### Commits (pushed to `main` → Vercel AUTO-DEPLOY)
+- `84e3116` — F1–F9 premium suite (21 files, +4524)
+- `c7da7c9` — Remove ACTIVE SIGNALS simulated counter (stats row)
+- **F10 commit (awaiting this session)**: achievements action + card + page + nav + deps (`html-to-image`, `qrcode`)
+
+### Feature 10 Deliverables
+- `src/app/actions/achievements.ts` — read-only: weekly (Mon–Sun IST) + monthly windows; win rate, W/L, best pair (≥3), best session (IST Morning/Evening/Off-Hours ≥3), avg confidence (own `live_otc` scans), risk grade (A+ ≤1.5 / A ≤3 / B ≤5 / C), journal completion % (risk+emotion filled), Net P/L (sum profit_loss), best day (≥3 trades/day), 10 badges; lifetime stats + best streak.
+- `src/components/signals/PerformanceCard.tsx` — glowing dark glass card (emerald/purple radial blobs, gradient win-rate, gold badge chips, 🧲 MAGNET OF TRADE gradient wordmark + @magnetoftrade + QR + URL). Exact-pixel sizing via `u = px * (size.w/1080)` helper; 5 sizes in `CARD_SIZES` (1080×1920, 1080×1080, 1200×630, 1200×627, 1600×900). QR = white rounded box with `qrDataUrl` img.
+- `src/app/dashboard/achievements/page.tsx` — studio: Weekly/Monthly toggle, size picker, privacy (public/semi/anon — default semi), live scaled preview (ResizeObserver), Download PNG (`html-to-image toPng` pixelRatio 1), Share (`navigator.share` files → fallback download), trophy shelf of 10 badges (earned/locked), lifetime stat cards. VIP-gated via `canAccess('journal')` → LockedFeature. QR generated client-side via `qrcode.toDataURL(siteUrl)`.
+- Nav: `Achievements` (Trophy icon) in NAV_TRADING after Trader Profile.
+
+### Key Notes for Future
+- `profit_loss` is currency-like (journal shows `+X.XX`) — Net P/L = plain sum.
+- Card capture is client-side `html-to-image` — no server costs, WYSIWYG with the design system. `<img>` for QR carries an eslint-disable for @next/next/no-img-element (data URL, correct).
+- "Auto-generated every Monday/1st" = live computation on page open (no cron, no storage).
+- `qrcode` package: default import `QRCode` from 'qrcode', `QRCode.toDataURL(url, {width, margin})`.
+- SITE_URL = `process.env.NEXT_PUBLIC_SITE_URL ?? 'https://quotex-intelligence-journal.vercel.app'`.
+- Lint rule learned: new pages must avoid calling setState synchronously inside effect bodies (inline async IIFE + `cancelled` flag passes react-hooks/set-state-in-effect); removed `eslint-disable` for exhaustive-deps when unneeded (unused directive warning).
+- Untracked (marketing, not feature code): `public/instagram-carousel/`, `public/final-instagram-carousel/`, `public/signal-landing.html`.
+- Deps: `html-to-image`, `qrcode` (prod); `@types/qrcode` (dev).
