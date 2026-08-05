@@ -309,6 +309,9 @@ export default function AchievementsPage() {
             <p className="text-[9px] text-slate-600 font-mono leading-relaxed">
               Share opens Telegram / WhatsApp / native picker where supported — otherwise it downloads the PNG.
             </p>
+            <p className="text-[9px] text-slate-500 font-sans leading-relaxed border-t border-slate-800/60 pt-2">
+              ⚠️ <span className="font-semibold text-slate-400">Disclaimer:</span> Performance cards are for personal sharing only and reflect past journaled trades. They do not constitute financial advice or guarantee future results. Trade responsibly.
+            </p>
           </div>
         </div>
 

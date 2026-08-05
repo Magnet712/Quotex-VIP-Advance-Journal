@@ -65,9 +65,11 @@ export default function PerformanceCard({ data, period, size, privacy, qrDataUrl
   const statCells: { label: string; value: string; sub?: string; accent?: string }[] = [];
 
   if (summary) {
+    const winRate = summary.trades > 0 ? Math.round((summary.wins / summary.trades) * 100) : null;
     statCells.push(
       { label: 'TRADES', value: `${summary.trades}`, sub: `${summary.activeDays} active days` },
       { label: 'WINS', value: `${summary.wins}`, sub: `${summary.losses} losses`, accent: '#34d399' },
+      { label: 'WIN RATE', value: winRate !== null ? `${winRate}%` : '—', sub: summary.trades > 0 ? `${summary.trades} total trades` : 'no trades yet', accent: winRate !== null && winRate >= 60 ? '#34d399' : winRate !== null && winRate >= 50 ? '#fbbf24' : '#fb7185' },
       { label: 'BEST PAIR', value: summary.bestPair ?? '—', sub: summary.bestPair ? `${summary.bestPairWinRate}% · ${summary.bestPairN} trades` : 'needs ≥3 trades' },
       { label: 'AVG CONFIDENCE', value: summary.avgConfidence !== null ? `${summary.avgConfidence}%` : '—', sub: 'your OTC scans' },
       { label: 'BEST SESSION', value: summary.bestSession ?? '—', sub: summary.bestSession ? `${summary.bestSessionWinRate}% · ${summary.bestSessionN} trades` : 'IST window' },
@@ -82,7 +84,9 @@ export default function PerformanceCard({ data, period, size, privacy, qrDataUrl
     }
   }
 
-  const gridCols = isWide ? (statCells.length >= 9 ? 5 : 4) : 2;
+  const gridCols = isWide
+    ? (statCells.length > 0 ? Math.min(statCells.length, 7) : 7)
+    : 2;
 
   return (
     <div
@@ -154,11 +158,14 @@ export default function PerformanceCard({ data, period, size, privacy, qrDataUrl
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          padding: isWide ? u(56) : u(64),
-          gap: isWide ? u(28) : u(36),
+          paddingTop: isWide ? u(32) : u(64),
+          paddingLeft: isWide ? u(32) : u(64),
+          paddingRight: isWide ? u(32) : u(64),
+          paddingBottom: isWide ? u(130) : u(64),
+          gap: isWide ? u(16) : u(36),
           border: `1px solid rgba(148,163,184,0.25)`,
           borderRadius: u(28),
-          margin: isWide ? u(14) : u(18),
+          margin: isWide ? u(10) : u(18),
           boxShadow: `0 0 ${u(64)}px rgba(52,211,153,0.10), 0 0 ${u(120)}px rgba(168,85,247,0.12), inset 0 0 ${u(80)}px rgba(52,211,153,0.04)`,
           background: 'rgba(2,5,11,0.72)',
           backdropFilter: 'blur(10px)',
@@ -167,27 +174,23 @@ export default function PerformanceCard({ data, period, size, privacy, qrDataUrl
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: u(16) }}>
-            <div
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/magnet-logo.png"
+              alt="Magnet of Trade"
               style={{
-                width: u(56),
-                height: u(56),
-                borderRadius: u(16),
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: u(30),
-                background: 'linear-gradient(135deg, rgba(52,211,153,0.25), rgba(168,85,247,0.25))',
-                border: '1px solid rgba(52,211,153,0.4)',
-                boxShadow: '0 0 24px rgba(52,211,153,0.35)',
+                width: isWide ? u(56) : u(80),
+                height: isWide ? u(56) : u(80),
+                borderRadius: u(8),
+                objectFit: 'contain',
+                flexShrink: 0,
+                border: '1.5px solid rgba(52,211,153,0.55)',
+                boxShadow: '0 0 18px rgba(52,211,153,0.40), 0 0 6px rgba(52,211,153,0.20)',
               }}
-            >
-              🧲
-            </div>
+            />
             <div>
-              <div style={{ fontSize: u(26), fontWeight: 900, letterSpacing: u(3), background: 'linear-gradient(90deg, #34d399, #a78bfa)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
-                MAGNET OF TRADE
-              </div>
-              <div style={{ fontSize: u(16), letterSpacing: u(4), color: '#94a3b8', marginTop: u(4) }}>AI TRADING INTELLIGENCE</div>
+              <div style={{ fontSize: u(22), fontWeight: 900, letterSpacing: u(2), color: '#c7d2fe' }}>MAGNET OF TRADE</div>
+              <div style={{ fontSize: u(14), letterSpacing: u(4), color: '#94a3b8', marginTop: u(4) }}>AI TRADING INTELLIGENCE</div>
             </div>
           </div>
           <div
@@ -222,19 +225,19 @@ export default function PerformanceCard({ data, period, size, privacy, qrDataUrl
           >
             {displayName}
           </div>
-          <div style={{ fontSize: u(20), color: '#a5b4fc', marginTop: u(8), fontWeight: 700 }}>
-            📅 {windowLabel}
+          <div style={{ fontSize: u(20), color: windowLabel === '—' ? '#334155' : '#a5b4fc', marginTop: u(8), fontWeight: 700 }}>
+            📅 {windowLabel === '—' ? 'No trades recorded yet' : windowLabel}
           </div>
         </div>
 
-        {/* Hero: win rate */}
-        {summary && (
+        {/* Hero: win rate — tall cards only (wide cards use stats grid to save vertical space) */}
+        {!isWide && (summary ? (
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: u(28), flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: isWide ? u(20) : u(22), letterSpacing: u(4), color: '#94a3b8' }}>WIN RATE</div>
+              <div style={{ fontSize: u(22), letterSpacing: u(4), color: '#94a3b8' }}>WIN RATE</div>
               <div
                 style={{
-                  fontSize: isWide ? u(110) : u(140),
+                  fontSize: u(140),
                   fontWeight: 900,
                   lineHeight: 1,
                   marginTop: u(8),
@@ -274,48 +277,80 @@ export default function PerformanceCard({ data, period, size, privacy, qrDataUrl
               </div>
             </div>
           </div>
-        )}
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: u(28), flexWrap: 'wrap', opacity: 0.35 }}>
+            <div>
+              <div style={{ fontSize: u(22), letterSpacing: u(4), color: '#475569' }}>WIN RATE</div>
+              <div style={{ fontSize: u(140), fontWeight: 900, lineHeight: 1, marginTop: u(8), color: '#1e293b' }}>—%</div>
+            </div>
+            <div style={{ display: 'flex', gap: u(16), paddingBottom: u(10) }}>
+              <div style={{ padding: `${u(14)}px ${u(28)}px`, borderRadius: u(16), border: '1px dashed rgba(52,211,153,0.15)', background: 'rgba(52,211,153,0.03)' }}>
+                <div style={{ fontSize: u(30), fontWeight: 900, color: '#1e293b' }}>—</div>
+                <div style={{ fontSize: u(14), letterSpacing: u(2), color: '#334155' }}>WINS</div>
+              </div>
+              <div style={{ padding: `${u(14)}px ${u(28)}px`, borderRadius: u(16), border: '1px dashed rgba(251,113,133,0.15)', background: 'rgba(251,113,133,0.02)' }}>
+                <div style={{ fontSize: u(30), fontWeight: 900, color: '#1e293b' }}>—</div>
+                <div style={{ fontSize: u(14), letterSpacing: u(2), color: '#334155' }}>LOSSES</div>
+              </div>
+            </div>
+          </div>
+        ))}
 
         {/* Stats grid */}
-        {summary && (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
-              gap: u(14),
-            }}
-          >
-            {statCells.map((c) => (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
+            gap: u(14),
+          }}
+        >
+          {summary ? statCells.map((c) => (
+            <div
+              key={c.label}
+              style={{
+                padding: isWide ? `${u(10)}px ${u(14)}px` : `${u(16)}px ${u(20)}px`,
+                borderRadius: u(16),
+                border: '1px solid rgba(148,163,184,0.22)',
+                background: 'rgba(15,23,42,0.55)',
+                boxShadow: 'inset 0 0 30px rgba(52,211,153,0.03)',
+              }}
+            >
+              <div style={{ fontSize: isWide ? u(11) : u(13), letterSpacing: u(2), color: '#64748b' }}>{c.label}</div>
               <div
-                key={c.label}
                 style={{
-                  padding: `${u(16)}px ${u(20)}px`,
-                  borderRadius: u(16),
-                  border: '1px solid rgba(148,163,184,0.22)',
-                  background: 'rgba(15,23,42,0.55)',
-                  boxShadow: 'inset 0 0 30px rgba(52,211,153,0.03)',
+                  fontSize: isWide ? u(24) : u(34),
+                  fontWeight: 900,
+                  marginTop: u(4),
+                  color: c.accent ?? '#e2e8f0',
+                  textShadow: c.accent ? `0 0 26px ${c.accent}55` : '0 0 20px rgba(226,232,240,0.18)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}
               >
-                <div style={{ fontSize: u(13), letterSpacing: u(2), color: '#64748b' }}>{c.label}</div>
-                <div
-                  style={{
-                    fontSize: isWide ? u(30) : u(34),
-                    fontWeight: 900,
-                    marginTop: u(6),
-                    color: c.accent ?? '#e2e8f0',
-                    textShadow: c.accent ? `0 0 26px ${c.accent}55` : '0 0 20px rgba(226,232,240,0.18)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {c.value}
-                </div>
-                <div style={{ fontSize: u(13), color: '#64748b', marginTop: u(4) }}>{c.sub}</div>
+                {c.value}
               </div>
-            ))}
-          </div>
-        )}
+              <div style={{ fontSize: isWide ? u(11) : u(13), color: '#64748b', marginTop: u(3) }}>{c.sub}</div>
+            </div>
+          )) : [
+            'TRADES', 'WINS', 'WIN RATE', 'BEST PAIR', 'AVG CONFIDENCE', 'BEST SESSION', 'RISK DISCIPLINE',
+          ].map((label) => (
+            <div
+              key={label}
+              style={{
+                padding: isWide ? `${u(10)}px ${u(14)}px` : `${u(16)}px ${u(20)}px`,
+                borderRadius: u(16),
+                border: '1px dashed rgba(148,163,184,0.10)',
+                background: 'rgba(15,23,42,0.30)',
+                opacity: 0.5,
+              }}
+            >
+              <div style={{ fontSize: isWide ? u(11) : u(13), letterSpacing: u(2), color: '#334155' }}>{label}</div>
+              <div style={{ fontSize: isWide ? u(24) : u(34), fontWeight: 900, marginTop: u(4), color: '#1e293b' }}>—</div>
+              <div style={{ fontSize: isWide ? u(11) : u(13), color: '#1e293b', marginTop: u(3) }}>journal to unlock</div>
+            </div>
+          ))}
+        </div>
 
         {/* Badges */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: u(12), alignItems: 'center' }}>
@@ -344,30 +379,49 @@ export default function PerformanceCard({ data, period, size, privacy, qrDataUrl
           )}
         </div>
 
-        <div style={{ flex: 1 }} />
 
-        {/* Footer */}
+        {/* Footer — absolutely pinned to bottom, always visible */}
         <div
           style={{
+            position: 'absolute',
+            bottom: isWide ? u(24) : u(64),
+            left: isWide ? u(32) : u(64),
+            right: isWide ? u(32) : u(64),
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: u(20),
-            paddingTop: u(24),
+            paddingTop: u(18),
             borderTop: '1px solid rgba(148,163,184,0.18)',
           }}
         >
-          <div>
-            <div style={{ fontSize: u(20), fontWeight: 900, letterSpacing: u(2), color: '#c7d2fe' }}>🧲 MAGNET OF TRADE</div>
-            <div style={{ fontSize: u(15), letterSpacing: u(2), color: '#64748b', marginTop: u(4) }}>
-              AI TRADING INTELLIGENCE · @magnetoftrade
+          <div style={{ display: 'flex', alignItems: 'center', gap: u(12) }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/magnet-logo.png"
+              alt="Magnet of Trade"
+              style={{
+                width: isWide ? u(36) : u(52),
+                height: isWide ? u(36) : u(52),
+                borderRadius: u(6),
+                objectFit: 'contain',
+                flexShrink: 0,
+                border: '1px solid rgba(52,211,153,0.50)',
+                boxShadow: '0 0 14px rgba(52,211,153,0.35)',
+              }}
+            />
+            <div>
+              <div style={{ fontSize: isWide ? u(16) : u(20), fontWeight: 900, letterSpacing: u(2), color: '#c7d2fe' }}>MAGNET OF TRADE</div>
+              <div style={{ fontSize: isWide ? u(12) : u(15), letterSpacing: u(2), color: '#64748b', marginTop: u(4) }}>
+                AI TRADING INTELLIGENCE · @magnetoftrade
+              </div>
             </div>
           </div>
           {qrDataUrl && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: u(16) }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: u(12) }}>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: u(15), color: '#94a3b8', letterSpacing: u(1) }}>Scan to visit</div>
-                <div style={{ fontSize: u(14), color: '#64748b', marginTop: u(2), maxWidth: u(260), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: isWide ? u(12) : u(15), color: '#94a3b8', letterSpacing: u(1) }}>Scan to visit</div>
+                <div style={{ fontSize: isWide ? u(11) : u(14), color: '#64748b', marginTop: u(2), maxWidth: u(220), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {data.siteUrl}
                 </div>
               </div>
@@ -376,11 +430,11 @@ export default function PerformanceCard({ data, period, size, privacy, qrDataUrl
                 src={qrDataUrl}
                 alt="QR"
                 style={{
-                  width: u(96),
-                  height: u(96),
-                  borderRadius: u(12),
+                  width: isWide ? u(64) : u(96),
+                  height: isWide ? u(64) : u(96),
+                  borderRadius: u(10),
                   background: '#ffffff',
-                  padding: u(6),
+                  padding: u(5),
                   boxShadow: '0 0 30px rgba(255,255,255,0.22)',
                 }}
               />
