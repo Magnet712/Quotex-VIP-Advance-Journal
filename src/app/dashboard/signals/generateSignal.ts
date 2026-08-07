@@ -64,6 +64,11 @@ const OTC_PAIRS = [
   { symbol: 'USD/ARS', short: 'USDARS', base: 920.00, pip: 1, vol: 'HIGH' },
   { symbol: 'USD/PKR', short: 'USDPKR', base: 278.50, pip: 1, vol: 'HIGH' },
   { symbol: 'USD/BDT', short: 'USDBDT', base: 109.80, pip: 1, vol: 'MEDIUM' },
+  { symbol: 'USD/NGN', short: 'USDNGN', base: 1352.00, pip: 1, vol: 'HIGH' },
+  { symbol: 'USD/PHP', short: 'USDPHP', base: 58.60, pip: 2, vol: 'HIGH' },
+  { symbol: 'USD/COP', short: 'USDCOP', base: 3950.00, pip: 1, vol: 'HIGH' },
+  { symbol: 'USD/EGP', short: 'USDEGP', base: 49.20, pip: 2, vol: 'HIGH' },
+  { symbol: 'USD/IDR', short: 'USDIDR', base: 16050.00, pip: 1, vol: 'HIGH' },
 ];
 
 interface GeneratedSignal {

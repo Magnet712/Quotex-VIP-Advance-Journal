@@ -56,6 +56,11 @@ const PAIR_BASE_PRICES: Record<string, { base: number; pip: number }> = {
   'USD/ARS': { base: 920.00,  pip: 1 },
   'USD/PKR': { base: 278.50,  pip: 1 },
   'USD/BDT': { base: 109.80,  pip: 1 },
+  'USD/NGN': { base: 1352.00, pip: 1 },
+  'USD/PHP': { base: 58.60,   pip: 2 },
+  'USD/COP': { base: 3950.00, pip: 1 },
+  'USD/EGP': { base: 49.20,   pip: 2 },
+  'USD/IDR': { base: 16050.00, pip: 1 },
 };
 
 /**
