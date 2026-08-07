@@ -41,6 +41,12 @@ export default function Footer() {
             <li>
               <Link href="/register-info" className="hover:text-neon-green transition-colors">How it Works</Link>
             </li>
+            <li>
+              <Link href="/terms-of-service" className="hover:text-neon-green transition-colors">Terms of Service</Link>
+            </li>
+            <li>
+              <Link href="/privacy-policy" className="hover:text-neon-green transition-colors">Privacy Policy</Link>
+            </li>
           </ul>
         </div>
 
@@ -65,6 +71,9 @@ export default function Footer() {
               >
                 CREATE BROKER ACCOUNT
               </Link>
+            </li>
+            <li className="text-[10px] text-slate-600 leading-snug pt-1">
+              Referral link: we may earn a commission. No extra cost to you.
             </li>
           </ul>
         </div>

@@ -1070,7 +1070,14 @@ export default function SignalsPage() {
                   </div>
                 </div>
 
-                {/* OTC Manual Scan Selector Grid (34 Pairs) */}
+                {/* Data Mode Notice */}
+                <div className="border border-amber-500/25 bg-amber-500/5 rounded-xl px-4 py-2.5 text-left">
+                  <p className="text-[9px] font-mono text-amber-400/90 leading-relaxed">
+                    <span className="font-bold uppercase tracking-wider">DATA MODE:</span> Signals use deterministic market-style data + mathematical multi-indicator analysis — no live broker feed connected. Practice-grade data, not exact real broker prices.
+                  </p>
+                </div>
+
+                {/* OTC Manual Scan Selector (39 Pairs) */}
                 <div className="glass-panel p-5 rounded-xl border border-glass-border space-y-4 font-mono text-xs text-left">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-glass-border/30 pb-3">
                     <div className="flex items-center gap-2">
