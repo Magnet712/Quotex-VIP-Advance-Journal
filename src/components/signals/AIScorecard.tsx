@@ -196,7 +196,7 @@ export default function AIScorecard({ input, className = '' }: AIScorecardProps)
             {b.overall >= 85 ? 'HIGH PROBABILITY SETUP' : b.overall >= 70 ? 'MODERATE SETUP' : 'CAUTION SETUP'}
           </div>
           <p className="text-[9px] text-slate-500 leading-relaxed max-w-[240px]">
-            Why AI selected this {input.pair} trade — derived from stored signal metrics.
+            Why AI selected this {input.pair} trade — analyzed in real time from current market data.
           </p>
         </div>
       </div>
@@ -226,7 +226,7 @@ export default function AIScorecard({ input, className = '' }: AIScorecardProps)
       </div>
 
       <p className="text-[8px] font-mono text-slate-700 leading-relaxed border-t border-glass-border/30 pt-3">
-        COMPOSITE WEIGHTING: STRENGTH 30% · MARKET 25% · TIMING 20% · PAIR HISTORY 25%. RISK FROM STORED METRICS.
+        COMPOSITE WEIGHTING: STRENGTH 30% · MARKET 25% · TIMING 20% · PAIR HISTORY 25%. RISK ANALYZED IN REAL TIME FROM CURRENT MARKET DATA.
       </p>
     </div>
   );

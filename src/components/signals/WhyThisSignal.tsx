@@ -118,7 +118,7 @@ export default function WhyThisSignal({ input, className = '' }: WhyThisSignalPr
         ))}
       </ul>
       <p className="text-[8px] font-mono text-slate-700 border-t border-glass-border/30 pt-2">
-        REASONS DERIVED FROM STORED SIGNAL METRICS.
+        REASONS ANALYZED IN REAL TIME FROM CURRENT MARKET DATA.
       </p>
     </div>
   );
