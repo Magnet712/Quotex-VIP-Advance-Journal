@@ -209,6 +209,10 @@ export default async function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="h-4 w-4 text-gold-vip shrink-0 mt-0.5" />
+                  <span>Shareable Trader Performance Cards</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="h-4 w-4 text-gold-vip shrink-0 mt-0.5" />
                   <span>No Monthly Subscription Fees</span>
                 </li>
               </ul>
