@@ -686,6 +686,8 @@ export async function activateSubscriptionInternal(userId: string, planId: strin
       expiry.setDate(expiry.getDate() + 30);
     } else if (planId === 'premium_6months') {
       expiry.setDate(expiry.getDate() + 180);
+    } else if (planId === 'premium_yearly') {
+      expiry.setDate(expiry.getDate() + 365);
     } else if (planId === 'premium_lifetime') {
       expiry = null; // Lifetime access
     } else {

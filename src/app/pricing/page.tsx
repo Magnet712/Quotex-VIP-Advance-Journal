@@ -22,12 +22,12 @@ async function getPricingConfig() {
     const { data: settingsData } = await supabase
       .from('system_settings')
       .select('key, value')
-      .in('key', ['price_premium_monthly', 'price_premium_6months', 'price_premium_lifetime']);
+      .in('key', ['price_premium_monthly', 'price_premium_6months', 'price_premium_yearly']);
 
     const config: Record<string, string> = {
       price_premium_monthly: '$19',
       price_premium_6months: '$99',
-      price_premium_lifetime: '$199'
+      price_premium_yearly: '$169'
     };
 
     (settingsData ?? []).forEach(row => {
@@ -37,7 +37,7 @@ async function getPricingConfig() {
     const { data: pricingData } = await supabase
       .from('pricing_settings')
       .select('id, price, discount')
-      .in('id', ['premium_monthly', 'premium_6months', 'premium_lifetime']);
+      .in('id', ['premium_monthly', 'premium_6months', 'premium_yearly']);
 
     const planDiscounts: Record<string, number> = {};
     const discountedPrices: Record<string, string> = {};
@@ -45,7 +45,7 @@ async function getPricingConfig() {
     if (pricingData && pricingData.length > 0) {
       pricingData.forEach(plan => {
         const d = plan.discount ?? 0;
-        const key = plan.id === 'premium_monthly' ? 'monthly' : plan.id === 'premium_6months' ? 'sixMonths' : 'lifetime';
+        const key = plan.id === 'premium_monthly' ? 'monthly' : plan.id === 'premium_6months' ? 'sixMonths' : 'yearly';
         planDiscounts[key] = d;
         const discounted = Math.max(0, plan.price - (plan.price * (d / 100)));
         discountedPrices[key] = Number.isInteger(discounted) ? `$${discounted}` : `$${discounted.toFixed(2)}`;
@@ -57,7 +57,7 @@ async function getPricingConfig() {
     return {
       price_premium_monthly: '$19',
       price_premium_6months: '$99',
-      price_premium_lifetime: '$199',
+      price_premium_yearly: '$169',
       planDiscounts: {} as Record<string, number>,
       discountedPrices: {} as Record<string, string>
     };
@@ -275,20 +275,24 @@ export default async function PricingPage() {
                   </div>
                 </div>
                 <div className="flex justify-between items-baseline">
-                  <span className="text-xs font-mono text-slate-400 uppercase">Lifetime:</span>
+                  <span className="text-xs font-mono text-slate-400 uppercase">Yearly:</span>
                   <div className="flex items-center gap-2">
-                    {(prices.planDiscounts?.lifetime ?? 0) > 0 && prices.discountedPrices?.lifetime ? (
+                    {(prices.planDiscounts?.yearly ?? 0) > 0 && prices.discountedPrices?.yearly ? (
                       <>
-                        <span className="text-[9px] text-rose-400 font-bold border border-rose-500/30 px-1.5 py-0.5 rounded bg-rose-500/10 mr-1">{prices.planDiscounts.lifetime}% OFF</span>
-                        <span className="text-xs text-slate-600 line-through">{prices.price_premium_lifetime}</span>
-                        <span className="text-2xl font-extrabold font-mono text-rose-300">{prices.discountedPrices.lifetime}</span>
+                        <span className="text-[9px] text-rose-400 font-bold border border-rose-500/30 px-1.5 py-0.5 rounded bg-rose-500/10 mr-1">{prices.planDiscounts.yearly}% OFF</span>
+                        <span className="text-xs text-slate-600 line-through">{prices.price_premium_yearly}</span>
+                        <span className="text-2xl font-extrabold font-mono text-rose-300">{prices.discountedPrices.yearly}</span>
                       </>
                     ) : (
-                      <span className="text-2xl font-extrabold font-mono text-purple-300">{prices.price_premium_lifetime}</span>
+                      <span className="text-2xl font-extrabold font-mono text-purple-300">{prices.price_premium_yearly}</span>
                     )}
-                    <span className="text-[10px] text-slate-500 font-mono"> / LIFETIME</span>
+                    <span className="text-[10px] text-slate-500 font-mono"> / YEAR</span>
                   </div>
                 </div>
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-neon-green/5 border border-neon-green/25 text-[9px] font-mono font-bold text-neon-green uppercase tracking-wider">
+                <Award className="h-3 w-3 fill-neon-green" /> Best Value · ≈ $14/mo · 3 months FREE vs Monthly
               </div>
 
               <ul className="space-y-3 text-xs text-slate-300">
@@ -354,7 +358,7 @@ export default async function PricingPage() {
               },
               {
                 q: "Can I upgrade from VIP to Premium Signal Pro?",
-                a: "Yes! At any time, you can purchase a Premium Signal Pro subscription (Monthly, 6-Month, or Lifetime) to append the signal subsystem directly onto your journal dashboard."
+                a: "Yes! At any time, you can purchase a Premium Signal Pro subscription (Monthly, 6-Month, or Yearly) to append the signal subsystem directly onto your journal dashboard."
               }
             ].map((faq, idx) => (
               <div key={idx} className="glass-panel p-5 rounded-lg space-y-2 border border-glass-border">

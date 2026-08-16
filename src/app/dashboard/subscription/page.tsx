@@ -245,6 +245,8 @@ export default function SubscriptionPage() {
     ? Math.round((subState.remainingDays / 30) * 100)
     : subState?.subscription?.plan_id === 'premium_6months'
     ? Math.round((subState.remainingDays / 180) * 100)
+    : subState?.subscription?.plan_id === 'premium_yearly'
+    ? Math.round((subState.remainingDays / 365) * 100)
     : 100;
 
   return (
@@ -381,13 +383,13 @@ export default function SubscriptionPage() {
                         <div className="flex items-baseline gap-1.5 mt-2">
                           <span className="text-2xl font-extrabold text-slate-200 font-mono">${discountedPrice}</span>
                           <span className="text-xs text-slate-600 line-through">${p.price}</span>
-                          <span className="text-[9px] text-slate-500 font-bold uppercase">/ {p.id === 'premium_lifetime' ? 'one-time' : p.id === 'premium_6months' ? '6 mo' : 'mo'}</span>
+                          <span className="text-[9px] text-slate-500 font-bold uppercase">/ {p.id === 'premium_yearly' ? 'yr' : p.id === 'premium_lifetime' ? 'one-time' : p.id === 'premium_6months' ? '6 mo' : 'mo'}</span>
                         </div>
                       </div>
                     ) : (
                       <div className="flex items-baseline gap-1 mt-2">
                         <span className="text-2xl font-extrabold text-slate-200 font-mono">${p.price}</span>
-                        <span className="text-[9px] text-slate-500 font-bold uppercase">/ {p.id === 'premium_lifetime' ? 'one-time' : p.id === 'premium_6months' ? '6 mo' : 'mo'}</span>
+                        <span className="text-[9px] text-slate-500 font-bold uppercase">/ {p.id === 'premium_yearly' ? 'yr' : p.id === 'premium_lifetime' ? 'one-time' : p.id === 'premium_6months' ? '6 mo' : 'mo'}</span>
                       </div>
                     )}
                   </div>

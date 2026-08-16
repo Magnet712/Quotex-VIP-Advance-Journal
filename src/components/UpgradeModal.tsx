@@ -12,7 +12,7 @@ export default function UpgradeModal() {
   const [prices, setPrices] = useState({
     monthly: '$19',
     sixMonths: '$99',
-    lifetime: '$199'
+    yearly: '$169'
   });
   const [planDiscounts, setPlanDiscounts] = useState<Record<string, number>>({});
   const [discountedPrices, setDiscountedPrices] = useState<Record<string, string>>({});
@@ -46,7 +46,7 @@ export default function UpgradeModal() {
         setPrices({
           monthly: settingsRes.settings['price_premium_monthly'] || '$19',
           sixMonths: settingsRes.settings['price_premium_6months'] || '$99',
-          lifetime: settingsRes.settings['price_premium_lifetime'] || '$199'
+          yearly: settingsRes.settings['price_premium_yearly'] || '$169'
         });
       }
       if (plansRes.success && plansRes.plans) {
@@ -54,7 +54,7 @@ export default function UpgradeModal() {
         const discounted: Record<string, string> = {};
         plansRes.plans.forEach(plan => {
           const d = plan.discount ?? 0;
-          const key = plan.id === 'premium_monthly' ? 'monthly' : plan.id === 'premium_6months' ? 'sixMonths' : 'lifetime';
+          const key = plan.id === 'premium_monthly' ? 'monthly' : plan.id === 'premium_6months' ? 'sixMonths' : 'yearly';
           pd[key] = d;
           const disc = Math.max(0, plan.price - (plan.price * (d / 100)));
           discounted[key] = Number.isInteger(disc) ? `$${disc}` : `$${disc.toFixed(2)}`;
@@ -192,14 +192,15 @@ export default function UpgradeModal() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-[8px] text-slate-500 uppercase tracking-wider">Lifetime</div>
+                  <div className="text-[8px] text-slate-500 uppercase tracking-wider">Yearly</div>
                   <div className="text-sm font-bold text-slate-200 mt-0.5">
-                    {planDiscounts.lifetime > 0 && discountedPrices.lifetime ? (
-                      <><span className="text-[9px] text-slate-600 line-through mr-1">{prices.lifetime}</span><span className="text-rose-300">{discountedPrices.lifetime}</span></>
+                    {planDiscounts.yearly > 0 && discountedPrices.yearly ? (
+                      <><span className="text-[9px] text-slate-600 line-through mr-1">{prices.yearly}</span><span className="text-rose-300">{discountedPrices.yearly}</span></>
                     ) : (
-                      <span className="text-slate-200">{prices.lifetime}</span>
+                      <span className="text-slate-200">{prices.yearly}</span>
                     )}
                   </div>
+                  <div className="text-[7px] text-neon-green mt-0.5 uppercase">≈ $14/mo · best value</div>
                 </div>
               </div>
 

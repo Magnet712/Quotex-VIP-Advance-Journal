@@ -91,7 +91,7 @@ export default function MembershipPage() {
           <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs font-mono">
             <div>
               <span className="text-slate-500">Plan Duration:</span>
-              <span className="text-slate-300 ml-2">{isPremium || isVip ? 'Lifetime Access' : 'Trial'}</span>
+              <span className="text-slate-300 ml-2">{isVip ? 'Lifetime Access' : isPremium ? 'Billing Cycle' : 'Trial'}</span>
             </div>
             <div>
               <span className="text-slate-500">Status:</span>
@@ -103,7 +103,7 @@ export default function MembershipPage() {
             </div>
             <div>
               <span className="text-slate-500">Renewal Period:</span>
-              <span className="text-slate-300 ml-2">{isPremium || isVip ? 'Never (No Renewals)' : 'Upgrade Required'}</span>
+              <span className="text-slate-300 ml-2">{isVip ? 'Never (No Renewals)' : isPremium ? 'Per Plan — see Subscription Center' : 'Upgrade Required'}</span>
             </div>
           </div>
         </div>

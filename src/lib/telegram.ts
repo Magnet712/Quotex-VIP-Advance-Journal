@@ -7,6 +7,7 @@
 const PLAN_LABELS: Record<string, string> = {
   premium_monthly:  'Premium Monthly',
   premium_6months:  'Premium 6 Months',
+  premium_yearly:   'Premium Yearly',
   premium_lifetime: 'Premium Lifetime',
 };
 

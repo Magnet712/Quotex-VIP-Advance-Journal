@@ -306,7 +306,7 @@ export default function DashboardHome() {
               Approved
             </div>
             <div className="text-[10px] text-slate-500 font-mono mt-1">
-              Expiry: {isPremium || isVip ? 'Never Expires (Lifetime Access)' : 'N/A'}
+              Expiry: {isVip ? 'Never Expires (Lifetime Access)' : isPremium ? 'Per Plan — see Subscription Center' : 'N/A'}
             </div>
           </div>
         </div>
