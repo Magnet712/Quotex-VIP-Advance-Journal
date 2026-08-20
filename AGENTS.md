@@ -248,3 +248,38 @@ Shareable branded weekly/monthly performance cards (Spotify-Wrapped style) with 
 - Lint rule learned: new pages must avoid calling setState synchronously inside effect bodies (inline async IIFE + `cancelled` flag passes react-hooks/set-state-in-effect); removed `eslint-disable` for exhaustive-deps when unneeded (unused directive warning).
 - Untracked (marketing, not feature code): `public/instagram-carousel/`, `public/final-instagram-carousel/`, `public/signal-landing.html`.
 - Deps: `html-to-image`, `qrcode` (prod); `@types/qrcode` (dev).
+
+## Session History (08 Aug 2026) — Pricing update + Planned Maintenance Mode
+
+### Done
+- `712e2ae` — feat: add Shareable Trader Performance Cards to VIP Journal pricing features (pricing/page.tsx:210, +4 lines). Pushed → live. Achievements stayed VIP-gated (`'journal': 'vip'` in `src/lib/permissions.ts:12`) so the claim is accurate.
+
+### PLANNED (NOT IMPLEMENTED — user deferred until user base grows) — Maintenance Mode Option 1 (env-var toggle, $0)
+User asked "show Website Under Maintenance while I fix stuff"; chose **Option 1: Env-var toggle + redirect**. Implement when requested:
+
+1. **`src/lib/maintenance.ts`** (new): `isMaintenanceMode()` reading `process.env.MAINTENANCE_MODE === '1' || 'true'`; export bypass header const.
+2. **`src/app/maintenance/page.tsx`** (new): static branded maintenance page in existing design system (dark glass, emerald/gold glow), `robots: noindex`, NO Supabase/auth/network calls — must work even mid-outage. Telegram footer.
+3. **`next.config.ts`**: add `async redirects()` beside existing `headers()` — active ONLY when `MAINTENANCE_MODE === '1'`:
+   - `{ source: '/((?!maintenance).*)', destination: '/maintenance', permanent: false }` (regex excludes /maintenance → no redirect loop; 302 → not cached by browsers/SEO).
+4. Keep Sentry wrapper + CSP headers untouched. Zero app-code changes.
+
+**Toggle procedure (2 min per switch, Production env only):** Vercel → Settings → Environment Variables → `MAINTENANCE_MODE=1` (or blank to disable) → Deployments → ⋮ → Redeploy.
+- Preview deployments unaffected → developer can keep testing on preview URL while production shows maintenance.
+- Hobby plan = free redeploys; no runtime cost (env read at build time, no Edge Config).
+- Vercel Cron (`vercel.json`) keeps running during maintenance (fine/harmless).
+- Honest limitation: toggle needs ~2-min redeploy, NOT instant. Instant on/off = Edge Config but NOT free-friendly on Hobby — rejected unless user changes mind.
+
+- Alternative options documented for user: Option 2 = temporary `vercel.json` redirect + `public/maintenance.html` commits (2 commits, zero app code); Option 3 = separate `maintenance` git branch swapped as Production Branch (zero code).
+
+## Session History (10 Aug 2026) — MAGNET NEED MIGRATION (Vercel → Cloudflare + Railway, PLANNED)
+
+**TRIGGER PHRASE: user types `MAGNET NEED MIGRATION` → read `docs/MAGNET_NEED_MIGRATION.md` FIRST, then execute the split.** That doc is the full memory of the 10 Aug migration planning conversation (facts verified by web search that day). Key points:
+
+- **EXACT TRIGGER FLOW (locked):** 1) User types `MAGNET NEED MIGRATION` + pastes Vercel Usage stats screenshot → 2) ANALYZE the stats FIRST — what actually burns the 4h CPU (scans? specific routes? crawl bots? Sentry? cron?) — the plan MAY CHANGE based on findings (e.g., one heavy endpoint dominates → consider fixing it BEFORE migrating; honest scan traffic → move as planned) → 3) only THEN start the split execution, adapted to that data.
+
+- **Why:** Vercel Hobby fluid CPU notice (80% of 4h/month) + **live Razorpay billing on Hobby = commercial TOS violation** (Vercel explicitly lists "processing payment from visitors" as commercial; Hobby can be suspended without warning).
+- **Destination:** Railway (FULL app — zero code change, real Node: nodemailer/ws/razorpay all work) + Cloudflare free (marketing static: `public/signal-landing.html`, `public/instagram-carousel/`, `public/final-instagram-carousel/` + cron Worker hitting `/api/cron/expire-subscriptions` + DNS). OTC-only future drops TwelveData/ws.
+- **CRITICAL RULE:** do NOT delete the Vercel project first — migration order is: build split (Vercel live) → copy env vars + test → switch DNS + Razorpay webhook URL (webhook FIRST, wait 5–10 min, then DNS) → verify → delete Vercel LAST. Disruption = parking brake (recoverable), deletion = destroy (irreversible).
+- **Railway billing:** monthly auto-renew ONLY (no prepay, post-paid card required since Mar 2024); $5 Hobby min incl $5 usage credit (realistic bill $8–15/mo for this app); $1/mo free tier exists (too small for app but ok as staging backup); cancel anytime, spending caps available. No native cron.
+- **Cloudflare full shift = 1–2 day port, NOT recommended:** Next 16.2.9 + next-on-pages unproven, nodemailer/razorpay SDK/Sentry config blockers. Ranking locked: Vercel Pro $20 > Railway $5–15 > Cloudflare.
+- **Env-var watchlist:** ~20 vars incl `NEXT_PUBLIC_SITE_URL` (auto-flips QR codes/sitemap/robots); hardcoded URL fallbacks remain in `src/app/sitemap.ts` + `src/app/robots.ts` (stale onrender.com).

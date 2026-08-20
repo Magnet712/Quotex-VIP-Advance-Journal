@@ -52,17 +52,27 @@ export async function getAllUsers() {
 
 /**
  * Updates a user profile status (e.g. approve, reject, disable).
+ * When rejecting, an optional reason is persisted so the user can
+ * see why their request was rejected. The reason is cleared whenever
+ * the status leaves 'rejected' (approve / reset to pending).
  */
-export async function updateUserStatus(userId: string, status: 'pending' | 'approved' | 'rejected') {
+export async function updateUserStatus(userId: string, status: 'pending' | 'approved' | 'rejected', reason?: string) {
   const isAdmin = await verifyAdmin();
   if (!isAdmin) {
     return { success: false, error: 'Unauthorized. Admin access required.' };
   }
 
+  const updateData: Record<string, string | null> = { status };
+  if (status === 'rejected') {
+    updateData.rejection_reason = reason?.trim() || null;
+  } else {
+    updateData.rejection_reason = null;
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from('users')
-    .update({ status })
+    .update(updateData)
     .eq('id', userId);
 
   if (error) {

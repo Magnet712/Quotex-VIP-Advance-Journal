@@ -56,6 +56,15 @@ export default function AdminDashboardPage() {
   const [newPassword, setNewPassword] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [rejectingUser, setRejectingUser] = useState<{ id: string; trader_id: string; username: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const REJECT_REASONS = [
+    'Invalid Trader ID — not registered through partner link',
+    'Trader ID not found at broker',
+    'Duplicate registration',
+    'Suspected fraud / abuse',
+  ];
 
   // REFERRALS TAB STATE
   const [referralsLedger, setReferralsLedger] = useState<any[]>([]);
@@ -216,6 +225,31 @@ export default function AdminDashboardPage() {
       }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Error occurred.' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const openRejectModal = (user: any) => {
+    setRejectingUser(user);
+    setRejectReason(REJECT_REASONS[0]);
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!rejectingUser) return;
+    setActionLoading(rejectingUser.id);
+    setMessage(null);
+    try {
+      const res = await updateUserStatus(rejectingUser.id, 'rejected', rejectReason);
+      if (res.success) {
+        setMessage({ type: 'success', text: `User ${rejectingUser.trader_id} rejected with reason.` });
+        setRejectingUser(null);
+        await loadData();
+      } else {
+        setMessage({ type: 'error', text: res.error || 'Failed to reject user.' });
+      }
+    } catch (err: unknown) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Error occurred.' });
     } finally {
       setActionLoading(null);
     }
@@ -599,7 +633,14 @@ export default function AdminDashboardPage() {
                     filteredUsers.map((user) => (
                       <tr key={user.id} className="hover:bg-slate-900/30 transition-colors">
                         <td className="p-4 font-bold text-slate-200">{user.trader_id}</td>
-                        <td className="p-4 text-slate-300">{user.username}</td>
+                        <td className="p-4 text-slate-300">
+                          {user.username}
+                          {user.status === 'rejected' && (
+                            <div className="text-[10px] text-rose-400/80 mt-0.5 max-w-[220px] truncate" title={user.rejection_reason || ''}>
+                              REASON: {user.rejection_reason || 'No reason provided'}
+                            </div>
+                          )}
+                        </td>
                         <td className="p-4 text-slate-500">
                           {new Date(user.created_at).toLocaleDateString()} {new Date(user.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </td>
@@ -644,7 +685,7 @@ export default function AdminDashboardPage() {
                               </button>
                               <button
                                 disabled={actionLoading === user.id}
-                                onClick={() => handleStatusChange(user.id, 'rejected')}
+                                onClick={() => openRejectModal(user)}
                                 className="p-1.5 rounded bg-rose-950/40 border border-rose-500/20 text-rose-400 hover:bg-rose-950/80 transition-colors inline-flex items-center"
                                 title="Reject Account"
                               >
@@ -1551,6 +1592,70 @@ export default function AdminDashboardPage() {
       </main>
 
       <Footer />
+
+      {/* Reject Account Modal */}
+      {rejectingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-md glass-panel p-6 rounded-xl border border-glass-border space-y-4">
+            <div className="space-y-1">
+              <h3 className="text-sm font-mono font-bold text-rose-400">REJECT ACCOUNT REQUEST</h3>
+              <p className="text-[10px] text-slate-500 font-mono">
+                TRADER ID: {rejectingUser.trader_id} &bull; USERNAME: {rejectingUser.username}
+              </p>
+              <p className="text-[10px] text-slate-500">
+                The selected reason will be shown to the user on their status screen.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <span className="text-[10px] font-mono font-bold tracking-wider text-slate-400 uppercase">QUICK REASONS</span>
+              <div className="flex flex-wrap gap-2">
+                {REJECT_REASONS.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRejectReason(r)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border ${
+                      rejectReason === r
+                        ? 'bg-rose-950/60 border-rose-500/50 text-rose-300'
+                        : 'bg-slate-900 border-glass-border text-slate-400 hover:text-rose-300 hover:border-rose-500/30'
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-mono font-bold tracking-wider text-slate-400 uppercase">OR CUSTOM REASON</span>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={2}
+                placeholder="Type a custom rejection reason..."
+                className="w-full bg-[#030812] border border-glass-border px-3 py-2 rounded text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/40 resize-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleRejectConfirm}
+                disabled={actionLoading === rejectingUser.id || !rejectReason.trim()}
+                className="flex-1 py-2 rounded bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs uppercase"
+              >
+                {actionLoading === rejectingUser.id ? 'REJECTING...' : 'CONFIRM REJECT'}
+              </button>
+              <button
+                onClick={() => {
+                  setRejectingUser(null);
+                  setRejectReason('');
+                }}
+                className="px-4 py-2 rounded bg-slate-900 border border-glass-border hover:bg-slate-800 text-slate-400 text-xs font-bold"
+              >
+                CANCEL
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

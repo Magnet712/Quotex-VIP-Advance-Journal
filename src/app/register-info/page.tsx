@@ -19,6 +19,7 @@ function RegisterInfoContent() {
   const [isPendingView, setIsPendingView] = useState(false);
   const [sessionUser, setSessionUser] = useState<any>(null);
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Form states
@@ -39,13 +40,14 @@ function RegisterInfoContent() {
         // Fetch status
         const { data: profile } = await supabase
           .from('users')
-          .select('status, trader_id')
+          .select('status, trader_id, rejection_reason')
           .eq('id', session.user.id)
           .single();
         
         if (profile) {
           setProfileStatus(profile.status);
           setTraderId(profile.trader_id);
+          setRejectionReason(profile.rejection_reason);
           if (profile.status === 'pending' || profile.status === 'rejected') {
             setIsPendingView(true);
           } else if (profile.status === 'approved') {
@@ -116,36 +118,75 @@ function RegisterInfoContent() {
   };
 
   if (isPendingView || success) {
+    const isRejected = profileStatus === 'rejected';
     return (
       <>
         <div className="w-full max-w-lg glass-panel p-8 rounded-xl border border-glass-border space-y-6 relative text-center">
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-gold-vip/5 rounded-full blur-3xl pointer-events-none" />
+        <div className={`absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl pointer-events-none ${isRejected ? 'bg-rose-500/10' : 'bg-gold-vip/5'}`} />
         
-        <div className="inline-flex items-center justify-center p-3 rounded-full bg-gold-vip/10 border border-gold-vip/30 text-gold-vip animate-pulse mb-2">
-          <HelpCircle className="h-8 w-8 text-gold-vip" />
+        <div className={`inline-flex items-center justify-center p-3 rounded-full border mb-2 ${isRejected ? 'bg-rose-950/20 border-rose-500/40 text-rose-500' : 'bg-gold-vip/10 border-gold-vip/30 text-gold-vip animate-pulse'}`}>
+          {isRejected ? (
+            <AlertCircle className="h-8 w-8 text-rose-500" />
+          ) : (
+            <HelpCircle className="h-8 w-8 text-gold-vip" />
+          )}
         </div>
 
-        <h2 className="text-xl sm:text-2xl font-bold font-mono tracking-tight text-slate-100">
-          ACCOUNT PENDING VERIFICATION
+        <h2 className={`text-xl sm:text-2xl font-bold font-mono tracking-tight ${isRejected ? 'text-rose-400' : 'text-slate-100'}`}>
+          {isRejected ? 'REQUEST REJECTED' : 'ACCOUNT PENDING VERIFICATION'}
         </h2>
         
-        <div className="bg-slate-950/60 border border-glass-border p-5 rounded-lg text-left text-xs space-y-3 font-mono">
+        <div className={`bg-slate-950/60 border p-5 rounded-lg text-left text-xs space-y-3 font-mono ${isRejected ? 'border-rose-500/30' : 'border-glass-border'}`}>
           <div className="flex justify-between border-b border-slate-900 pb-2">
             <span className="text-slate-500">TRADER ID:</span>
             <span className="text-slate-200 font-bold">{traderId || 'SUBMITTED'}</span>
           </div>
           <div className="flex justify-between border-b border-slate-900 pb-2">
             <span className="text-slate-500">STATUS:</span>
-            <span className="text-gold-vip font-bold glow-text-gold uppercase">{profileStatus || 'PENDING'}</span>
+            <span className={`font-bold uppercase ${isRejected ? 'text-rose-500 glow-text-red' : 'text-gold-vip glow-text-gold'}`}>{profileStatus || 'PENDING'}</span>
           </div>
-          <div className="text-[11px] text-slate-400 leading-relaxed font-sans pt-1">
-            Your account request has been successfully registered. The system administrator manually verifies each Trader ID registration against our partner link to grant lifetime VIP access.
-          </div>
+          {isRejected && (
+            <div className="bg-rose-950/20 border border-rose-500/25 p-3 rounded">
+              <span className="text-rose-400 font-bold tracking-wider block text-[10px]">REASON FOR REJECTION:</span>
+              <span className="text-slate-200 leading-relaxed block mt-1">{rejectionReason || 'No reason provided by the administrator. Please contact VIP support.'}</span>
+            </div>
+          )}
+          {!isRejected && (
+            <div className="text-[11px] text-slate-400 leading-relaxed font-sans pt-1">
+              Your account request has been successfully registered. The system administrator manually verifies each Trader ID registration against our partner link to grant lifetime VIP access.
+            </div>
+          )}
         </div>
 
-        <div className="text-sm text-slate-400 max-w-sm mx-auto leading-normal">
-          Verification typically completes in <strong className="text-neon-green">1 to 12 hours</strong>. Please contact VIP support at <span className="text-gold-vip font-mono text-xs">{process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'vip-support@quotex.journal'}</span> for rapid activation.
-        </div>
+        {isRejected ? (
+          <div className="text-left space-y-3">
+            <div className="bg-slate-950/60 border border-glass-border p-4 rounded-lg space-y-2 text-left">
+              <span className="text-[10px] font-mono font-bold tracking-wider text-slate-400 uppercase block">HOW TO GET ACTIVATED</span>
+              <ol className="space-y-2 text-[11px] font-sans text-slate-300 list-decimal list-inside">
+                <li>
+                  Open a new broker account through our compliance link:&nbsp;
+                  <a
+                    href="https://broker-qx.pro/sign-up/?lid=1712337"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gold-vip hover:underline"
+                  >
+                    OPEN BROKER REGISTRATION
+                  </a>
+                </li>
+                <li>Sign out below and register again with your new Broker Trader ID.</li>
+                <li>Your request will be verified against the partner link for activation.</li>
+              </ol>
+            </div>
+            <div className="text-sm text-slate-400 max-w-sm mx-auto leading-normal">
+              Need help? Contact VIP support at <span className="text-gold-vip font-mono text-xs">{process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'vip-support@quotex.journal'}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-slate-400 max-w-sm mx-auto leading-normal">
+            Verification typically completes in <strong className="text-neon-green">1 to 12 hours</strong>. Please contact VIP support at <span className="text-gold-vip font-mono text-xs">{process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'vip-support@quotex.journal'}</span> for rapid activation.
+          </div>
+        )}
 
         <div className="pt-4 flex flex-col gap-3">
           <Link
@@ -160,7 +201,7 @@ function RegisterInfoContent() {
             className="flex items-center justify-center gap-1.5 w-full py-2 text-slate-500 hover:text-rose-500 text-xs transition-colors"
           >
             <LogOut className="h-4 w-4" />
-            <span>Sign Out / Log in different ID</span>
+            <span>{isRejected ? 'Sign Out / Register with a new Trader ID' : 'Sign Out / Log in different ID'}</span>
           </button>
         </div>
       </div>

@@ -164,7 +164,7 @@ export async function loginTrader(traderId: string, password: string) {
     const adminClient = createAdminClient();
     const { data: profile, error: profileError } = await adminClient
       .from('users')
-      .select('status, vip_access, premium_access')
+      .select('status, vip_access, premium_access, rejection_reason')
       .eq('id', data.user.id)
       .single();
 
@@ -181,6 +181,7 @@ export async function loginTrader(traderId: string, password: string) {
       status: profile.status,
       vipAccess: profile.vip_access,
       premiumAccess: profile.premium_access,
+      rejectionReason: profile.rejection_reason,
     };
   } catch (err: any) {
     console.error('Login error:', err);
