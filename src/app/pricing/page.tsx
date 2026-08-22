@@ -323,7 +323,27 @@ export default async function PricingPage() {
               </ul>
             </div>
 
-            <div className="pt-8">
+            {/* How to Use Tip */}
+            <div className="mt-5 rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-4 py-3 space-y-1">
+              <p className="text-[9px] font-mono font-bold text-emerald-400 uppercase tracking-widest">💡 How to Use</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                Your Analysis on Market&nbsp;
+                <span className="text-emerald-400 font-semibold">+</span>&nbsp;
+                AI Signal Confluence&nbsp;
+                <span className="text-emerald-400 font-bold">=</span>&nbsp;
+                <span className="text-emerald-300 font-semibold">Great Combination</span>
+              </p>
+            </div>
+
+            {/* AI Disclaimer */}
+            <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 flex items-start gap-2">
+              <span className="text-sm leading-none mt-0.5">⚠️</span>
+              <p className="text-[10px] text-amber-300/80 leading-relaxed">
+                AI can make mistakes — signals are not always 100% accurate. Always apply your own judgment.
+              </p>
+            </div>
+
+            <div className="pt-6">
               <Link
                 href="/register-info"
                 className="block w-full py-3.5 rounded bg-purple-500 hover:bg-purple-600 text-slate-950 font-extrabold text-xs font-mono tracking-widest text-center uppercase transition-all glow-shadow-purple"
