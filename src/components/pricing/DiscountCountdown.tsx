@@ -37,10 +37,10 @@ function calcTimeLeft(endsAt: string): TimeLeft | null {
 }
 
 export default function DiscountCountdown({ endsAt }: Props) {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(() => calcTimeLeft(endsAt));
+  // Start null so server renders nothing — client fills in after hydration (no mismatch)
+  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
 
   useEffect(() => {
-    // Recalculate immediately on mount (avoids SSR mismatch)
     setTimeLeft(calcTimeLeft(endsAt));
 
     const interval = setInterval(() => {

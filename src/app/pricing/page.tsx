@@ -1,6 +1,5 @@
 import React from 'react';
 import Link from 'next/link';
-import nextDynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -8,12 +7,7 @@ import {
   Check, Star, Award, Zap, HelpCircle, ArrowRight, ShieldCheck, Play 
 } from 'lucide-react';
 import { getFeatureFlag } from '@/app/actions/feature_flags';
-
-// Client-only countdown (setInterval), loaded after hydration
-const DiscountCountdown = nextDynamic(
-  () => import('@/components/pricing/DiscountCountdown'),
-  { ssr: false }
-);
+import DiscountCountdown from '@/components/pricing/DiscountCountdown';
 
 export const dynamic = 'force-dynamic';
 
