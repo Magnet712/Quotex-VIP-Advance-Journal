@@ -85,6 +85,17 @@ export default function DiscountCountdown({ endsAt }: Props) {
         >
           Limited Offer Ends In
         </span>
+        {/* Urgency badge — right side of header row */}
+        <div
+          className="ml-auto flex-shrink-0 rounded-full px-2 py-0.5 text-[8px] font-black font-mono uppercase tracking-wider text-rose-200"
+          style={{
+            background: 'rgba(220,38,38,0.25)',
+            border: '1px solid rgba(248,113,113,0.30)',
+            boxShadow: '0 0 8px rgba(220,38,38,0.30)',
+          }}
+        >
+          🔥 Act Now
+        </div>
       </div>
 
       {/* Countdown tiles */}
@@ -136,18 +147,6 @@ export default function DiscountCountdown({ endsAt }: Props) {
             )}
           </React.Fragment>
         ))}
-
-        {/* Urgency tag */}
-        <div
-          className="ml-auto flex-shrink-0 rounded-full px-2 py-0.5 text-[8px] font-black font-mono uppercase tracking-wider text-rose-200"
-          style={{
-            background: 'rgba(220,38,38,0.25)',
-            border: '1px solid rgba(248,113,113,0.30)',
-            boxShadow: '0 0 8px rgba(220,38,38,0.30)',
-          }}
-        >
-          🔥 Act Now
-        </div>
       </div>
 
       {/* CSS keyframe injected inline (avoids Tailwind config dependency) */}
