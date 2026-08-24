@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import nextDynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -7,6 +8,12 @@ import {
   Check, Star, Award, Zap, HelpCircle, ArrowRight, ShieldCheck, Play 
 } from 'lucide-react';
 import { getFeatureFlag } from '@/app/actions/feature_flags';
+
+// Client-only countdown (setInterval), loaded after hydration
+const DiscountCountdown = nextDynamic(
+  () => import('@/components/pricing/DiscountCountdown'),
+  { ssr: false }
+);
 
 export const dynamic = 'force-dynamic';
 
@@ -36,11 +43,12 @@ async function getPricingConfig() {
 
     const { data: pricingData } = await supabase
       .from('pricing_settings')
-      .select('id, price, discount')
+      .select('id, price, discount, discount_ends_at')
       .in('id', ['premium_monthly', 'premium_6months', 'premium_yearly']);
 
     const planDiscounts: Record<string, number> = {};
     const discountedPrices: Record<string, string> = {};
+    const discountEndsAt: Record<string, string | null> = {};
 
     if (pricingData && pricingData.length > 0) {
       pricingData.forEach(plan => {
@@ -49,17 +57,19 @@ async function getPricingConfig() {
         planDiscounts[key] = d;
         const discounted = Math.max(0, plan.price - (plan.price * (d / 100)));
         discountedPrices[key] = Number.isInteger(discounted) ? `$${discounted}` : `$${discounted.toFixed(2)}`;
+        discountEndsAt[key] = plan.discount_ends_at ?? null;
       });
     }
 
-    return { ...config, planDiscounts, discountedPrices };
+    return { ...config, planDiscounts, discountedPrices, discountEndsAt };
   } catch (err) {
     return {
       price_premium_monthly: '$19',
       price_premium_6months: '$99',
       price_premium_yearly: '$169',
       planDiscounts: {} as Record<string, number>,
-      discountedPrices: {} as Record<string, string>
+      discountedPrices: {} as Record<string, string>,
+      discountEndsAt: {} as Record<string, string | null>,
     };
   }
 }
@@ -290,6 +300,18 @@ export default async function PricingPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Discount Countdown — only shown when a discount + expiry deadline are active */}
+              {(() => {
+                const candidates = (['monthly', 'sixMonths', 'yearly'] as const)
+                  .map(k => prices.discountEndsAt?.[k])
+                  .filter((v): v is string => !!v);
+                const hasAnyDiscount = (['monthly', 'sixMonths', 'yearly'] as const)
+                  .some(k => (prices.planDiscounts?.[k] ?? 0) > 0);
+                if (!hasAnyDiscount || candidates.length === 0) return null;
+                const endsAt = candidates.reduce((a, b) => (a < b ? a : b));
+                return <DiscountCountdown endsAt={endsAt} />;
+              })()}
 
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-neon-green/5 border border-neon-green/25 text-[9px] font-mono font-bold text-neon-green uppercase tracking-wider">
                 <Award className="h-3 w-3 fill-neon-green" /> Best Value · ≈ $14/mo · 3 months FREE vs Monthly

@@ -15,6 +15,7 @@ export interface PlanSetting {
   price: number;
   currency: string;
   discount: number;
+  discount_ends_at: string | null;
   enabled: boolean;
 }
 
@@ -118,7 +119,13 @@ export async function getWalletSettings() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Action: updateBillingPlan
 // ─────────────────────────────────────────────────────────────────────────────
-export async function updateBillingPlan(id: string, price: number, enabled: boolean, discount: number) {
+export async function updateBillingPlan(
+  id: string,
+  price: number,
+  enabled: boolean,
+  discount: number,
+  discountEndsAt?: string | null,
+) {
   const isAdmin = await checkAdmin();
   if (!isAdmin) return { success: false, error: 'Unauthorized admin action' };
 
@@ -126,7 +133,14 @@ export async function updateBillingPlan(id: string, price: number, enabled: bool
     const supabase = await createClient();
     const { error } = await supabase
       .from('pricing_settings')
-      .update({ price, enabled, discount, updated_at: new Date().toISOString() })
+      .update({
+        price,
+        enabled,
+        discount,
+        // Pass null explicitly to clear; undefined = no-op (column untouched)
+        ...(discountEndsAt !== undefined ? { discount_ends_at: discountEndsAt ?? null } : {}),
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', id);
 
     if (error) throw error;

@@ -403,11 +403,11 @@ export default function AdminDashboardPage() {
   };
 
   // SaaS edits handlers
-  const handleUpdatePrice = async (planId: string, price: number, discount: number, enabled: boolean) => {
+  const handleUpdatePrice = async (planId: string, price: number, discount: number, enabled: boolean, discountEndsAt?: string | null) => {
     setBillingActionLoading(planId);
     setMessage(null);
     try {
-      const res = await updateBillingPlan(planId, price, enabled, discount);
+      const res = await updateBillingPlan(planId, price, enabled, discount, discountEndsAt);
       if (res.success) {
         setMessage({ type: 'success', text: `Plan price settings for "${planId}" successfully saved.` });
         await loadData();
@@ -1664,13 +1664,42 @@ export default function AdminDashboardPage() {
 interface PricingEditProps {
   plan: any;
   loading: boolean;
-  onSave: (id: string, price: number, discount: number, enabled: boolean) => void;
+  onSave: (id: string, price: number, discount: number, enabled: boolean, discountEndsAt?: string | null) => void;
+}
+
+// Convert UTC ISO string → value for datetime-local input (no timezone offset)
+function isoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return '';
+  try {
+    // datetime-local needs "YYYY-MM-DDTHH:MM" in local time
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return '';
+  }
 }
 
 function PricingEditCard({ plan, loading, onSave }: PricingEditProps) {
   const [price, setPrice] = useState(plan.price);
   const [discount, setDiscount] = useState(plan.discount);
   const [enabled, setEnabled] = useState(plan.enabled);
+  // discount_ends_at stored as local datetime string for the <input type="datetime-local">
+  const [endsAtInput, setEndsAtInput] = useState<string>(
+    isoToLocalInput(plan.discount_ends_at)
+  );
+
+  const isLocked = plan.id === 'free' || plan.id === 'vip';
+
+  // Build ISO UTC string from local datetime-local value (or null if empty)
+  const buildEndsAt = (): string | null => {
+    if (!endsAtInput) return null;
+    try {
+      return new Date(endsAtInput).toISOString();
+    } catch {
+      return null;
+    }
+  };
 
   return (
     <div className="glass-panel p-4.5 rounded-xl border border-glass-border/60 flex flex-col justify-between space-y-4">
@@ -1687,7 +1716,7 @@ function PricingEditCard({ plan, loading, onSave }: PricingEditProps) {
               type="number"
               value={price}
               onChange={(e) => setPrice(Number(e.target.value))}
-              disabled={plan.id === 'free' || plan.id === 'vip'}
+              disabled={isLocked}
               className="w-full bg-[#02050b] border border-glass-border px-2 py-1 rounded text-slate-200 text-xs focus:outline-none"
             />
           </div>
@@ -1697,11 +1726,39 @@ function PricingEditCard({ plan, loading, onSave }: PricingEditProps) {
               type="number"
               value={discount}
               onChange={(e) => setDiscount(Number(e.target.value))}
-              disabled={plan.id === 'free' || plan.id === 'vip'}
+              disabled={isLocked}
               className="w-full bg-[#02050b] border border-glass-border px-2 py-1 rounded text-slate-200 text-xs focus:outline-none"
             />
           </div>
         </div>
+
+        {/* Countdown expiry — only editable for premium plans with a discount field */}
+        {!isLocked && (
+          <div className="space-y-1">
+            <label className="text-[8px] text-rose-400/80 block uppercase tracking-widest">⏳ Discount Ends At (optional)</label>
+            <div className="flex gap-1.5 items-center">
+              <input
+                type="datetime-local"
+                value={endsAtInput}
+                onChange={(e) => setEndsAtInput(e.target.value)}
+                className="flex-1 bg-[#02050b] border border-rose-500/20 px-2 py-1 rounded text-slate-200 text-[10px] focus:outline-none focus:border-rose-500/50 cursor-pointer"
+              />
+              {endsAtInput && (
+                <button
+                  type="button"
+                  title="Clear expiry"
+                  onClick={() => setEndsAtInput('')}
+                  className="text-[9px] px-2 py-1 rounded bg-rose-950/40 border border-rose-500/20 text-rose-400 hover:bg-rose-950/70 transition-colors"
+                >
+                  CLR
+                </button>
+              )}
+            </div>
+            <p className="text-[7px] text-slate-600 leading-relaxed">
+              Set a deadline for the discount. Countdown auto-shows on pricing page when set.
+            </p>
+          </div>
+        )}
 
         <div className="flex items-center justify-between border-t border-glass-border/30 pt-3">
           <span className="text-slate-500">PLAN ENABLED</span>
@@ -1716,7 +1773,7 @@ function PricingEditCard({ plan, loading, onSave }: PricingEditProps) {
       </div>
 
       <button
-        onClick={() => onSave(plan.id, price, discount, enabled)}
+        onClick={() => onSave(plan.id, price, discount, enabled, buildEndsAt())}
         disabled={loading || plan.id === 'free'}
         className="w-full py-1.5 rounded bg-slate-900 border border-glass-border text-slate-300 font-bold uppercase text-[9px] hover:text-slate-200 transition-colors disabled:opacity-30 cursor-pointer"
       >
