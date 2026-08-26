@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { logoutUser } from '@/app/actions/auth';
 import { getUserAccessState } from '@/app/actions/admin_optimization';
 import UpgradeModal from '@/components/UpgradeModal';
+import CurvedLightBeam from '@/components/CurvedLightBeam';
 import { 
   BarChart3, BookOpen, Award, Settings, LogOut, 
   TrendingUp, Shield, Menu, X, Loader2, User, Radio, History,
@@ -277,8 +278,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans grid-overlay text-left">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans grid-overlay text-left relative overflow-x-hidden">
       
+      {/* ── Top-Left to Right Bent Curved Light Beam & Shine Effect ── */}
+      <CurvedLightBeam />
+
       {/* Dynamic Upgrade Modal */}
       <UpgradeModal />
 

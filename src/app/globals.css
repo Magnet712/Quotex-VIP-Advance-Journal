@@ -209,6 +209,66 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
+@keyframes beam-sweep {
+  0% { transform: translateX(-40%) rotate(-15deg); opacity: 0.2; }
+  50% { transform: translateX(10%) rotate(-15deg); opacity: 0.45; }
+  100% { transform: translateX(-40%) rotate(-15deg); opacity: 0.2; }
+}
+@keyframes ambient-glow {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.08); }
+}
+
+@keyframes beam-dash {
+  0% {
+    stroke-dashoffset: 2200;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -300;
+    opacity: 0;
+  }
+}
+
+@keyframes beam-dash-fast {
+  0% {
+    stroke-dashoffset: 2700;
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -300;
+    opacity: 0;
+  }
+}
+
+@keyframes shine-sweep {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  80% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateX(360vw);
+    opacity: 0;
+  }
+}
 
 /* ─── Animation Utility Classes ───────────────────────────────────────── */
 .animate-fadeIn {
@@ -248,6 +308,47 @@ body {
 }
 .animate-countdown-pulse {
   animation: countdown-pulse 1s infinite ease-in-out;
+}
+.animate-beam-sweep {
+  animation: beam-sweep 12s ease-in-out infinite;
+}
+.animate-ambient-glow {
+  animation: ambient-glow 9s ease-in-out infinite;
+}
+.animate-beam-dash {
+  animation: beam-dash 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.animate-beam-dash-fast {
+  animation: beam-dash-fast 2.8s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+@keyframes diagonal-shine-sweep {
+  0% {
+    transform: translate3d(-100vw, -100vh, 0) rotate(-35deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  85% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(140vw, 140vh, 0) rotate(-35deg);
+    opacity: 0;
+  }
+}
+
+.animate-shine-sweep {
+  animation: shine-sweep 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.animate-shine-sweep-delayed {
+  animation: shine-sweep 6s cubic-bezier(0.4, 0, 0.2, 1) 0.35s infinite;
+}
+.animate-diagonal-shine {
+  animation: diagonal-shine-sweep 7.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.animate-diagonal-shine-delayed {
+  animation: diagonal-shine-sweep 7.5s cubic-bezier(0.4, 0, 0.2, 1) 0.5s infinite;
 }
 
 /* ─── Skeleton Loading ──────────────────────────────────────────────────── */
