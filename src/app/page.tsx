@@ -865,7 +865,7 @@ export default function Home() {
                     <HelpCircle className={`h-4 w-4 shrink-0 transition-colors ${
                       activeFaq === idx ? 'text-neon-green' : 'text-slate-500'
                     }`} />
-                    <span className={`text-sm font-mono font-bold tracking-wide transition-colors ${
+                    <span className={`text-sm sm:text-base font-sans font-semibold transition-colors ${
                       activeFaq === idx ? 'text-neon-green' : 'text-slate-200'
                     }`}>{faq.q}</span>
                   </span>
