@@ -43,7 +43,7 @@ export default function CookieConsent() {
       <div className="glass-panel p-4 rounded-xl border border-glass-border space-y-3 animate-fadeIn">
         <div className="flex items-start justify-between gap-3">
           <p className="text-[11px] text-slate-300 leading-relaxed">
-            We use <strong>cookies and analytics (Microsoft Clarity)</strong> to improve the site and
+            We use <strong>cookies and analytics (Google Analytics, Microsoft Clarity)</strong> to improve the site and
             understand how members use the tool. See our{' '}
             <Link href="/privacy-policy" className="text-neon-green underline">Privacy Policy</Link> and{' '}
             <Link href="/terms-of-service" className="text-neon-green underline">Terms of Service</Link>.

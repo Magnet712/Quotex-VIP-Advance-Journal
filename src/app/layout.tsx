@@ -45,6 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const clarityId = process.env.NEXT_PUBLIC_CLARITY_ID;
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   return (
     <html
@@ -53,6 +54,24 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <WebVitals />
+        {gaId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${gaId}', {
+                  page_path: window.location.pathname,
+                });
+              `}
+            </Script>
+          </>
+        )}
         {clarityId && (
           <Script id="clarity-analytics" strategy="afterInteractive">
             {`
