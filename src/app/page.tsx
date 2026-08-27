@@ -42,6 +42,9 @@ export default function Home() {
   // Preview Tabs state
   const [activePreviewTab, setActivePreviewTab] = useState<'journal' | 'analytics' | 'checklist' | 'signals' | 'winrate'>('journal');
 
+  // FAQ accordion state
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+
   const [ratingData, setRatingData] = useState<{ average: number; count: number }>({ average: 4.8, count: 0 });
 
   useEffect(() => {
@@ -802,6 +805,86 @@ export default function Home() {
 
       {/* Part 8: Testimonials (Dynamic Carousel - Hides gracefully if empty) */}
       {/* We do not have any seeded testimonials inside the database. So this section is hidden gracefully. */}
+
+      {/* FAQ Section */}
+      <section className="py-24 border-b border-glass-border bg-slate-950/60 relative">
+        <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-neon-green/3 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-12 space-y-4">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-neon-green/30 bg-neon-green/5 text-neon-green text-[10px] font-mono font-bold tracking-widest uppercase">
+              Common Questions
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-bold font-mono tracking-tight">
+              Frequently Asked <span className="text-neon-green">Questions</span>
+            </h2>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Everything you need to know before getting started.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              {
+                q: 'Is this really free?',
+                a: 'Yes. The VIP Journal — Trading Journal, Analytics, Risk Calculator, Checklist — is 100% free, no card needed. AI Signal System Engine is an optional Premium upgrade.'
+              },
+              {
+                q: 'Why do I need to open a broker account?',
+                a: 'This platform operates on a partner-affiliate model. When you open a Quotex account through our link, we earn a small commission from the broker — that revenue funds your free VIP access. You trade on Quotex anyway, so it costs you nothing extra.'
+              },
+              {
+                q: 'What is a Trader ID and where do I find it?',
+                a: 'Your Trader ID is your unique numeric account number assigned by Quotex after registration (example: 5283401). You\'ll find it on your Quotex dashboard or profile page after logging into your broker account.'
+              },
+              {
+                q: 'How long does approval take?',
+                a: 'Typically 1 to 2 hours (max within 12 hours). The admin manually verifies each registration against our partner link. For faster activation, contact VIP support on Telegram after submitting.'
+              },
+              {
+                q: 'Can I use my existing Quotex account?',
+                a: 'No. Activation only works with a new account opened through our partner link. If you register with an existing Trader ID, your request will be rejected. Please use the registration link provided on this page.'
+              },
+              {
+                q: 'What happens after I am approved?',
+                a: 'Full VIP Journal access — Trading Journal, Analytics, Risk Calculator, Checklist, AI Performance Review. Premium unlocks the AI Signal System Engine + Signal History + Performance Analytics.\n\n💡 Your market analysis + AI signal = stronger confluence.\n⚠️ AI signals are not 100% accurate — always apply your own judgment.'
+              }
+            ].map((faq, idx) => (
+              <div
+                key={idx}
+                className={`glass-panel rounded-xl border transition-all duration-300 overflow-hidden ${
+                  activeFaq === idx
+                    ? 'border-neon-green/30 bg-neon-green/3'
+                    : 'border-glass-border hover:border-neon-green/20'
+                }`}
+              >
+                <button
+                  onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                  className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left"
+                >
+                  <span className="flex items-center gap-3">
+                    <HelpCircle className={`h-4 w-4 shrink-0 transition-colors ${
+                      activeFaq === idx ? 'text-neon-green' : 'text-slate-500'
+                    }`} />
+                    <span className={`text-sm font-mono font-bold tracking-wide transition-colors ${
+                      activeFaq === idx ? 'text-neon-green' : 'text-slate-200'
+                    }`}>{faq.q}</span>
+                  </span>
+                  <ChevronRight className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-300 ${
+                    activeFaq === idx ? 'rotate-90 text-neon-green' : ''
+                  }`} />
+                </button>
+                {activeFaq === idx && (
+                  <div className="px-6 pb-5 pt-0">
+                    <div className="pl-7 text-xs text-slate-400 font-sans leading-relaxed whitespace-pre-line border-l border-neon-green/20">
+                      {faq.a}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Part 9: Final CTA */}
       <section className="py-24 relative overflow-hidden bg-[#040815]">
