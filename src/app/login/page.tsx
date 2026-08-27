@@ -135,11 +135,21 @@ export default function LoginPage() {
           </form>
 
           {/* Links for new account */}
-          <div className="border-t border-glass-border pt-4 text-center space-y-2">
+          <div className="border-t border-glass-border pt-4 text-center space-y-3">
             <div className="text-xs text-slate-500">
               New to the platform?{' '}
               <Link href="/register-info" className="text-neon-green hover:underline">
                 Create Account & Request Activation
+              </Link>
+            </div>
+            {/* Activation status check link */}
+            <div>
+              <Link
+                href="/register-info?pending=true"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-400 text-[10px] font-mono font-bold tracking-wider uppercase hover:bg-sky-500/20 hover:border-sky-500/50 transition-all"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
+                Check Your Activation Approval Status →
               </Link>
             </div>
             <div>

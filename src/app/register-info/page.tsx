@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { 
-  TrendingUp, AlertCircle, CheckCircle, ArrowRight, 
+  TrendingUp, AlertCircle, CheckCircle, ArrowRight, Lock,
   HelpCircle, ExternalLink, ShieldCheck, Loader, LogOut, Sparkles
 } from 'lucide-react';
 
@@ -17,6 +17,8 @@ function RegisterInfoContent() {
   const router = useRouter();
   const supabase = createClient();
   const [isPendingView, setIsPendingView] = useState(false);
+  const [isApprovedView, setIsApprovedView] = useState(false);
+  const [isNoSessionView, setIsNoSessionView] = useState(false);
   const [sessionUser, setSessionUser] = useState<any>(null);
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
@@ -51,11 +53,34 @@ function RegisterInfoContent() {
           if (profile.status === 'pending' || profile.status === 'rejected') {
             setIsPendingView(true);
           } else if (profile.status === 'approved') {
-            // Already approved, redirect to dashboard
-            router.push('/dashboard');
-            router.refresh();
+            // If arriving via status-check link, show approved card (one-time only)
+            if (searchParams.get('pending') === 'true') {
+              const celebrationKey = `magnet_vip_celebrated_${session.user.id}`;
+              const alreadySeen = localStorage.getItem(celebrationKey);
+              if (!alreadySeen) {
+                // First time after approval — show green card, set flag, then redirect
+                localStorage.setItem(celebrationKey, '1');
+                setIsApprovedView(true);
+                setTimeout(() => {
+                  router.push('/dashboard');
+                  router.refresh();
+                }, 2500);
+              } else {
+                // Already seen the celebration — redirect immediately
+                router.push('/dashboard');
+                router.refresh();
+              }
+            } else {
+              // Normal login flow — redirect immediately
+              router.push('/dashboard');
+              router.refresh();
+            }
           }
         }
+      }
+      // No session — if user arrived via status-check link, show login-required card
+      if (!session?.user && searchParams.get('pending') === 'true') {
+        setIsNoSessionView(true);
       }
     }
 
@@ -66,10 +91,9 @@ function RegisterInfoContent() {
     if (refVal) {
       setReferredBy(refVal);
     }
-
-    if (searchParams.get('pending') === 'true') {
-      setIsPendingView(true);
-    }
+    // NOTE: ?pending=true is intentionally NOT handled here unconditionally.
+    // Status is derived from the actual session inside checkSession() above.
+    // If no session exists and ?pending=true is in URL, isNoSessionView is shown.
   }, [searchParams, supabase, router]);
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -116,6 +140,75 @@ function RegisterInfoContent() {
     router.push('/');
     router.refresh();
   };
+
+  if (isNoSessionView) {
+    return (
+      <div className="w-full max-w-md glass-panel p-8 rounded-xl border border-gold-vip/25 space-y-6 relative text-center overflow-hidden">
+        <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full blur-3xl pointer-events-none bg-gold-vip/5" />
+
+        <div className="inline-flex items-center justify-center p-4 rounded-full border bg-gold-vip/10 border-gold-vip/30 text-gold-vip">
+          <Lock className="h-8 w-8 text-gold-vip" />
+        </div>
+
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold font-mono tracking-tight text-slate-100">LOGIN REQUIRED</h2>
+          <p className="text-xs font-mono text-slate-500">TO CHECK YOUR ACTIVATION STATUS</p>
+        </div>
+
+        <div className="bg-slate-950/60 border border-glass-border p-4 rounded-lg text-xs font-sans text-slate-400 leading-relaxed">
+          You need to be logged in to check your activation approval status. Please login with your Trader ID and password.
+        </div>
+
+        <div className="flex flex-col gap-3 pt-2">
+          <Link
+            href="/login"
+            className="w-full py-3 rounded bg-neon-green text-slate-950 font-bold hover:bg-neon-green-hover transition-colors tracking-wider text-xs font-mono uppercase glow-button flex items-center justify-center gap-2"
+          >
+            <span>GO TO LOGIN</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/"
+            className="w-full py-2.5 rounded bg-slate-900 border border-glass-border hover:border-neon-green/30 text-slate-400 font-semibold text-xs tracking-wider uppercase transition-colors"
+          >
+            Go Back Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (isApprovedView) {
+    return (
+      <div className="w-full max-w-md glass-panel p-8 rounded-xl border border-emerald-500/30 space-y-6 relative text-center overflow-hidden">
+        <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl pointer-events-none bg-emerald-500/10" />
+        <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full blur-3xl pointer-events-none bg-neon-green/10" />
+
+        <div className="inline-flex items-center justify-center p-4 rounded-full border bg-emerald-950/30 border-emerald-500/40 text-emerald-400 animate-pulse">
+          <CheckCircle className="h-10 w-10 text-emerald-400" />
+        </div>
+
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold font-mono tracking-tight text-emerald-400 glow-text-green">✅ APPROVED</h2>
+          <p className="text-xs font-mono text-slate-400">YOUR VIP ACCESS IS ACTIVE</p>
+        </div>
+
+        <div className="bg-emerald-950/20 border border-emerald-500/20 p-4 rounded-lg text-xs font-mono text-emerald-300 leading-relaxed">
+          Your Trader ID has been verified. VIP Journal access is fully activated.
+          <br />
+          <span className="text-slate-500">Redirecting to your dashboard...</span>
+        </div>
+
+        <div className="flex justify-center">
+          <div className="flex gap-1">
+            {[0,1,2].map(i => (
+              <span key={i} className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isPendingView || success) {
     const isRejected = profileStatus === 'rejected';
