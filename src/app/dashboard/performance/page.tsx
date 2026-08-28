@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { 
   Layers, CheckCircle, XCircle, Clock, 
-  Activity, ArrowDown, ArrowUp, AlertCircle, RefreshCw, BarChart3
+  Activity, ArrowDown, ArrowUp, AlertCircle, RefreshCw, BarChart3, Download
 } from 'lucide-react';
 
 export default function PerformancePage() {
@@ -104,6 +104,41 @@ export default function PerformancePage() {
     return <LockedFeature feature="performance-reports" />;
   }
 
+  const handleExportCSV = () => {
+    if (!performance) return;
+    const headers = ['Metric / Dimension', 'Value', 'Context'];
+    const rows: (string | number)[][] = [
+      ['Timeframe', range.toUpperCase(), 'Report Period'],
+      ['Pipeline', pipeline, 'Data Pipeline'],
+      ['Accuracy', `${performance.accuracy}%`, 'Win Rate'],
+      ['Total Signals', performance.total, 'Total Evaluated'],
+      ['Wins', performance.wins, 'Resolved Wins'],
+      ['Losses', performance.losses, 'Resolved Losses'],
+      ['Pending', performance.pending, 'Pending Resolution'],
+      ['Avg Daily Signals', performance.avgDailySignals, 'Per Day Average'],
+      ['Most Active Asset', `"${(performance.mostTradedAsset || 'N/A').replace(/"/g, '""')}"`, 'Highest Volume'],
+      ['Best Accuracy Asset', `"${(performance.bestPerformingAsset || 'N/A').replace(/"/g, '""')}"`, 'Top Win Rate'],
+      ['Lowest Accuracy Asset', `"${(performance.worstPerformingAsset || 'N/A').replace(/"/g, '""')}"`, 'Lowest Win Rate'],
+    ];
+
+    if (performance.dailyPerformanceData && performance.dailyPerformanceData.length > 0) {
+      rows.push(['--- DAILY PROGRESSION ---', '---', '---']);
+      performance.dailyPerformanceData.forEach((d: any) => {
+        rows.push([d.date, `${d.accuracy}%`, `${d.total} trades (${d.wins}W / ${d.losses}L)`]);
+      });
+    }
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `performance_report_export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 w-full max-w-7xl mx-auto animate-fadeIn text-left">
       
@@ -113,12 +148,22 @@ export default function PerformancePage() {
           <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">analytical reports</span>
           <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-100">Performance Dashboard</h1>
         </div>
-        <button
-          onClick={loadData}
-          className="flex items-center gap-1.5 px-3 py-2 rounded border border-glass-border hover:bg-slate-900/40 text-xs font-mono font-bold text-slate-400 hover:text-slate-200 transition-all uppercase"
-        >
-          <RefreshCw className="h-3.5 w-3.5" /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          {hasData && (
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-1.5 px-3 py-2 rounded bg-purple-600 hover:bg-purple-500 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-purple-900/30"
+            >
+              <Download className="h-3.5 w-3.5" /> Export CSV
+            </button>
+          )}
+          <button
+            onClick={loadData}
+            className="flex items-center gap-1.5 px-3 py-2 rounded border border-glass-border hover:bg-slate-900/40 text-xs font-mono font-bold text-slate-400 hover:text-slate-200 transition-all uppercase"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Date & Filter Settings bar */}

@@ -396,22 +396,45 @@ export default function SubscriptionPage() {
 
                   {/* Feature Lists */}
                   <ul className="text-[10px] text-slate-500 space-y-2 pt-4 border-t border-glass-border/30">
-                    <li className="flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-neon-green shrink-0" />
-                      <span>Professional Signals Feed</span>
-                    </li>
-                    <li className="flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-neon-green shrink-0" />
-                      <span>Unlimited Journal Entries</span>
-                    </li>
-                    <li className="flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-neon-green shrink-0" />
-                      <span>Advanced Stats Analytics</span>
-                    </li>
-                    <li className="flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-neon-green shrink-0" />
-                      <span>Chronological timeline audits</span>
-                    </li>
+                    {p.id === 'free' ? (
+                      <>
+                        <li className="flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                          <span>Free Telegram Channel Access</span>
+                        </li>
+                        <li className="flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                          <span>Basic Learning Resources</span>
+                        </li>
+                        <li className="flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                          <span>Periodic Market Review</span>
+                        </li>
+                        <li className="flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                          <span>Limited Sample Signals</span>
+                        </li>
+                      </>
+                    ) : (
+                      <>
+                        <li className="flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-neon-green shrink-0" />
+                          <span>Professional Signals Feed</span>
+                        </li>
+                        <li className="flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-neon-green shrink-0" />
+                          <span>Unlimited Journal Entries</span>
+                        </li>
+                        <li className="flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-neon-green shrink-0" />
+                          <span>Advanced Stats Analytics</span>
+                        </li>
+                        <li className="flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-neon-green shrink-0" />
+                          <span>Chronological timeline audits</span>
+                        </li>
+                      </>
+                    )}
                   </ul>
                 </div>
 

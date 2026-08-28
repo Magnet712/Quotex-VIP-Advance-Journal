@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Brain, RefreshCw, Sparkles, Crosshair, Clock, ShieldAlert, TrendingUp,
-  AlertTriangle, BookOpen, Quote, Activity,
+  AlertTriangle, BookOpen, Quote, Activity, Download
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { canAccess } from '@/lib/permissions';
@@ -124,6 +124,44 @@ export default function TraderProfilePage() {
     ? [profile.style, profile.bestPair, profile.bestSession, profile.avgRisk, profile.bestPerformance, profile.weakestArea].filter((m): m is ProfileMetric => Boolean(m))
     : [];
 
+  const handleExportCSV = () => {
+    if (!profile) return;
+    const resolved = profile.resolvedTrades || (profile.wins + profile.losses);
+    const winRate = resolved > 0 ? ((profile.wins / resolved) * 100).toFixed(1) : '0.0';
+    const headers = ['Category / Metric', 'Value', 'Note / Context'];
+    const rows: (string | number)[][] = [
+      ['Status', profile.status.toUpperCase(), `${profile.totalTrades} Total Trades Logged`],
+      ['Total Trades', profile.totalTrades, `${profile.activeDays} Active Days`],
+      ['Resolved Trades', resolved, 'Wins + Losses'],
+      ['Wins', profile.wins, 'Journal Wins'],
+      ['Losses', profile.losses, 'Journal Losses'],
+      ['Win Rate', `${winRate}%`, 'Completed Win Rate'],
+      ['Trading Style', `"${(profile.style?.value || 'N/A').replace(/"/g, '""')}"`, `"${(profile.style?.note || '').replace(/"/g, '""')}"`],
+      ['Best Pair', `"${(profile.bestPair?.value || 'N/A').replace(/"/g, '""')}"`, `"${(profile.bestPair?.note || '').replace(/"/g, '""')}"`],
+      ['Best Session', `"${(profile.bestSession?.value || 'N/A').replace(/"/g, '""')}"`, `"${(profile.bestSession?.note || '').replace(/"/g, '""')}"`],
+      ['Average Risk', `"${(profile.avgRisk?.value || 'N/A').replace(/"/g, '""')}"`, `"${(profile.avgRisk?.note || '').replace(/"/g, '""')}"`],
+      ['Best Performance', `"${(profile.bestPerformance?.value || 'N/A').replace(/"/g, '""')}"`, `"${(profile.bestPerformance?.note || '').replace(/"/g, '""')}"`],
+      ['Weakest Area', `"${(profile.weakestArea?.value || 'N/A').replace(/"/g, '""')}"`, `"${(profile.weakestArea?.note || '').replace(/"/g, '""')}"`],
+    ];
+
+    if (profile.recommendation && profile.recommendation.length > 0) {
+      rows.push(['--- AI COACH RECOMMENDATIONS ---', '---', '---']);
+      profile.recommendation.forEach((rec, idx) => {
+        rows.push([`Recommendation ${idx + 1}`, `"${rec.replace(/"/g, '""')}"`, 'AI Strategy Guidance']);
+      });
+    }
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `trader_profile_dossier_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 w-full max-w-7xl mx-auto animate-fadeIn">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-glass-border pb-6 animate-fadeInUp">
@@ -138,13 +176,23 @@ export default function TraderProfilePage() {
             Personal AI coach — analyzed from your journaled trades
           </p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-glass-border bg-slate-900/50 text-[10px] font-mono font-bold text-slate-300 hover:text-slate-100 hover:border-slate-700 transition-colors uppercase tracking-wider disabled:opacity-50 self-start sm:self-auto"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh Profile
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {profile && (
+            <button
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-[10px] font-mono font-bold text-white transition-all uppercase tracking-wider shadow-md shadow-purple-900/30"
+            >
+              <Download className="h-3.5 w-3.5" /> Export CSV
+            </button>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-glass-border bg-slate-900/50 text-[10px] font-mono font-bold text-slate-300 hover:text-slate-100 hover:border-slate-700 transition-colors uppercase tracking-wider disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh Profile
+          </button>
+        </div>
       </div>
 
       {/* Personal Performance vs AI — visible for warming and ready states */}

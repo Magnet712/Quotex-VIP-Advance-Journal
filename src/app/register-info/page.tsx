@@ -246,7 +246,7 @@ function RegisterInfoContent() {
           )}
           {!isRejected && (
             <div className="text-[11px] text-slate-400 leading-relaxed font-sans pt-1">
-              Your account request has been successfully registered. The system administrator manually verifies each Trader ID registration against our partner link to grant lifetime VIP access.
+              Your account request has been successfully registered. The system administrator manually verifies each Trader ID registration against our partner link to grant exclusive VIP access.
             </div>
           )}
         </div>

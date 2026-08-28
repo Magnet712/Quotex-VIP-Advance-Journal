@@ -5,7 +5,7 @@ import {
   FlaskConical, Sparkles, Zap, Filter, Calendar, Clock, 
   TrendingUp, CheckCircle, XCircle, AlertTriangle, 
   RefreshCw, BarChart2, Award, Shield, Target, ArrowUpRight, ArrowDownRight,
-  Hourglass, Layers, HelpCircle, BarChart3, PieChart as PieChartIcon
+  Hourglass, Layers, HelpCircle, BarChart3, PieChart as PieChartIcon, Download
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid,
@@ -182,6 +182,53 @@ export default function StrategyLabPage() {
     ...(result.refunds > 0 ? [{ name: 'Refunds', value: result.refunds, color: '#38bdf8' }] : []),
   ].filter(d => d.value > 0) : [];
 
+  const handleExportCSV = () => {
+    if (!result) return;
+    const headers = ['Category / Metric', 'Value', 'Detail'];
+    const rows: (string | number)[][] = [
+      ['Target Pair', `"${result.pairAnalyzed}"`, 'Selected Asset'],
+      ['Direction Filter', direction, 'Strategy Direction'],
+      ['Expiry Window', expiry, 'Fixed OTC Frame'],
+      ['Total Signals', result.signals, 'All Logged Scans'],
+      ['Settled Signals', result.settledSignals, 'Resolved Outcomes'],
+      ['Wins', result.wins, 'Resolved WIN'],
+      ['Losses', result.losses, 'Resolved LOSS'],
+      ['Pending', result.pending, 'Awaiting Expiry'],
+      ['Historical Win Rate', `${result.winRate}%`, 'Completed Win Rate'],
+      ['Best Session', `"${result.bestSession}"`, 'Peak Accuracy Window'],
+      ['Best Pair', `"${result.bestPair}"`, 'Top Performance Asset'],
+      ['Strongest Setup', `"${result.strongestSetup}"`, 'Top Strategy Model'],
+      ['Worst Condition', `"${result.worstCondition}"`, 'Risk Trigger'],
+      ['CALL Win Rate', `${result.directionalEdge.callWinRate}%`, `${result.directionalEdge.callWins}W / ${result.directionalEdge.callLosses}L`],
+      ['PUT Win Rate', `${result.directionalEdge.putWinRate}%`, `${result.directionalEdge.putWins}W / ${result.directionalEdge.putLosses}L`],
+      ['AI Verdict', `"${result.aiVerdict.replace(/"/g, '""')}"`, 'Dynamic AI Intelligence'],
+    ];
+
+    if (result.setupBreakdown && result.setupBreakdown.length > 0) {
+      rows.push(['--- STRATEGY MODEL BREAKDOWN ---', '---', '---']);
+      result.setupBreakdown.forEach(sb => {
+        rows.push([`"${sb.setup.replace(/"/g, '""')}"`, `${sb.winRate}%`, `${sb.total} total (${sb.wins}W / ${sb.losses}L)`]);
+      });
+    }
+
+    if (result.hourlyDistribution && result.hourlyDistribution.length > 0) {
+      rows.push(['--- HOURLY SESSION BREAKDOWN ---', '---', '---']);
+      result.hourlyDistribution.forEach(h => {
+        rows.push([h.hour, `${h.winRate}%`, `${h.count} scans (${h.wins}W / ${h.losses}L)`]);
+      });
+    }
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `ai_strategy_lab_export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-8 pb-16 animate-fadeIn">
       {/* Top Header */}
@@ -203,14 +250,24 @@ export default function StrategyLabPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleAnalyze}
-          disabled={analyzing}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-purple-600 hover:bg-purple-500 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-purple-900/30 disabled:opacity-50"
-        >
-          <Zap className={`h-4 w-4 ${analyzing ? 'animate-spin' : ''}`} />
-          {analyzing ? 'ANALYZING...' : 'ANALYZE'}
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {result && result.signals > 0 && (
+            <button
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded bg-slate-900 hover:bg-slate-800 border border-glass-border text-slate-200 font-mono font-bold text-xs uppercase tracking-wider transition-all hover:border-purple-500/50 shadow-md"
+            >
+              <Download className="h-3.5 w-3.5 text-purple-400" /> Export CSV
+            </button>
+          )}
+          <button
+            onClick={handleAnalyze}
+            disabled={analyzing}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-purple-600 hover:bg-purple-500 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-purple-900/30 disabled:opacity-50"
+          >
+            <Zap className={`h-4 w-4 ${analyzing ? 'animate-spin' : ''}`} />
+            {analyzing ? 'ANALYZING...' : 'ANALYZE'}
+          </button>
+        </div>
       </div>
 
       {/* Control / Filter Panel */}

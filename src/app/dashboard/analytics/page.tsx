@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import { 
   Award, DollarSign, Target, Activity, 
-  Flame, BarChart3, Plus, Loader, Trash2, Calendar, AlertCircle, X
+  Flame, BarChart3, Plus, Loader, Trash2, Calendar, AlertCircle, X, Download
 } from 'lucide-react';
 
 interface AITradingIntelligencePanelProps {
@@ -821,20 +821,55 @@ export default function AnalyticsPage() {
     );
   }
 
+  const handleExportCSV = () => {
+    if (trades.length === 0) return;
+    const headers = ['Date', 'Asset', 'Direction', 'Investment', 'P/L', 'Outcome', 'Emotion', 'Risk %', 'Notes'];
+    const rows = trades.map(t => [
+      t.trade_date ? new Date(t.trade_date).toLocaleDateString() : '—',
+      `"${(t.asset || '').replace(/"/g, '""')}"`,
+      t.direction || '—',
+      t.investment_amount || 0,
+      t.profit_loss || 0,
+      isTradeWin(t) ? 'WIN' : 'LOSS',
+      `"${(t.emotion || 'Normal').replace(/"/g, '""')}"`,
+      t.risk_percentage || '—',
+      `"${(t.notes || '').replace(/"/g, '""')}"`
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `analytics_journal_export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 w-full max-w-7xl mx-auto animate-fadeIn">
       {/* Title */}
-      <div className="flex justify-between items-center border-b border-glass-border pb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-glass-border pb-4 gap-4">
         <div>
           <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">analytical database</span>
           <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-100">Performance Terminal</h1>
         </div>
-        <button
-          onClick={handleEraseData}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded border border-rose-500/35 hover:bg-rose-950/20 text-rose-400 font-bold text-xs font-mono tracking-wider uppercase transition-all"
-        >
-          <Trash2 className="h-4 w-4" /> ERASE ALL DATA
-        </button>
+        <div className="flex items-center gap-2">
+          {trades.length > 0 && (
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded bg-purple-600 hover:bg-purple-500 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-purple-900/30"
+            >
+              <Download className="h-3.5 w-3.5" /> Export CSV
+            </button>
+          )}
+          <button
+            onClick={handleEraseData}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded border border-rose-500/35 hover:bg-rose-950/20 text-rose-400 font-bold text-xs font-mono tracking-wider uppercase transition-all"
+          >
+            <Trash2 className="h-4 w-4" /> ERASE ALL DATA
+          </button>
+        </div>
       </div>
 
       {/* KPI Row */}

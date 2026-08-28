@@ -145,7 +145,7 @@ export default function DashboardHome() {
       id: 'premium-release',
       type: 'promo',
       title: 'Premium Signal Pro Active',
-      message: 'Automated 1-minute OTC & Live Forex webhook signals are now live. Upgrade to unlock the advanced execution engine.',
+      message: 'Manual 1-Minute OTC Confluence Scans are live (Live Forex coming soon). Upgrade to unlock the advanced intelligence environment.',
       showUpgrade: !isPremium,
     }
   ].filter(n => !dismissedNotifications.includes(n.id));

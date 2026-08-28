@@ -382,11 +382,11 @@ export default async function PricingPage() {
             {[
               {
                 q: "How does the VIP Journal plan work?",
-                a: "By registering an account with our partner broker through our referral link and making a minimum deposit, you qualify for lifetime VIP access to the advanced trading journal and analytics dashboard for free."
+                a: "By registering an account with our partner broker through our referral link and making a minimum deposit, you qualify for lifetime VIP access (till Account Exist) to the advanced trading journal and analytics dashboard for free."
               },
               {
                 q: "What is the difference between VIP and Premium?",
-                a: "VIP includes the Advanced Journal, risk calculators, checklist, and statistics. Premium Signal Pro adds the complete live automated signals engine, signal execution dashboards, history audit, and immediate live alert popups."
+                a: "VIP includes the Advanced Journal, risk calculators, checklist, and statistics. Premium Signal Pro adds the complete live Manual Scan signals engine, Performance Report dashboards, history audit, and Ai Strategy Lab."
               },
               {
                 q: "How are premium signal prices updated?",
