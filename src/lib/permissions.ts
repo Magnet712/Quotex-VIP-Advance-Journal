@@ -16,6 +16,7 @@ export const FEATURE_MIN_ROLES: Record<string, MembershipRole> = {
   'premium-signals': 'premium',
   'signal-history': 'premium',
   'performance-reports': 'premium',
+  'strategy-lab': 'premium',
 };
 
 /**
@@ -40,7 +41,7 @@ export function canAccess(
   let requiredRole = FEATURE_MIN_ROLES[feature];
 
   // Dynamic visibility overrides for signals modules
-  if (['premium-signals', 'signal-history', 'performance-reports'].includes(feature)) {
+  if (['premium-signals', 'signal-history', 'performance-reports', 'strategy-lab'].includes(feature)) {
     if (signalVisibilitySetting === 'public') {
       requiredRole = 'free';
     } else if (signalVisibilitySetting === 'vip') {

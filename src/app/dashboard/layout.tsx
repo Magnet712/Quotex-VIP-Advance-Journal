@@ -12,7 +12,7 @@ import {
   BarChart3, BookOpen, Award, Settings, LogOut, 
   TrendingUp, Shield, Menu, X, Loader2, User, Radio, History,
   Calculator, Send, CheckSquare, LineChart, Video, Zap, CreditCard, Bell,
-  Lock, Brain, BrainCircuit, Trophy
+  Lock, Brain, BrainCircuit, Trophy, FlaskConical
 } from 'lucide-react';
 import { getUserNotifications, markNotificationsRead } from '@/app/actions/billing';
 
@@ -36,7 +36,8 @@ const NAV_TRADING = [
 const NAV_SIGNALS = [
   { name: 'Signal Dashboard', href: '/dashboard/signals', icon: Radio },
   { name: 'Signal History', href: '/dashboard/signal-history', icon: History },
-  { name: 'Performance', href: '/dashboard/performance', icon: LineChart }
+  { name: 'Performance', href: '/dashboard/performance', icon: LineChart },
+  { name: 'AI Strategy Lab', href: '/dashboard/strategy-lab', icon: FlaskConical }
 ];
 const NAV_COMMUNITY = [
   { name: 'Telegram', href: 'https://t.me/Magnetoftrade', icon: Send, isExternal: true },
