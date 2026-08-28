@@ -166,23 +166,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </button>
 
         {showNotificationsDropdown && (
-          <div className={`absolute right-0 ${
-            align === 'up' ? 'bottom-10' : 'top-10'
-          } z-50 w-64 glass-panel border border-glass-border rounded-xl p-3 space-y-2 text-left shadow-xl bg-[#030812]`}>
-            <div className="text-[8px] text-slate-550 uppercase tracking-wider border-b border-glass-border/40 pb-1.5 flex justify-between items-center">
-              <span>Alert Notifications</span>
-              {unreadNotifications > 0 && <span className="text-rose-450 font-bold">{unreadNotifications} Unread</span>}
+          <div className={`absolute ${
+            align === 'up' ? 'left-[-150px] bottom-11' : 'right-0 top-10'
+          } z-50 w-80 bg-[#090d16] border border-slate-700/80 rounded-xl p-3.5 space-y-2.5 text-left shadow-2xl ring-1 ring-white/10`}>
+            <div className="text-[10px] text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-2 flex justify-between items-center font-mono font-bold">
+              <span className="flex items-center gap-1.5 text-purple-400">
+                <Bell className="h-3.5 w-3.5" /> Notifications
+              </span>
+              {unreadNotifications > 0 && (
+                <span className="text-[9px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-bold">
+                  {unreadNotifications} New
+                </span>
+              )}
             </div>
-            <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {notifications.map((n: any) => (
-                <div key={n.id} className="text-[10px] space-y-0.5 border-b border-glass-border/10 pb-1.5 last:border-0 last:pb-0">
-                  <div className="font-bold text-slate-200">{n.title}</div>
-                  <p className="text-slate-400 text-[9px] leading-normal">{n.message}</p>
-                  <span className="text-[7px] text-slate-655 block">{new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <div
+                  key={n.id}
+                  className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1 hover:border-slate-700 transition-colors"
+                >
+                  <div className="font-bold text-xs text-white font-mono tracking-tight">{n.title}</div>
+                  <p className="text-slate-200 text-[11px] leading-relaxed font-sans">{n.message}</p>
+                  <div className="text-[9px] text-purple-400/90 font-mono pt-0.5">
+                    {new Date(n.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })} • {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
                 </div>
               ))}
               {notifications.length === 0 && (
-                <div className="text-center py-4 text-[9px] text-slate-650 uppercase">
+                <div className="text-center py-6 text-[10px] text-slate-500 uppercase font-mono">
                   No notifications
                 </div>
               )}

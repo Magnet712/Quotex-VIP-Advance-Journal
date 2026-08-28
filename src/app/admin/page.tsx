@@ -29,9 +29,10 @@ import {
   Users, UserCheck, UserPlus, Star, BarChart2, Loader,
   Radio, Database, Cpu, Zap, CreditCard, Wallet, FileText,
   DollarSign, TrendingUp, HelpCircle, Clock, ChevronUp, ChevronDown, AlertCircle,
-  Activity
+  Activity, Send, Bell, MessageSquare
 } from 'lucide-react';
 import { getSignalMode, setSignalMode } from '@/app/actions/signal_mode';
+import { sendAdminNotification } from '@/app/actions/admin_notifications';
 
 type AdminTab = 'users' | 'pipelines' | 'billing' | 'referrals';
 
@@ -65,6 +66,14 @@ export default function AdminDashboardPage() {
     'Duplicate registration',
     'Suspected fraud / abuse',
   ];
+
+  // NOTIFICATION DISPATCHER STATE
+  const [messagingUser, setMessagingUser] = useState<{ id: string; trader_id: string; username: string } | null>(null);
+  const [notifTraderId, setNotifTraderId] = useState('');
+  const [notifTitle, setNotifTitle] = useState('');
+  const [notifMessage, setNotifMessage] = useState('');
+  const [notifBroadcast, setNotifBroadcast] = useState(false);
+  const [sendingNotif, setSendingNotif] = useState(false);
 
   // REFERRALS TAB STATE
   const [referralsLedger, setReferralsLedger] = useState<any[]>([]);
@@ -371,6 +380,43 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notifTitle.trim() || !notifMessage.trim()) return;
+
+    setSendingNotif(true);
+    setMessage(null);
+    try {
+      const targetId = notifBroadcast ? undefined : (messagingUser ? messagingUser.trader_id : notifTraderId);
+      const res = await sendAdminNotification({
+        traderId: targetId,
+        title: notifTitle,
+        message: notifMessage,
+        broadcast: notifBroadcast,
+      });
+
+      if (res.success) {
+        setMessage({
+          type: 'success',
+          text: notifBroadcast
+            ? `Broadcast alert sent to all ${res.count} users successfully!`
+            : `Notification sent to Trader ID "${res.targetUser?.trader_id}" (${res.targetUser?.username}) successfully!`,
+        });
+        setMessagingUser(null);
+        setNotifTitle('');
+        setNotifMessage('');
+        setNotifTraderId('');
+        setNotifBroadcast(false);
+      } else {
+        setMessage({ type: 'error', text: res.error || 'Failed to dispatch notification.' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Error sending notification.' });
+    } finally {
+      setSendingNotif(false);
+    }
+  };
+
   const handleSignalModeToggle = async (modeToToggle: 'LIVE_OTC' | 'LIVE_MARKET') => {
     setModeLoading(true);
     setModeMessage(null);
@@ -592,6 +638,92 @@ export default function AdminDashboardPage() {
               ))}
             </div>
 
+            {/* Notification Dispatcher Panel */}
+            <div className="glass-panel p-5 rounded-2xl border border-purple-500/30 bg-[#080518]/60 space-y-4 text-left">
+              <div className="flex items-center justify-between border-b border-glass-border/40 pb-3">
+                <div className="flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-purple-400" />
+                  <h3 className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">
+                    Direct Notification & Alert Dispatcher
+                  </h3>
+                </div>
+                <span className="text-[9px] font-mono text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 uppercase font-bold">
+                  Live Dashboard Bell Alert
+                </span>
+              </div>
+
+              <form onSubmit={handleSendNotification} className="space-y-4 font-mono text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Target Trader ID */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
+                      Target Trader ID
+                    </label>
+                    <input
+                      type="text"
+                      disabled={notifBroadcast}
+                      placeholder={notifBroadcast ? "All Active Users Selected" : "e.g. 12345678 or TRADER ID"}
+                      value={notifTraderId}
+                      onChange={(e) => setNotifTraderId(e.target.value)}
+                      className={`w-full bg-[#030812] border rounded-lg px-3.5 py-2 text-xs text-slate-200 focus:outline-none transition-colors ${
+                        notifBroadcast ? 'opacity-40 border-glass-border cursor-not-allowed' : 'border-glass-border focus:border-purple-500'
+                      }`}
+                    />
+                    <label className="flex items-center gap-2 pt-1 cursor-pointer text-[10px] text-slate-400 select-none">
+                      <input
+                        type="checkbox"
+                        checked={notifBroadcast}
+                        onChange={(e) => setNotifBroadcast(e.target.checked)}
+                        className="rounded bg-slate-900 border-glass-border text-purple-600 focus:ring-0"
+                      />
+                      <span>Broadcast to ALL users simultaneously</span>
+                    </label>
+                  </div>
+
+                  {/* Alert Title */}
+                  <div className="md:col-span-2 space-y-1.5">
+                    <label className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
+                      Notification Title
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. VIP Account Approved / Important Trading Notice"
+                      value={notifTitle}
+                      onChange={(e) => setNotifTitle(e.target.value)}
+                      className="w-full bg-[#030812] border border-glass-border rounded-lg px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Message Body */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
+                    Message Content
+                  </label>
+                  <textarea
+                    required
+                    rows={2}
+                    placeholder="Type the message that will appear in the user's dashboard notification bell..."
+                    value={notifMessage}
+                    onChange={(e) => setNotifMessage(e.target.value)}
+                    className="w-full bg-[#030812] border border-glass-border rounded-lg px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-purple-500 resize-none font-sans"
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={sendingNotif || (!notifBroadcast && !notifTraderId.trim())}
+                    className="inline-flex items-center gap-2 px-5 py-2 rounded bg-purple-600 hover:bg-purple-500 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-purple-900/30 disabled:opacity-50"
+                  >
+                    <Send className={`h-3.5 w-3.5 ${sendingNotif ? 'animate-spin' : ''}`} />
+                    {sendingNotif ? 'DISPATCHING...' : 'DISPATCH NOTIFICATION'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
             {/* Sub-tab selection */}
             <div className="border-b border-glass-border flex space-x-6 text-xs">
               {(['pending', 'approved', 'rejected'] as const).map((tab) => (
@@ -721,6 +853,17 @@ export default function AdminDashboardPage() {
                           >
                             <Key className="h-3.5 w-3.5" />
                           </button>
+                          <button
+                            onClick={() => {
+                              setMessagingUser(user);
+                              setNotifTitle('');
+                              setNotifMessage('');
+                            }}
+                            className="p-1.5 rounded bg-purple-950/40 border border-purple-500/30 text-purple-300 hover:text-white hover:bg-purple-900/60 inline-flex items-center transition-colors"
+                            title="Send Direct Notification Alert"
+                          >
+                            <Bell className="h-3.5 w-3.5" />
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -762,6 +905,74 @@ export default function AdminDashboardPage() {
                           setNewPassword('');
                         }}
                         className="px-4 py-2 rounded bg-slate-900 border border-glass-border hover:bg-slate-800 text-slate-400 text-xs font-bold"
+                      >
+                        CANCEL
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Send Notification Modal */}
+            {messagingUser && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+                <div className="w-full max-w-md glass-panel p-6 rounded-xl border border-purple-500/30 bg-[#080518] space-y-4 text-left shadow-2xl">
+                  <div className="space-y-1 border-b border-glass-border/40 pb-3">
+                    <div className="flex items-center gap-2 text-purple-400">
+                      <Bell className="h-4 w-4" />
+                      <h3 className="text-sm font-mono font-bold text-slate-100 uppercase">SEND DIRECT NOTIFICATION</h3>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-mono">
+                      TRADER ID: <strong className="text-slate-200">{messagingUser.trader_id}</strong> &bull; USER: <strong className="text-slate-200">{messagingUser.username}</strong>
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSendNotification} className="space-y-4 font-mono text-xs">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
+                        Alert Title
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. VIP Access Granted / Important Account Update"
+                        value={notifTitle}
+                        onChange={(e) => setNotifTitle(e.target.value)}
+                        className="w-full bg-[#030812] border border-glass-border rounded-lg px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">
+                        Message Content
+                      </label>
+                      <textarea
+                        required
+                        rows={3}
+                        placeholder="Type message to appear on the user's dashboard notification bell..."
+                        value={notifMessage}
+                        onChange={(e) => setNotifMessage(e.target.value)}
+                        className="w-full bg-[#030812] border border-glass-border rounded-lg px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-purple-500 resize-none font-sans"
+                      />
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="submit"
+                        disabled={sendingNotif}
+                        className="flex-1 py-2.5 rounded bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50"
+                      >
+                        {sendingNotif ? 'SENDING...' : 'SEND NOTIFICATION'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMessagingUser(null);
+                          setNotifTitle('');
+                          setNotifMessage('');
+                        }}
+                        className="px-4 py-2.5 rounded bg-slate-900 border border-glass-border hover:bg-slate-800 text-slate-400 text-xs font-bold"
                       >
                         CANCEL
                       </button>
