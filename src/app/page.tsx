@@ -436,7 +436,7 @@ export default function Home() {
                   Upgrade to Premium <Zap className="h-4.5 w-4.5 text-purple-400" />
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Subscribe to Premium Signal Pro. Gain unrestricted immediate entry/expiry alerts, full signal logs, indicators confluence, and priority alert delivery.
+                  Subscribe to Premium Signal Pro. Gain unrestricted immediate precision entry signals, full signal logs, indicators confluence, and priority alert delivery.
                 </p>
                 <div className="pt-2">
                   <Link

@@ -180,7 +180,7 @@ export default function MembershipPage() {
             </li>
             <li className="flex items-start gap-2">
               <Check className="h-4 w-4 text-purple-400 mt-0.5 shrink-0" />
-              <span>Real-time live signal dash (OTC & Forex)</span>
+              <span>Real-time live signal dash (OTC for now & Forex Available Soon)</span>
             </li>
             <li className="flex items-start gap-2">
               <Check className="h-4 w-4 text-purple-400 mt-0.5 shrink-0" />
@@ -189,6 +189,18 @@ export default function MembershipPage() {
             <li className="flex items-start gap-2">
               <Check className="h-4 w-4 text-purple-400 mt-0.5 shrink-0" />
               <span>Equity curve & drawdown performance reports</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="h-4 w-4 text-purple-400 mt-0.5 shrink-0" />
+              <span>Dynamic Premium performance & win rate reporting</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="h-4 w-4 text-purple-400 mt-0.5 shrink-0" />
+              <span>AI Strategy Lab</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Check className="h-4 w-4 text-purple-400 mt-0.5 shrink-0" />
+              <span>Unlimited Scan</span>
             </li>
           </ul>
         </div>

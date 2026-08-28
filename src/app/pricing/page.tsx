@@ -322,19 +322,19 @@ export default async function PricingPage() {
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="h-4.5 w-4 text-purple-400 shrink-0" />
-                  <span>Entry Prices + Expiry Target Levels</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="h-4.5 w-4 text-purple-400 shrink-0" />
                   <span>Indicator Confluence Conformation</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="h-4.5 w-4 text-purple-400 shrink-0" />
-                  <span>Real-Time Performance Dashboard</span>
+                  <span>Real-Time Performance Analytics Dashboard</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="h-4.5 w-4 text-purple-400 shrink-0" />
-                  <span>High-Priority Instant Live Alerts</span>
+                  <span>AI Strategy Lab</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="h-4.5 w-4 text-purple-400 shrink-0" />
+                  <span>Unlimited Scan</span>
                 </li>
               </ul>
             </div>

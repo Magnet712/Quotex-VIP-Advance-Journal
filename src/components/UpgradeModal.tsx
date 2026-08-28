@@ -211,7 +211,7 @@ export default function UpgradeModal() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-3.5 w-3.5 text-purple-400 mt-0.5 shrink-0" />
-                  <span>Real-time live signal dash (Forex Webhooks & OTC)</span>
+                  <span>Real-time live signal dash (OTC for now & Forex Available Soon)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-3.5 w-3.5 text-purple-400 mt-0.5 shrink-0" />
@@ -220,6 +220,14 @@ export default function UpgradeModal() {
                 <li className="flex items-start gap-2">
                   <Check className="h-3.5 w-3.5 text-purple-400 mt-0.5 shrink-0" />
                   <span>Dynamic Premium performance & win rate reporting</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-purple-400 mt-0.5 shrink-0" />
+                  <span>AI Strategy Lab</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-purple-400 mt-0.5 shrink-0" />
+                  <span>Unlimited Scan</span>
                 </li>
               </ul>
             </div>
