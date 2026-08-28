@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, Award, Zap, Send, ShieldAlert, ArrowRight, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import { getPublicOptimizationSettings } from '@/app/actions/admin_optimization';
 import { getPublicPricingPlans } from '@/app/actions/billing';
 
 export default function UpgradeModal() {
@@ -38,27 +37,37 @@ export default function UpgradeModal() {
   const fetchPrices = async () => {
     setLoading(true);
     try {
-      const [settingsRes, plansRes] = await Promise.all([
-        getPublicOptimizationSettings(),
-        getPublicPricingPlans()
-      ]);
-      if (settingsRes.success && settingsRes.settings) {
-        setPrices({
-          monthly: settingsRes.settings['price_premium_monthly'] || '$19',
-          sixMonths: settingsRes.settings['price_premium_6months'] || '$99',
-          yearly: settingsRes.settings['price_premium_yearly'] || '$169'
-        });
-      }
+      const plansRes = await getPublicPricingPlans();
       if (plansRes.success && plansRes.plans) {
         const pd: Record<string, number> = {};
         const discounted: Record<string, string> = {};
+        const basePrices: Record<string, string> = {
+          monthly: '$19',
+          sixMonths: '$99',
+          yearly: '$169'
+        };
+
         plansRes.plans.forEach(plan => {
+          const key = plan.id === 'premium_monthly' 
+            ? 'monthly' 
+            : plan.id === 'premium_6months' 
+            ? 'sixMonths' 
+            : plan.id === 'premium_yearly' 
+            ? 'yearly' 
+            : plan.id === 'premium_lifetime' 
+            ? 'lifetime' 
+            : null;
+
+          if (!key) return;
+
           const d = plan.discount ?? 0;
-          const key = plan.id === 'premium_monthly' ? 'monthly' : plan.id === 'premium_6months' ? 'sixMonths' : 'yearly';
           pd[key] = d;
+          basePrices[key] = `$${plan.price}`;
           const disc = Math.max(0, plan.price - (plan.price * (d / 100)));
           discounted[key] = Number.isInteger(disc) ? `$${disc}` : `$${disc.toFixed(2)}`;
         });
+
+        setPrices(basePrices as any);
         setPlanDiscounts(pd);
         setDiscountedPrices(discounted);
       }
@@ -200,7 +209,11 @@ export default function UpgradeModal() {
                       <span className="text-slate-200">{prices.yearly}</span>
                     )}
                   </div>
-                  <div className="text-[7px] text-neon-green mt-0.5 uppercase">≈ $14/mo · best value</div>
+                  <div className="text-[7px] text-neon-green mt-0.5 uppercase">
+                    ≈ ${discountedPrices.yearly 
+                        ? (parseFloat(discountedPrices.yearly.replace('$', '')) / 12).toFixed(1) 
+                        : (parseFloat(prices.yearly.replace('$', '')) / 12).toFixed(1)}/mo · best value
+                  </div>
                 </div>
               </div>
 

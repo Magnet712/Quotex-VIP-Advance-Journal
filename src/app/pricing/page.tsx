@@ -307,9 +307,21 @@ export default async function PricingPage() {
                 return <DiscountCountdown endsAt={endsAt} />;
               })()}
 
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-neon-green/5 border border-neon-green/25 text-[9px] font-mono font-bold text-neon-green uppercase tracking-wider">
-                <Award className="h-3 w-3 fill-neon-green" /> Best Value · ≈ $14/mo · 3 months FREE vs Monthly
-              </div>
+              {(() => {
+                const yearlyVal = (prices.planDiscounts?.yearly ?? 0) > 0 && prices.discountedPrices?.yearly
+                  ? parseFloat(prices.discountedPrices.yearly.replace('$', ''))
+                  : parseFloat((prices.price_premium_yearly || '$169').replace('$', ''));
+                const perMonth = (yearlyVal / 12).toFixed(1);
+                const discountPct = prices.planDiscounts?.yearly ?? 0;
+                return (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-neon-green/5 border border-neon-green/25 text-[9px] font-mono font-bold text-neon-green uppercase tracking-wider">
+                    <Award className="h-3 w-3 fill-neon-green" /> 
+                    <span>
+                      Best Value · ≈ ${perMonth}/mo {discountPct > 0 ? `· ${discountPct}% Discount Active` : '· 3 months FREE vs Monthly'}
+                    </span>
+                  </div>
+                );
+              })()}
 
               <ul className="space-y-3 text-xs text-slate-300">
                 <li className="flex items-start gap-2.5 font-semibold text-purple-200">
