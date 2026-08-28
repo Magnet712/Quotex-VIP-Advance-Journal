@@ -10,6 +10,7 @@ import LiveCandlestick from '@/components/LiveCandlestick';
 import OrderflowVisual from '@/components/OrderflowVisual';
 import RiskManagementVisual from '@/components/RiskManagementVisual';
 import TradingPsychologyVisual from '@/components/TradingPsychologyVisual';
+import CardShineEffect from '@/components/CardShineEffect';
 import { 
   TrendingUp, Award, BarChart3, Shield, BookOpen, Clock, 
   ChevronRight, ArrowRight, Zap, Target, Star, Lock,
@@ -375,67 +376,76 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
             
             {/* Step 1 */}
-            <div className="glass-panel glass-panel-hover p-6 rounded-2xl relative space-y-4 text-left">
-              <div className="h-10 w-10 bg-slate-900 border border-glass-border text-neon-green font-mono font-bold text-sm flex items-center justify-center rounded-lg">
-                01
-              </div>
-              <h3 className="text-base font-mono font-bold text-slate-100 flex items-center gap-1.5">
-                Join Free Community <Send className="h-4 w-4 text-slate-400" />
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Start by entering our Telegram channel. Access fundamental educational resources, select mock indicators, and review sample signal reports.
-              </p>
-              <div className="pt-2">
-                <Link
-                  href="https://t.me/Magnetoftrade" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-neon-green hover:underline uppercase"
-                >
-                  Join Channel <ChevronRight className="h-3 w-3" />
-                </Link>
+            <div className="glass-panel glass-panel-hover p-6 rounded-2xl relative overflow-hidden space-y-4 text-left">
+              <CardShineEffect />
+              <div className="relative z-10 space-y-4">
+                <div className="h-10 w-10 bg-slate-900 border border-glass-border text-neon-green font-mono font-bold text-sm flex items-center justify-center rounded-lg">
+                  01
+                </div>
+                <h3 className="text-base font-mono font-bold text-slate-100 flex items-center gap-1.5">
+                  Join Free Community <Send className="h-4 w-4 text-slate-400" />
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Start by entering our Telegram channel. Access fundamental educational resources, select mock indicators, and review sample signal reports.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    href="https://t.me/Magnetoftrade" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-neon-green hover:underline uppercase"
+                  >
+                    Join Channel <ChevronRight className="h-3 w-3" />
+                  </Link>
+                </div>
               </div>
             </div>
 
             {/* Step 2 */}
-            <div className="glass-panel glass-panel-hover p-6 rounded-2xl relative space-y-4 text-left border-gold-vip/25">
-              <div className="h-10 w-10 bg-slate-900 border border-gold-vip/20 text-gold-vip font-mono font-bold text-sm flex items-center justify-center rounded-lg">
-                02
-              </div>
-              <h3 className="text-base font-mono font-bold text-gold-vip flex items-center gap-1.5 glow-text-gold">
-                Unlock VIP Journal <Award className="h-4.5 w-4.5 text-gold-vip fill-gold-vip/10" />
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Register a broker profile using our partner referral link. Unlock the Advanced Journal, the metrics dashboard, and full pre-trade checklist rules with zero fee.
-              </p>
-              <div className="pt-2">
-                <Link
-                  href="/register-info"
-                  className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-gold-vip hover:underline uppercase"
-                >
-                  Get VIP Free (No Card Needed) <ChevronRight className="h-3 w-3" />
-                </Link>
+            <div className="glass-panel glass-panel-hover p-6 rounded-2xl relative overflow-hidden space-y-4 text-left border-gold-vip/25">
+              <CardShineEffect />
+              <div className="relative z-10 space-y-4">
+                <div className="h-10 w-10 bg-slate-900 border border-gold-vip/20 text-gold-vip font-mono font-bold text-sm flex items-center justify-center rounded-lg">
+                  02
+                </div>
+                <h3 className="text-base font-mono font-bold text-gold-vip flex items-center gap-1.5 glow-text-gold">
+                  Unlock VIP Journal <Award className="h-4.5 w-4.5 text-gold-vip fill-gold-vip/10" />
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Register a broker profile using our partner referral link. Unlock the Advanced Journal, the metrics dashboard, and full pre-trade checklist rules with zero fee.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    href="/register-info"
+                    className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-gold-vip hover:underline uppercase"
+                  >
+                    Get VIP Free (No Card Needed) <ChevronRight className="h-3 w-3" />
+                  </Link>
+                </div>
               </div>
             </div>
 
             {/* Step 3 */}
-            <div className="glass-panel glass-panel-hover p-6 rounded-2xl relative space-y-4 text-left border-purple-500/25 bg-[#0b071c]/30">
-              <div className="h-10 w-10 bg-slate-900 border border-purple-500/20 text-purple-400 font-mono font-bold text-sm flex items-center justify-center rounded-lg">
-                03
-              </div>
-              <h3 className="text-base font-mono font-bold text-purple-300 flex items-center gap-1.5">
-                Upgrade to Premium <Zap className="h-4.5 w-4.5 text-purple-400" />
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Subscribe to Premium Signal Pro. Gain unrestricted immediate entry/expiry alerts, full signal logs, indicators confluence, and priority alert delivery.
-              </p>
-              <div className="pt-2">
-                <Link
-                  href="/pricing"
-                  className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-purple-400 hover:underline uppercase"
-                >
-                  Unlock Premium Signals Now <ChevronRight className="h-3 w-3" />
-                </Link>
+            <div className="glass-panel glass-panel-hover p-6 rounded-2xl relative overflow-hidden space-y-4 text-left border-purple-500/25 bg-[#0b071c]/30">
+              <CardShineEffect />
+              <div className="relative z-10 space-y-4">
+                <div className="h-10 w-10 bg-slate-900 border border-purple-500/20 text-purple-400 font-mono font-bold text-sm flex items-center justify-center rounded-lg">
+                  03
+                </div>
+                <h3 className="text-base font-mono font-bold text-purple-300 flex items-center gap-1.5">
+                  Upgrade to Premium <Zap className="h-4.5 w-4.5 text-purple-400" />
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Subscribe to Premium Signal Pro. Gain unrestricted immediate entry/expiry alerts, full signal logs, indicators confluence, and priority alert delivery.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    href="/pricing"
+                    className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-purple-400 hover:underline uppercase"
+                  >
+                    Unlock Premium Signals Now <ChevronRight className="h-3 w-3" />
+                  </Link>
+                </div>
               </div>
             </div>
 
@@ -517,8 +527,9 @@ export default function Home() {
                 pro: true
               }
             ].map((feature, i) => (
-              <div key={i} className="glass-panel glass-panel-hover p-6 rounded-xl flex flex-col justify-between text-left space-y-4 border-glass-border">
-                <div className="space-y-3">
+              <div key={i} className="glass-panel glass-panel-hover p-6 rounded-xl relative overflow-hidden flex flex-col justify-between text-left space-y-4 border-glass-border">
+                <CardShineEffect />
+                <div className="relative z-10 space-y-3">
                   <div className={`p-3 border border-glass-border/30 rounded-md w-12 h-12 flex items-center justify-center ${feature.bg}`}>
                     <feature.icon className={`h-6 w-6 ${feature.color}`} />
                   </div>

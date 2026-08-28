@@ -351,6 +351,30 @@ body {
   animation: diagonal-shine-sweep 7.5s cubic-bezier(0.4, 0, 0.2, 1) 0.5s infinite;
 }
 
+@keyframes card-shine-sweep {
+  0% {
+    transform: translate3d(-100%, -100%, 0) rotate(-35deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(160%, 160%, 0) rotate(-35deg);
+    opacity: 0;
+  }
+}
+
+.animate-card-shine {
+  animation: card-shine-sweep 6.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.animate-card-shine-delayed {
+  animation: card-shine-sweep 6.5s cubic-bezier(0.4, 0, 0.2, 1) 0.35s infinite;
+}
+
 /* ─── Skeleton Loading ──────────────────────────────────────────────────── */
 .skeleton {
   background: linear-gradient(90deg, 
