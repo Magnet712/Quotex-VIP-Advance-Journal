@@ -23,6 +23,7 @@ export interface WalletSetting {
   network: string;
   display_name: string;
   address: string;
+  qr_code_url?: string | null;
   enabled: boolean;
 }
 
@@ -155,21 +156,40 @@ export async function updateBillingPlan(
 // ─────────────────────────────────────────────────────────────────────────────
 // Action: updateWalletAddress
 // ─────────────────────────────────────────────────────────────────────────────
-export async function updateWalletAddress(network: string, address: string, enabled: boolean) {
+export async function updateWalletAddress(
+  network: string,
+  address: string,
+  enabled: boolean,
+  qrCodeUrl?: string | null
+) {
   const isAdmin = await checkAdmin();
   if (!isAdmin) return { success: false, error: 'Unauthorized admin action' };
 
   try {
     const supabase = await createClient();
+    const updatePayload: Record<string, any> = {
+      address,
+      enabled,
+      updated_at: new Date().toISOString(),
+    };
+    if (qrCodeUrl !== undefined) {
+      updatePayload.qr_code_url = qrCodeUrl ?? null;
+    }
+
     const { error } = await supabase
       .from('wallet_settings')
-      .update({ address, enabled, updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq('network', network);
 
-    if (error) throw error;
+    if (error) {
+      console.error('[updateWalletAddress DB Error]:', error);
+      throw error;
+    }
+    revalidatePath('/dashboard/subscription');
     return { success: true };
-  } catch {
-    return { success: false, error: 'Failed to update wallet address' };
+  } catch (err: any) {
+    console.error('[updateWalletAddress Exception]:', err);
+    return { success: false, error: err?.message || 'Failed to update wallet address' };
   }
 }
 
@@ -223,7 +243,7 @@ export async function createPaymentRequest(planId: string, network: string) {
       .single();
 
     if (error) throw error;
-    return { success: true, payment: data };
+    return { success: true, payment: { ...data, qr_code_url: wallet.qr_code_url || null } };
   } catch {
     return { success: false, error: 'Failed to create payment request' };
   }

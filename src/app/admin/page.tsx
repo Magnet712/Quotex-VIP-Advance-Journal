@@ -24,12 +24,13 @@ import {
 } from '@/app/actions/billing';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import QRCode from 'qrcode';
 import { 
   ShieldAlert, ShieldCheck, Check, X, Award, Key, Trash, RefreshCw, 
   Users, UserCheck, UserPlus, Star, BarChart2, Loader,
   Radio, Database, Cpu, Zap, CreditCard, Wallet, FileText,
   DollarSign, TrendingUp, HelpCircle, Clock, ChevronUp, ChevronDown, AlertCircle,
-  Activity, Send, Bell, MessageSquare
+  Activity, Send, Bell, MessageSquare, Upload, Image as ImageIcon, Trash2
 } from 'lucide-react';
 import { getSignalMode, setSignalMode } from '@/app/actions/signal_mode';
 import { sendAdminNotification } from '@/app/actions/admin_notifications';
@@ -467,13 +468,13 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleUpdateWallet = async (network: string, address: string, enabled: boolean) => {
+  const handleUpdateWallet = async (network: string, address: string, enabled: boolean, qrCodeUrl?: string | null) => {
     setBillingActionLoading(network);
     setMessage(null);
     try {
-      const res = await updateWalletAddress(network, address, enabled);
+      const res = await updateWalletAddress(network, address, enabled, qrCodeUrl);
       if (res.success) {
-        setMessage({ type: 'success', text: `Wallet address configured for "${network}" successfully.` });
+        setMessage({ type: 'success', text: `Wallet settings configured for "${network}" successfully.` });
         await loadData();
       } else {
         setMessage({ type: 'error', text: res.error || 'Failed to save wallet.' });
@@ -1998,19 +1999,53 @@ function PricingEditCard({ plan, loading, onSave }: PricingEditProps) {
 interface WalletEditProps {
   wallet: any;
   loading: boolean;
-  onSave: (network: string, address: string, enabled: boolean) => void;
+  onSave: (network: string, address: string, enabled: boolean, qrCodeUrl?: string | null) => void;
 }
 
 function WalletEditCard({ wallet, loading, onSave }: WalletEditProps) {
   const [address, setAddress] = useState(wallet.address);
   const [enabled, setEnabled] = useState(wallet.enabled);
+  const [customQr, setCustomQr] = useState<string | null>(wallet.qr_code_url || null);
+  const [previewQr, setPreviewQr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (address && !customQr) {
+      QRCode.toDataURL(address, {
+        width: 200,
+        margin: 1,
+        color: { dark: '#020617', light: '#ffffff' }
+      })
+        .then(url => setPreviewQr(url))
+        .catch(() => setPreviewQr(null));
+    } else {
+      setPreviewQr(null);
+    }
+  }, [address, customQr]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('QR Image file must be under 2MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCustomQr(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveCustomQr = () => {
+    setCustomQr(null);
+  };
 
   return (
     <div className="glass-panel p-4.5 rounded-xl border border-glass-border/60 flex flex-col justify-between space-y-4">
-      <div className="space-y-3 font-mono text-xs text-left">
+      <div className="space-y-3.5 font-mono text-xs text-left">
         <div>
           <span className="text-[8px] text-slate-500 block uppercase">{wallet.network.replace('_', ' ')}</span>
-          <h4 className="font-bold text-slate-200 mt-0.5">{wallet.display_name} Address</h4>
+          <h4 className="font-bold text-slate-200 mt-0.5">{wallet.display_name} Address & QR</h4>
         </div>
 
         <div className="space-y-1">
@@ -2021,6 +2056,61 @@ function WalletEditCard({ wallet, loading, onSave }: WalletEditProps) {
             onChange={(e) => setAddress(e.target.value)}
             className="w-full bg-[#02050b] border border-glass-border px-3 py-1.5 rounded text-slate-200 text-xs focus:outline-none"
           />
+        </div>
+
+        {/* QR Code Section & Preview */}
+        <div className="space-y-2 border border-glass-border/40 p-3 rounded-lg bg-slate-950/50">
+          <div className="flex items-center justify-between">
+            <span className="text-[8px] text-slate-400 font-bold uppercase">QR Code Mode</span>
+            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${
+              customQr 
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
+                : 'bg-neon-green/10 text-neon-green border border-neon-green/30'
+            }`}>
+              {customQr ? '★ Custom Uploaded' : '⚡ Auto-Generated'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="shrink-0 bg-white p-1.5 rounded-md shadow">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={customQr || previewQr || ''}
+                alt="QR Preview"
+                className="w-20 h-20 rounded block"
+              />
+            </div>
+
+            <div className="space-y-1.5 flex-1 min-w-0">
+              <label className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-900 border border-glass-border hover:border-purple-500/40 text-slate-300 hover:text-white text-[9px] font-bold uppercase cursor-pointer transition-colors">
+                <Upload className="h-3 w-3 text-purple-400" />
+                <span>Upload Custom QR</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+
+              {customQr && (
+                <button
+                  type="button"
+                  onClick={handleRemoveCustomQr}
+                  className="flex items-center gap-1 px-2 py-1 rounded bg-rose-950/30 border border-rose-500/30 text-rose-400 hover:bg-rose-950/60 text-[8px] uppercase font-bold transition-colors w-full justify-center"
+                >
+                  <Trash2 className="h-2.5 w-2.5" />
+                  <span>Revert to Auto-Gen</span>
+                </button>
+              )}
+
+              <p className="text-[7px] text-slate-500 leading-tight">
+                {customQr 
+                  ? 'Custom QR active. Click revert to use auto-generated QR code.' 
+                  : 'Auto-generates from wallet address. Upload an image to override.'}
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center justify-between border-t border-glass-border/30 pt-3">
@@ -2035,11 +2125,11 @@ function WalletEditCard({ wallet, loading, onSave }: WalletEditProps) {
       </div>
 
       <button
-        onClick={() => onSave(wallet.network, address, enabled)}
+        onClick={() => onSave(wallet.network, address, enabled, customQr)}
         disabled={loading}
-        className="w-full py-1.5 rounded bg-slate-900 border border-glass-border text-slate-300 font-bold uppercase text-[9px] hover:text-slate-200 transition-colors disabled:opacity-30 cursor-pointer"
+        className="w-full py-2 rounded bg-slate-900 border border-glass-border text-slate-300 font-bold uppercase text-[9px] hover:text-slate-200 transition-colors disabled:opacity-30 cursor-pointer"
       >
-        {loading ? 'SAVING...' : 'SAVE WALLET'}
+        {loading ? 'SAVING...' : 'SAVE WALLET & QR'}
       </button>
     </div>
   );

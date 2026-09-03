@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Award, RefreshCw, Zap, CheckCircle2,
-  Copy, Check, AlertCircle, Loader, X
+  Copy, Check, AlertCircle, Loader, X, QrCode as QrIcon
 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { 
   getUserSubscriptionState, getBillingPlans, getWalletSettings,
   createPaymentRequest, submitPaymentTxnHash,
@@ -24,6 +25,8 @@ export default function SubscriptionPage() {
   const [txnHash, setTxnHash] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedAmount, setCopiedAmount] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successActivated, setSuccessActivated] = useState(false);
@@ -33,6 +36,23 @@ export default function SubscriptionPage() {
   const [showMethodChooser, setShowMethodChooser] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'crypto' | 'razorpay' | null>(null);
   const [exchangeRate, setExchangeRate] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (activePayment?.wallet_address) {
+      QRCode.toDataURL(activePayment.wallet_address, {
+        width: 320,
+        margin: 1,
+        color: {
+          dark: '#020617',
+          light: '#ffffff',
+        },
+      })
+        .then((url) => setQrDataUrl(url))
+        .catch(() => setQrDataUrl(null));
+    } else {
+      setQrDataUrl(null);
+    }
+  }, [activePayment?.wallet_address]);
 
   const loadSubscription = useCallback(async () => {
     setLoading(true);
@@ -163,6 +183,12 @@ export default function SubscriptionPage() {
     navigator.clipboard.writeText(addr);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyAmount = (amt: number | string) => {
+    navigator.clipboard.writeText(String(amt));
+    setCopiedAmount(true);
+    setTimeout(() => setCopiedAmount(false), 2000);
   };
 
   const handleCheckoutInitiate = async (plan: any) => {
@@ -588,9 +614,9 @@ export default function SubscriptionPage() {
       {/* Crypto Checkout Modal */}
       {selectedPlan && activePayment && paymentMethod === 'crypto' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg glass-panel p-6 rounded-xl border border-glass-border space-y-5 text-left relative overflow-hidden">
+          <div className="w-full max-w-lg glass-panel p-6 rounded-xl border border-glass-border space-y-4 text-left relative overflow-hidden max-h-[90vh] overflow-y-auto">
             <button
-              onClick={() => setSelectedPlan(null)}
+              onClick={() => { setSelectedPlan(null); setPaymentMethod(null); }}
               className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-500 hover:text-slate-200 transition-colors"
             >
               <X className="h-5 w-5" />
@@ -637,28 +663,85 @@ export default function SubscriptionPage() {
                 </div>
               </div>
 
-              {/* Address details */}
-              <div className="space-y-1.5">
+              {/* Dynamic QR Code Section */}
+              <div className="space-y-2 bg-[#020617]/70 border border-glass-border p-3.5 rounded-lg text-center">
+                <div className="flex items-center justify-center gap-1.5 text-slate-400 text-[10px] font-bold uppercase">
+                  <QrIcon className="h-3.5 w-3.5 text-neon-green" />
+                  <span>Scan QR with Wallet / Exchange App</span>
+                </div>
+
+                <div className="flex justify-center py-1">
+                  {(activePayment.qr_code_url || qrDataUrl) ? (
+                    <div className="bg-white p-2.5 rounded-lg shadow-lg inline-block">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={activePayment.qr_code_url || qrDataUrl}
+                        alt="USDT Deposit QR"
+                        className="w-36 h-36 rounded block object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-36 h-36 bg-slate-900/60 rounded flex items-center justify-center border border-dashed border-slate-800 text-slate-600 text-[10px]">
+                      Loading QR...
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-[9px] text-slate-400 font-mono">
+                  Network: <span className="text-neon-green font-bold uppercase">{selectedNetwork.replace('_', ' ')}</span>
+                </div>
+              </div>
+
+              {/* Transfer Details & Copy Controls */}
+              <div className="space-y-2">
                 <label className="text-[9px] text-slate-500 uppercase block font-bold">2. Transfer Details</label>
-                <div className="bg-[#020617] border border-glass-border p-3.5 rounded-lg flex items-center justify-between gap-3">
-                  <div className="overflow-x-auto select-all scrollbar-none font-mono text-slate-300 text-[10px]">
-                    {activePayment.wallet_address}
+
+                {/* Amount Row */}
+                <div className="bg-[#020617] border border-glass-border p-2.5 rounded-lg flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[8px] text-slate-500 uppercase block">Payable Amount</span>
+                    <span className="font-bold text-neon-green text-xs">${activePayment.amount} USDT</span>
+                  </div>
+                  <button
+                    onClick={() => copyAmount(activePayment.amount)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-900 border border-glass-border text-slate-300 hover:text-slate-100 hover:border-neon-green/30 transition-colors text-[10px]"
+                    title="Copy amount"
+                  >
+                    {copiedAmount ? <Check className="h-3.5 w-3.5 text-neon-green" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>{copiedAmount ? 'Copied' : 'Copy Amount'}</span>
+                  </button>
+                </div>
+
+                {/* Wallet Address Row */}
+                <div className="bg-[#020617] border border-glass-border p-2.5 rounded-lg flex items-center justify-between gap-3">
+                  <div className="overflow-x-auto select-all scrollbar-none font-mono text-slate-300 text-[10px] min-w-0 flex-1">
+                    <span className="text-[8px] text-slate-500 uppercase block">Deposit Address</span>
+                    <span className="truncate block">{activePayment.wallet_address}</span>
                   </div>
                   <button
                     onClick={() => copyAddress(activePayment.wallet_address)}
-                    className="p-2 rounded bg-slate-900 border border-glass-border text-slate-400 hover:text-slate-200 transition-colors shrink-0"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-900 border border-glass-border text-slate-300 hover:text-slate-100 hover:border-neon-green/30 transition-colors text-[10px] shrink-0"
                     title="Copy wallet address"
                   >
-                    {copied ? <Check className="h-4 w-4 text-neon-green" /> : <Copy className="h-4 w-4" />}
+                    {copied ? <Check className="h-3.5 w-3.5 text-neon-green" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>{copied ? 'Copied' : 'Copy Address'}</span>
                   </button>
                 </div>
-                <p className="text-[8px] text-slate-500 uppercase font-bold italic tracking-wide">
-                  * ONLY send USDT to this address. Sending any other token will result in permanent loss.
-                </p>
+
+                {/* Warning Banner */}
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5 space-y-1">
+                  <div className="flex items-center gap-1.5 text-amber-400 font-bold text-[10px] uppercase">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    <span>Exact Amount Warning</span>
+                  </div>
+                  <p className="text-[9px] text-amber-200/80 leading-relaxed font-sans">
+                    You must send exactly <strong className="text-amber-300 font-mono">${activePayment.amount} USDT</strong>. If withdrawing from an exchange (Binance, Bybit, OKX, etc.), please ensure withdrawal fees are covered so the receiver gets the exact total. Underpaid transactions cannot be verified automatically.
+                  </p>
+                </div>
               </div>
 
               {/* Tx Hash Input */}
-              <div className="space-y-1.5 border-t border-glass-border/30 pt-4">
+              <div className="space-y-1.5 border-t border-glass-border/30 pt-3">
                 <label className="text-[9px] text-slate-500 uppercase block font-bold">3. Enter Transaction Hash / Tx ID</label>
                 <input
                   type="text"
@@ -666,7 +749,7 @@ export default function SubscriptionPage() {
                   value={txnHash}
                   onChange={(e) => setTxnHash(e.target.value)}
                   disabled={verifying}
-                  className="w-full bg-[#02050b] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none focus:border-neon-green/30 text-xs"
+                  className="w-full bg-[#02050b] border border-glass-border px-3 py-2 rounded text-slate-200 focus:outline-none focus:border-neon-green/30 text-xs font-mono"
                 />
               </div>
 
@@ -697,7 +780,7 @@ export default function SubscriptionPage() {
             {/* Modal Actions */}
             <div className="pt-2 grid grid-cols-2 gap-3 font-mono">
               <button
-              onClick={() => { setSelectedPlan(null); setPaymentMethod(null); }}
+                onClick={() => { setSelectedPlan(null); setPaymentMethod(null); }}
                 disabled={verifying}
                 className="py-2.5 rounded bg-slate-900 border border-glass-border text-slate-400 hover:text-slate-200 text-xs font-bold uppercase transition-colors"
               >
