@@ -1,5 +1,6 @@
 'use server';
 
+import crypto from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
@@ -16,10 +17,23 @@ function getVirtualEmail(traderId: string): string {
 }
 
 /**
- * Registers a new trader.
- * Creates an auth user with a virtual email, then inserts their profile with 'pending' status.
+ * Hashes a 4-to-6 digit recovery PIN for safe storage.
  */
-export async function registerTrader(traderId: string, username: string, password: string, referredBy?: string) {
+function hashPin(pin: string): string {
+  return crypto.createHash('sha256').update(pin.trim()).digest('hex');
+}
+
+/**
+ * Registers a new trader.
+ * Creates an auth user with a virtual email, then inserts their profile with 'pending' status and recovery PIN hash.
+ */
+export async function registerTrader(
+  traderId: string,
+  username: string,
+  password: string,
+  referredBy?: string,
+  recoveryPin?: string
+) {
   try {
     if (!traderId || !username || !password) {
       return { success: false, error: 'All fields are required.' };
@@ -31,6 +45,10 @@ export async function registerTrader(traderId: string, username: string, passwor
 
     if (password.length < 8) {
       return { success: false, error: 'Password must be at least 8 characters.' };
+    }
+
+    if (recoveryPin && !/^\d{4,6}$/.test(recoveryPin.trim())) {
+      return { success: false, error: 'Recovery PIN must be 4 to 6 numeric digits.' };
     }
 
     const rl = checkRateLimit(`register:${traderId}`, 3, 60000);
@@ -93,6 +111,7 @@ export async function registerTrader(traderId: string, username: string, passwor
         status: 'pending',
         vip_access: false,
         referred_by_trader_id: validReferredBy,
+        recovery_pin_hash: recoveryPin ? hashPin(recoveryPin) : null,
       });
 
     if (profileError) {
@@ -126,6 +145,75 @@ export async function registerTrader(traderId: string, username: string, passwor
   } catch (err: any) {
     console.error('Register error:', err);
     return { success: false, error: 'An unexpected error occurred.' };
+  }
+}
+
+/**
+ * Resets a trader password using their secret Recovery PIN.
+ */
+export async function resetPasswordWithPin(traderId: string, recoveryPin: string, newPassword: string) {
+  try {
+    if (!traderId || !recoveryPin || !newPassword) {
+      return { success: false, error: 'All fields are required.' };
+    }
+
+    if (newPassword.length < 8) {
+      return { success: false, error: 'New password must be at least 8 characters.' };
+    }
+
+    const rl = checkRateLimit(`reset:${traderId.trim().toLowerCase()}`, 5, 15 * 60 * 1000);
+    if (!rl.allowed) {
+      return { success: false, error: 'Too many reset attempts. Please try again in 15 minutes.' };
+    }
+
+    const adminClient = createAdminClient();
+
+    // 1. Fetch user by trader_id
+    const { data: userProfile, error: profileErr } = await adminClient
+      .from('users')
+      .select('id, trader_id, status, recovery_pin_hash')
+      .eq('trader_id', traderId.trim())
+      .maybeSingle();
+
+    if (profileErr || !userProfile) {
+      return { success: false, error: 'Trader ID not found.' };
+    }
+
+    if (userProfile.status !== 'approved') {
+      return {
+        success: false,
+        error: 'Password reset is only available for approved Trader accounts.',
+      };
+    }
+
+    if (!userProfile.recovery_pin_hash) {
+      return { 
+        success: false, 
+        error: 'No recovery PIN was configured for this account. Please contact Telegram Support.' 
+      };
+    }
+
+    // 2. Validate PIN hash
+    const inputHash = hashPin(recoveryPin);
+    if (inputHash !== userProfile.recovery_pin_hash) {
+      return { success: false, error: 'Incorrect Recovery PIN. Please check and try again.' };
+    }
+
+    // 3. Update password in Supabase Auth
+    const { error: updateAuthErr } = await adminClient.auth.admin.updateUserById(
+      userProfile.id,
+      { password: newPassword }
+    );
+
+    if (updateAuthErr) {
+      console.error('Password reset update error:', updateAuthErr);
+      return { success: false, error: 'Failed to update password. Please try again.' };
+    }
+
+    return { success: true, message: 'Password updated successfully! You can now log in.' };
+  } catch (err: any) {
+    console.error('resetPasswordWithPin exception:', err);
+    return { success: false, error: 'Password reset service error.' };
   }
 }
 

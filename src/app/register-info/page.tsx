@@ -28,6 +28,7 @@ function RegisterInfoContent() {
   const [traderId, setTraderId] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [recoveryPin, setRecoveryPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -101,14 +102,20 @@ function RegisterInfoContent() {
     setError(null);
     setLoading(true);
 
-    if (!traderId || !username || !password) {
-      setError('Please fill in all fields.');
+    if (!traderId || !username || !password || !recoveryPin) {
+      setError('Please fill in all fields including the Security Recovery PIN.');
+      setLoading(false);
+      return;
+    }
+
+    if (!/^\d{4,6}$/.test(recoveryPin.trim())) {
+      setError('Recovery PIN must be 4 to 6 numeric digits (e.g. 849201).');
       setLoading(false);
       return;
     }
 
     try {
-      const res = await registerTrader(traderId, username, password, referredBy || undefined);
+      const res = await registerTrader(traderId, username, password, referredBy || undefined, recoveryPin.trim());
       if (!res.success) {
         setError(res.error || 'Registration failed.');
         setLoading(false);
@@ -463,6 +470,31 @@ function RegisterInfoContent() {
               placeholder="••••••••"
               className="w-full bg-[#030812] border border-glass-border px-3.5 py-2.5 rounded font-mono text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-neon-green/40 transition-colors"
             />
+          </div>
+
+          {/* Security Recovery PIN */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="reg-recovery-pin" className="block text-[10px] font-mono font-bold tracking-wider text-slate-400 uppercase">
+                Security Recovery PIN (4-6 Digits)
+              </label>
+              <span className="text-[9px] text-neon-green font-mono">For Password Reset</span>
+            </div>
+            <input
+              id="reg-recovery-pin"
+              type="password"
+              inputMode="numeric"
+              maxLength={6}
+              required
+              disabled={loading}
+              value={recoveryPin}
+              onChange={(e) => setRecoveryPin(e.target.value.replace(/\D/g, ''))}
+              placeholder="e.g. 849201"
+              className="w-full bg-[#030812] border border-glass-border px-3.5 py-2.5 rounded font-mono text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-neon-green/40 transition-colors tracking-widest"
+            />
+            <p className="text-[9px] text-slate-500 font-sans leading-tight">
+              🔐 Save this secret numeric PIN. You will use it to reset your password if you ever forget it.
+            </p>
           </div>
 
           <button
