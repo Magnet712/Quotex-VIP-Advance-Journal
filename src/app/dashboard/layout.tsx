@@ -12,7 +12,7 @@ import {
   BarChart3, BookOpen, Award, Settings, LogOut, 
   TrendingUp, Shield, Menu, X, Loader2, User, Radio, History,
   Calculator, Send, CheckSquare, LineChart, Video, Zap, CreditCard, Bell,
-  Lock, Brain, BrainCircuit, Trophy, FlaskConical
+  Lock, Brain, BrainCircuit, Trophy, FlaskConical, Layers
 } from 'lucide-react';
 import { getUserNotifications, markNotificationsRead } from '@/app/actions/billing';
 
@@ -28,6 +28,7 @@ const NAV_ACCOUNT = [
 const NAV_TRADING = [
   { name: 'Journal', href: '/dashboard/journal', icon: BookOpen },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { name: 'Breakdown', href: '/dashboard/breakdown', icon: Layers },
   { name: 'Trader Profile', href: '/dashboard/trader-profile', icon: Brain },
   { name: 'Achievements', href: '/dashboard/achievements', icon: Trophy },
   { name: 'Checklist', href: '/dashboard/checklist', icon: CheckSquare },

@@ -11,6 +11,7 @@ export const FEATURE_MIN_ROLES: Record<string, MembershipRole> = {
   'basic-resources': 'free',
   'journal': 'vip',
   'analytics': 'vip',
+  'breakdown': 'vip',
   'checklist': 'vip',
   'risk-calculator': 'vip',
   'premium-signals': 'premium',
