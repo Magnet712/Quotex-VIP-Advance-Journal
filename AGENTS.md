@@ -283,3 +283,28 @@ User asked "show Website Under Maintenance while I fix stuff"; chose **Option 1:
 - **Railway billing:** monthly auto-renew ONLY (no prepay, post-paid card required since Mar 2024); $5 Hobby min incl $5 usage credit (realistic bill $8–15/mo for this app); $1/mo free tier exists (too small for app but ok as staging backup); cancel anytime, spending caps available. No native cron.
 - **Cloudflare full shift = 1–2 day port, NOT recommended:** Next 16.2.9 + next-on-pages unproven, nodemailer/razorpay SDK/Sentry config blockers. Ranking locked: Vercel Pro $20 > Railway $5–15 > Cloudflare.
 - **Env-var watchlist:** ~20 vars incl `NEXT_PUBLIC_SITE_URL` (auto-flips QR codes/sitemap/robots); hardcoded URL fallbacks remain in `src/app/sitemap.ts` + `src/app/robots.ts` (stale onrender.com).
+
+## Session History (11 Sep 2026) — Analytics Visual Enhancements & Breakdown Dashboard
+
+### Objective
+1. **Task 1**: Add Daily Net P&L histogram (bar chart) and 6-dimensional Edge Score Radar Chart (matching reference design) to `/dashboard/analytics`.
+2. **Task 2**: Add dedicated **Breakdown** dashboard section under **Trading** (`/dashboard/breakdown`) with 9 core P&L attribution cards and 4 executive insight callouts.
+3. Zero trading logic, SignalEngine, OTC, or backend calculations modified. Purely additive presentation layer over personal journal records (`getTrades()`).
+
+### Commits (pushed to `main` → Vercel AUTO-DEPLOY)
+- `122f553` — feat: add Daily Net P&L histogram, 6D Edge Score radar, and Breakdown dashboard (4 files, +753/-3)
+
+### Deliverables
+1. **Daily Net P&L Histogram** (`src/app/dashboard/analytics/page.tsx`):
+   - Daily grouped bar chart with green/red relative bars matching the Hourly Distribution P&L style.
+2. **Edge Score 6-Dimensional Radar Chart** (`src/app/dashboard/analytics/page.tsx`):
+   - 6 repeatability axes: `Win rate`, `Consistency`, `Recovery`, `Drawdown`, `Avg W/L`, `Profit factor`.
+   - Solid white current polygon + dashed gold `vs prev` polygon with interactive pill toggle and score badge.
+3. **Breakdown Dashboard Page** (`src/app/dashboard/breakdown/page.tsx`):
+   - **4 Top Insight Callouts**: Weakest Day, Best Asset, Worst Asset, Strategy Weakness.
+   - **9 Core Breakdown Cards**: Day of Week, Time of Day (4h blocks), Strategy, Symbol, Side (CALL vs PUT), Position Size (Q1–Q4), Psychology/Emotion, Setup Quality/Execution Grade, Risk % Exposure.
+   - Responsive horizontal relative length impact bars with green/red theme.
+4. **Permissions & Navigation**:
+   - `src/lib/permissions.ts`: `'breakdown': 'vip'`
+   - `src/app/dashboard/layout.tsx`: Added Breakdown link with `Layers` icon under `NAV_TRADING` below `Analytics`.
+
