@@ -25,6 +25,19 @@ import {
 import { getAllFeatureFlags } from '@/app/actions/feature_flags';
 import { getAverageRating } from '@/app/actions/ratings';
 
+const FACILITIES_MARQUEE_ITEMS = [
+  { label: 'Advanced Trading Journal', icon: BookOpen, border: 'border-sky-500/30', bg: 'bg-sky-500/10 hover:bg-sky-500/20', text: 'text-sky-200', iconColor: 'text-sky-400' },
+  { label: 'AI Signal Engine', icon: Zap, border: 'border-emerald-500/30', bg: 'bg-emerald-500/10 hover:bg-emerald-500/20', text: 'text-emerald-200', iconColor: 'text-emerald-400' },
+  { label: 'Trade Analytics Ledger', icon: BarChart3, border: 'border-sky-500/30', bg: 'bg-sky-500/10 hover:bg-sky-500/20', text: 'text-sky-200', iconColor: 'text-sky-400' },
+  { label: 'Risk Calculator', icon: Calculator, border: 'border-amber-500/30', bg: 'bg-amber-500/10 hover:bg-amber-500/20', text: 'text-amber-200', iconColor: 'text-amber-400' },
+  { label: 'Discipline Checklist', icon: ListTodo, border: 'border-amber-500/30', bg: 'bg-amber-500/10 hover:bg-amber-500/20', text: 'text-amber-200', iconColor: 'text-amber-400' },
+  { label: 'Real-Time Signals', icon: TrendingUp, border: 'border-emerald-500/30', bg: 'bg-emerald-500/10 hover:bg-emerald-500/20', text: 'text-emerald-200', iconColor: 'text-emerald-400' },
+  { label: 'Performance Tracking', icon: Award, border: 'border-purple-500/30', bg: 'bg-purple-500/10 hover:bg-purple-500/20', text: 'text-purple-200', iconColor: 'text-purple-400' },
+  { label: 'Psychology Tracker', icon: Brain, border: 'border-amber-500/30', bg: 'bg-amber-500/10 hover:bg-amber-500/20', text: 'text-amber-200', iconColor: 'text-amber-400' },
+  { label: 'Signal History', icon: Clock, border: 'border-sky-500/30', bg: 'bg-sky-500/10 hover:bg-sky-500/20', text: 'text-sky-200', iconColor: 'text-sky-400' },
+  { label: 'VIP Trade Reviews', icon: Sparkles, border: 'border-purple-500/30', bg: 'bg-purple-500/10 hover:bg-purple-500/20', text: 'text-purple-200', iconColor: 'text-purple-400' },
+];
+
 export default function Home() {
   // Stats states
   const [stats, setStats] = useState<any>(null);
@@ -546,33 +559,25 @@ export default function Home() {
       </section>
 
       {/* Marquee: Facilities + Real-Time Signals */}
-      <div className="border-y border-slate-800/50 bg-slate-950/60 backdrop-blur-sm overflow-hidden py-3.5">
+      <div className="relative border-y border-glass-border/60 bg-slate-950/70 backdrop-blur-md overflow-hidden py-3.5 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
         <style>{`@keyframes marquee{0%{transform:translateX(0)}to{transform:translateX(-50%)}}.marquee-track{animation:marquee 40s linear infinite}.marquee-track:hover{animation-play-state:paused}`}</style>
         <div className="flex marquee-track whitespace-nowrap">
-          <div className="flex shrink-0 items-center gap-3 px-4 font-mono text-[9px] font-bold uppercase tracking-wider">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-200"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Advanced Trading Journal</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/25 text-emerald-200"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />AI Signal Engine</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-200"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Trade Analytics Ledger</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-200"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Risk Calculator</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-200"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Discipline Checklist</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/25 text-emerald-200"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Real-Time Signals</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/25 text-purple-200"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />Performance Tracking</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-200"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Psychology Tracker</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-200"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Signal History</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/25 text-purple-200"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />VIP Trade Reviews</span>
-          </div>
-          <div className="flex shrink-0 items-center gap-3 px-4 font-mono text-[9px] font-bold uppercase tracking-wider">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-200"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Advanced Trading Journal</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/25 text-emerald-200"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />AI Signal Engine</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-200"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Trade Analytics Ledger</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-200"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Risk Calculator</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-200"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Discipline Checklist</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/25 text-emerald-200"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Real-Time Signals</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/25 text-purple-200"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />Performance Tracking</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/25 text-amber-200"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />Psychology Tracker</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-500/30 bg-sky-500/25 text-sky-200"><span className="h-1.5 w-1.5 rounded-full bg-sky-400" />Signal History</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/25 text-purple-200"><span className="h-1.5 w-1.5 rounded-full bg-purple-400" />VIP Trade Reviews</span>
-          </div>
+          {[0, 1].map((copyIdx) => (
+            <div key={copyIdx} className="flex shrink-0 items-center gap-3 px-3 font-mono text-[9px] font-bold uppercase tracking-wider">
+              {FACILITIES_MARQUEE_ITEMS.map((item, idx) => {
+                const IconComponent = item.icon;
+                return (
+                  <span
+                    key={`${copyIdx}-${idx}`}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${item.border} ${item.bg} ${item.text} transition-colors backdrop-blur-sm shadow-sm`}
+                  >
+                    <IconComponent className={`h-3 w-3 ${item.iconColor}`} />
+                    <span>{item.label}</span>
+                  </span>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </div>
 
