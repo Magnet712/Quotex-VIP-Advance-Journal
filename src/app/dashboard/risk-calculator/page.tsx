@@ -9,8 +9,10 @@ import {
   DollarSign, ShieldAlert, Percent, Activity, Calculator, 
   TrendingUp, ShieldCheck, Sparkles, BookOpen, Gift, Award
 } from 'lucide-react';
+import MonteCarloSimulator from '@/components/MonteCarloSimulator';
 
 export default function RiskCalculatorPage() {
+  const [activeTab, setActiveTab] = useState<'calculator' | 'monte-carlo'>('calculator');
   const [loading, setLoading] = useState(true);
   const [userAccess, setUserAccess] = useState<any>({
     vipAccess: false,
@@ -155,11 +157,51 @@ export default function RiskCalculatorPage() {
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 w-full max-w-5xl mx-auto animate-fadeIn text-left">
       
       {/* Title */}
-      <div className="border-b border-glass-border pb-4">
-        <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">capital preservation</span>
-        <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-100">Risk Calculator</h1>
+      <div className="border-b border-glass-border pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <span className="text-[10px] font-mono text-neon-green font-bold uppercase tracking-wider block">capital preservation</span>
+          <h1 className="text-2xl font-bold font-mono tracking-tight text-slate-100">Risk & Probability Suite</h1>
+        </div>
+
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-950/80 border border-glass-border">
+          <button
+            onClick={() => setActiveTab('calculator')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+              activeTab === 'calculator'
+                ? 'bg-neon-green/15 border border-neon-green/40 text-neon-green glow-text-green'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 border border-transparent'
+            }`}
+          >
+            <Calculator className="h-3.5 w-3.5" />
+            <span>Position Sizer</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('monte-carlo')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+              activeTab === 'monte-carlo'
+                ? 'bg-purple-500/20 border border-purple-500/50 text-purple-300'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40 border border-transparent'
+            }`}
+          >
+            <Activity className="h-3.5 w-3.5 text-purple-400 animate-pulse" />
+            <span>Monte Carlo</span>
+            <span className="text-[8px] bg-purple-500/30 text-purple-200 border border-purple-500/40 px-1.5 py-0.5 rounded-full font-extrabold">
+              PRO
+            </span>
+          </button>
+        </div>
       </div>
 
+      {activeTab === 'monte-carlo' ? (
+        <MonteCarloSimulator
+          initialBalance={balance}
+          initialRiskPercent={riskPercent}
+          initialPayout={payout}
+        />
+      ) : (
+        <>
       {/* Preset Risk Profiles Card */}
       <div className="glass-panel p-4 rounded-xl border border-glass-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/5 transition-all duration-200 hover:border-glass-border/50 animate-fadeInUp">
         <div className="space-y-1">
@@ -486,6 +528,8 @@ export default function RiskCalculatorPage() {
 
         </div>
       </div>
+      </>
+      )}
 
     </div>
   );
